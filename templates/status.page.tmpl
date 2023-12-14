@@ -1,0 +1,158 @@
+{{ define "status.page.tmpl" }}
+
+{{ template "header" .}}
+
+   <div class="container">
+        <div class="row">
+            <div class="col">
+                <h1>Shelly Status Service - Configuration Data</h1>
+                <h2>Shelly Data</h2>
+                <table class="table table-striped table-sm">
+                    <thead>
+                        <tr>
+                          <th scope="col" style="width: 25%">Phase</th>
+                          <th scope="col" style="width: 25%">A</th>
+                          <th scope="col" style="width: 25%">B</th>
+                          <th scope="col" style="width: 25%">C</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Voltage (V)</td>
+                            <td>{{ .configdata.AVoltage }}</td>
+                            <td>{{ .configdata.BVoltage }}</td>
+                            <td>{{ .configdata.CVoltage }}</td>
+                        </tr>
+                        <tr>
+                            <td>Current (A)</td>
+                            <td>{{ .configdata.ACurrent }}</td>
+                            <td>{{ .configdata.BCurrent }}</td>
+                            <td>{{ .configdata.CCurrent }}</td>
+                        </tr>
+                        <tr>
+                            <td>Active Power (W)</td>
+                            <td>{{ .configdata.AActPower }}</td>
+                            <td>{{ .configdata.BActPower }}</td>
+                            <td>{{ .configdata.CActPower }}</td>
+                        </tr>
+                        <tr>
+                            <td>Apparent Power (VA)</td>
+                            <td>{{ .configdata.AAprtPower }}</td>
+                            <td>{{ .configdata.BAprtPower }}</td>
+                            <td>{{ .configdata.CAprtPower }}</td>
+                        </tr>
+                        <tr>
+                            <td>Power Factor</td>
+                            <td>{{ .configdata.APf }}</td>
+                            <td>{{ .configdata.BPf }}</td>
+                            <td>{{ .configdata.CPf }}</td>
+                        </tr>
+                        <tr>
+                            <td>Frequency (Hz)</td>
+                            <td>{{ .configdata.AFreq }}</td>
+                            <td>{{ .configdata.BFreq }}</td>
+                            <td>{{ .configdata.CFreq }}</td>
+                        </tr>
+                        <tr>
+                            <td>Errors</td>
+                            <td>{{ .configdata.AErrors }}</td>
+                            <td>{{ .configdata.BErrors }}</td>
+                            <td>{{ .configdata.CErrors }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <table class="table table-striped table-sm">
+                    <thead>
+                        <tr>
+                          <th scope="col" style="width: 50%"></th>
+                          <th scope="col" style="width: 50%"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Total Current (A)</td>
+                            <td>{{ .configdata.TotalCurrent }}</td>
+                        </tr>
+                        <tr>
+                            <td>Total Active Power (W)</td>
+                            <td>{{ .configdata.TotalActPower }}</td>
+                        </tr>
+                        <tr>
+                            <td>Total Apparent Power (VA)</td>
+                            <td>{{ .configdata.AActPower }}</td>
+                        </tr>
+                        <tr>
+                            <td>User Calibrated Phase</td>
+                            <td>{{ .configdata.UserCalibratedPhase }}</td>
+                        </tr>
+                        <tr>
+                            <td>Errors</td>
+                            <td>{{ .configdata.Errors }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <h2>Server</h2>
+                <table class="table table-striped table-sm">
+                    <thead>
+                        <tr>
+                        <th scope="col" style="width: 50%">Variable</th>
+                        <th scope="col" style="width: 50%">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Host</td>
+                            <td>{{ .configdata.ServerHost }}</td>
+                        </tr>
+                        <tr>
+                            <td>Port</td>
+                            <td>{{ .configdata.ServerPort }}</td>
+                        </tr>
+                        <tr>
+                            <td>TLS Port</td>
+                            <td>{{ .configdata.ServerTlsPort }}</td>
+                        </tr>
+                        <tr>
+                            <td>Graceful Shutdown Time</td>
+                            <td>{{ .configdata.ServerGracefulShutdownTime }}</td>
+                        </tr>
+                        <tr>
+                            <td>Use TLS</td>
+                            <td>{{ .configdata.ServerUseTls }}</td>
+                        </tr>
+                        <tr>
+                            <td>Certificate File</td>
+                            <td>{{ .configdata.ServerCertFile }}</td>
+                        </tr>
+                        <tr>
+                            <td>Key File</td>
+                            <td>{{ .configdata.ServerKeyFile }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <h2>Miscellaneous</h2>
+                <table class="table table-striped table-sm">
+                    <thead>
+                        <tr>
+                        <th scope="col" style="width: 50%">Variable</th>
+                        <th scope="col" style="width: 50%">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Start Date</td>
+                            <td>{{ .configdata.StartDate }}</td>
+                        </tr>
+                        <tr>
+                            <td>Gin-Gonic Mode</td>
+                            <td>{{ .configdata.GinMode }}</td>
+                        </tr>
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+{{ template "footer" .}}
+
+{{ end }}
