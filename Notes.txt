@@ -1,0 +1,14 @@
+Mount SMB share to Linux file system
+recursively scan (configurable) daily folder
+https://yourbasic.org/golang/list-files-in-directory/
+Limit file types to audio
+for each file
+Parse file name
+handle duplicate files: last creation date / modified date wins?!
+Extract schedule time, calc duration
+Extract technical metadata with ffprobe
+https://stackoverflow.com/questions/6239350/how-to-extract-duration-time-from-ffmpeg-output
+https://gist.github.com/nrk/2286511
+Sanity check of length vs. schedule time
+Construct schedule import CSV for mAirList
+https://wiki.mairlist.com/reference:text_playlist_import_format_specification
