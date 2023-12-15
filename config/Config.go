@@ -26,7 +26,7 @@ type AppConfig struct {
 		TemplatePath string `envconfig:"TEMPLATE_PATH" default:"./templates/"`
 	}
 	MAirList struct {
-		RootFolder string   `envconfig:"ROOT_FOLDER" default:"D:\\Music\\Music\\Amos Lee"`
+		RootFolder string   `envconfig:"ROOT_FOLDER" default:"Z:\\sendungen"`
 		Extensions []string `envconfig:"EXTENSIONS" default:".mp3,.m4a,.wav"`
 	}
 	RunTime struct {

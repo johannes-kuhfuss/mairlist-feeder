@@ -3,7 +3,9 @@ package service
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
+	"regexp"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
@@ -20,7 +22,7 @@ type DefaultFeederService struct {
 }
 
 var (
-	fileList domain.FileList
+	rawFileList domain.FileList
 )
 
 func NewFeederService(cfg *config.AppConfig) DefaultFeederService {
@@ -47,19 +49,25 @@ func (s DefaultFeederService) Feed() {
 }
 
 func FeedRun(s DefaultFeederService) {
-	folder := s.Cfg.MAirList.RootFolder
-	err := crawlFolder(folder, s.Cfg.MAirList.Extensions)
+	rootFolder := s.Cfg.MAirList.RootFolder
+	err := crawlFolder(rootFolder, s.Cfg.MAirList.Extensions)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Error crawling folder %v: ", folder), err)
+		logger.Error(fmt.Sprintf("Error crawling folder %v: ", rootFolder), err)
 	}
-	for i, file := range fileList {
-		logger.Info(fmt.Sprintf("Index: %v, File: %v - Modification Time: %v - Size: %v", i, file.FilePath, file.FileInfo.ModTime(), file.FileInfo.Size()))
+	logger.Info(fmt.Sprintf("Number of entries in file list: %v", len(rawFileList)))
+	exp := regexp.MustCompile("(0[0-9]|1[0-9]|2[0-3])-(0[0-9]|[1-5][0-9])")
+	for i, file := range rawFileList {
+		//logger.Info(fmt.Sprintf("Index: %v, File: %v - Modification Time: %v - Size: %v", i, file.FilePath, file.FileInfo.ModTime(), file.FileInfo.Size()))
+		folder := filepath.Dir(file.FilePath)
+		if exp.MatchString(folder) {
+			logger.Info(fmt.Sprintf("Index: %v, File: %v", i, file.FilePath))
+		}
 	}
 }
 
-func crawlFolder(folder string, extensions []string) error {
+func crawlFolder(rootFolder string, extensions []string) error {
 	var fi domain.FileInfo
-	err := filepath.Walk(folder,
+	err := filepath.Walk(getTodayFolder(rootFolder),
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
@@ -67,7 +75,7 @@ func crawlFolder(folder string, extensions []string) error {
 			if misc.SliceContainsString(extensions, filepath.Ext(path)) {
 				fi.FilePath = path
 				fi.FileInfo = info
-				fileList = append(fileList, fi)
+				rawFileList = append(rawFileList, fi)
 			}
 			return nil
 		})
@@ -76,4 +84,15 @@ func crawlFolder(folder string, extensions []string) error {
 	} else {
 		return nil
 	}
+}
+
+func getTodayFolder(rootFolder string) string {
+	/*
+		year := fmt.Sprintf("%d", time.Now().Year())
+		month := fmt.Sprintf("%02d", time.Now().Month())
+		day := fmt.Sprintf("%02d", time.Now().Day())
+
+		return path.Join(rootFolder, year, month, day)
+	*/
+	return path.Join(rootFolder, "2023", "12")
 }
