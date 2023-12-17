@@ -65,11 +65,12 @@ func FeedRun(s DefaultFeederService) {
 	for _, file := range rawFileList {
 		folder := filepath.Dir(file.FilePath)
 		if exp.MatchString(folder) {
-			len, err := analyzeLength(file.FilePath, 130, s.Cfg.MAirList.FfprobePath)
+			timePos := exp.FindString(folder)
+			len, err := analyzeLength(file.FilePath, s.Cfg.MAirList.FfProbeTimeOut, s.Cfg.MAirList.FfprobePath)
 			if err != nil {
 				logger.Error("Could not analyze file length: ", err)
 			}
-			logger.Info(fmt.Sprintf("File: %v - Length (sec): %v", file.FilePath, len))
+			logger.Info(fmt.Sprintf("Time Slot: % v, File: %v - Length (sec): %v", timePos, file.FilePath, len))
 		}
 	}
 }

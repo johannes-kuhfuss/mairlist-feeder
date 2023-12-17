@@ -26,9 +26,10 @@ type AppConfig struct {
 		TemplatePath string `envconfig:"TEMPLATE_PATH" default:"./templates/"`
 	}
 	MAirList struct {
-		RootFolder  string   `envconfig:"ROOT_FOLDER" default:"Z:\\sendungen"`
-		Extensions  []string `envconfig:"EXTENSIONS" default:".mp3,.m4a,.wav"`
-		FfprobePath string   `envconfig:"FFPROBE_PATH" default:"/usr/bin/ffprobe"`
+		RootFolder     string   `envconfig:"ROOT_FOLDER" default:"Z:\\sendungen"`
+		Extensions     []string `envconfig:"EXTENSIONS" default:".mp3,.m4a,.wav"`
+		FfprobePath    string   `envconfig:"FFPROBE_PATH" default:"/usr/bin/ffprobe"`
+		FfProbeTimeOut int      `envconfig:"FFPROBE_TIMEOUT" default:"60"`
 	}
 	RunTime struct {
 		Router     *gin.Engine
