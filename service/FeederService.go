@@ -1,11 +1,17 @@
 package service
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"math"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
+	"time"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
@@ -56,11 +62,14 @@ func FeedRun(s DefaultFeederService) {
 	}
 	logger.Info(fmt.Sprintf("Number of entries in file list: %v", len(rawFileList)))
 	exp := regexp.MustCompile("(0[0-9]|1[0-9]|2[0-3])-(0[0-9]|[1-5][0-9])")
-	for i, file := range rawFileList {
-		//logger.Info(fmt.Sprintf("Index: %v, File: %v - Modification Time: %v - Size: %v", i, file.FilePath, file.FileInfo.ModTime(), file.FileInfo.Size()))
+	for _, file := range rawFileList {
 		folder := filepath.Dir(file.FilePath)
 		if exp.MatchString(folder) {
-			logger.Info(fmt.Sprintf("Index: %v, File: %v", i, file.FilePath))
+			len, err := analyzeLength(file.FilePath, 130, s.Cfg.MAirList.FfprobePath)
+			if err != nil {
+				logger.Error("Could not analyze file length: ", err)
+			}
+			logger.Info(fmt.Sprintf("File: %v - Length (sec): %v", file.FilePath, len))
 		}
 	}
 }
@@ -87,12 +96,46 @@ func crawlFolder(rootFolder string, extensions []string) error {
 }
 
 func getTodayFolder(rootFolder string) string {
-	/*
-		year := fmt.Sprintf("%d", time.Now().Year())
-		month := fmt.Sprintf("%02d", time.Now().Month())
-		day := fmt.Sprintf("%02d", time.Now().Day())
 
-		return path.Join(rootFolder, year, month, day)
-	*/
-	return path.Join(rootFolder, "2023", "12")
+	year := fmt.Sprintf("%d", time.Now().Year())
+	month := fmt.Sprintf("%02d", time.Now().Month())
+	day := fmt.Sprintf("%02d", time.Now().Day())
+
+	return path.Join(rootFolder, year, month, day)
+
+	//return path.Join(rootFolder, "2023", "12")
+}
+
+func analyzeLength(path string, timeout int, ffprobe string) (len int, err error) {
+	ctx := context.Background()
+	timeoutDuration := time.Duration(timeout) * time.Second
+	ctx, cancel := context.WithTimeout(ctx, timeoutDuration)
+	// ffprobe -show_format -print_format json -loglevel quiet <input_file>
+	cmd := exec.CommandContext(ctx, ffprobe, "-show_format", "-print_format", "json", "-loglevel", "quiet", path)
+	outJson, err := cmd.CombinedOutput()
+	if err != nil {
+		cancel()
+		logger.Error("Could not execute ffprobe: ", err)
+		return 0, err
+	}
+	cancel()
+	durationSec, err := parseDuration(outJson)
+	if err != nil {
+		logger.Error("Could not parse duration: ", err)
+		return 0, err
+	}
+	return durationSec, nil
+}
+
+func parseDuration(ffprobedata []byte) (durationSec int, err error) {
+	var result domain.FfprobeResult
+	err = json.Unmarshal(ffprobedata, &result)
+	if err != nil {
+		return 0, err
+	}
+	durFloat, err := strconv.ParseFloat(result.Format.Duration, 64)
+	if err != nil {
+		return 0, err
+	}
+	return int(math.Round(durFloat)), nil
 }
