@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"os"
 	"os/exec"
 	"path"
@@ -28,7 +27,7 @@ type DefaultFeederService struct {
 }
 
 var (
-	rawFileList domain.FileList
+	fileList domain.FileList
 )
 
 func NewFeederService(cfg *config.AppConfig) DefaultFeederService {
@@ -60,17 +59,19 @@ func FeedRun(s DefaultFeederService) {
 	if err != nil {
 		logger.Error(fmt.Sprintf("Error crawling folder %v: ", rootFolder), err)
 	}
-	logger.Info(fmt.Sprintf("Number of entries in file list: %v", len(rawFileList)))
+	logger.Info(fmt.Sprintf("Number of entries in file list: %v", len(fileList)))
 	exp := regexp.MustCompile("(0[0-9]|1[0-9]|2[0-3])-(0[0-9]|[1-5][0-9])")
-	for _, file := range rawFileList {
-		folder := filepath.Dir(file.FilePath)
+	for idx, file := range fileList {
+		folder := filepath.Dir(file.Path)
 		if exp.MatchString(folder) {
 			timePos := exp.FindString(folder)
-			len, err := analyzeLength(file.FilePath, s.Cfg.MAirList.FfProbeTimeOut, s.Cfg.MAirList.FfprobePath)
+			len, err := analyzeLength(file.Path, s.Cfg.MAirList.FfProbeTimeOut, s.Cfg.MAirList.FfprobePath)
 			if err != nil {
 				logger.Error("Could not analyze file length: ", err)
 			}
-			logger.Info(fmt.Sprintf("Time Slot: % v, File: %v - Length (sec): %v", timePos, file.FilePath, len))
+			fileList[idx].Slot = timePos
+			fileList[idx].Duration = len
+			logger.Info(fmt.Sprintf("Time Slot: % v, File: %v - Length (sec): %v", timePos, file.Path, len))
 		}
 	}
 }
@@ -83,9 +84,9 @@ func crawlFolder(rootFolder string, extensions []string) error {
 				return err
 			}
 			if misc.SliceContainsString(extensions, filepath.Ext(path)) {
-				fi.FilePath = path
 				fi.FileInfo = info
-				rawFileList = append(rawFileList, fi)
+				fi.Path = path
+				fileList = append(fileList, fi)
 			}
 			return nil
 		})
@@ -107,11 +108,11 @@ func getTodayFolder(rootFolder string) string {
 	//return path.Join(rootFolder, "2023", "12")
 }
 
-func analyzeLength(path string, timeout int, ffprobe string) (len int, err error) {
+func analyzeLength(path string, timeout int, ffprobe string) (len float64, err error) {
 	ctx := context.Background()
 	timeoutDuration := time.Duration(timeout) * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeoutDuration)
-	// ffprobe -show_format -print_format json -loglevel quiet <input_file>
+	// Syntax: ffprobe -show_format -print_format json -loglevel quiet <input_file>
 	cmd := exec.CommandContext(ctx, ffprobe, "-show_format", "-print_format", "json", "-loglevel", "quiet", path)
 	outJson, err := cmd.CombinedOutput()
 	if err != nil {
@@ -128,7 +129,7 @@ func analyzeLength(path string, timeout int, ffprobe string) (len int, err error
 	return durationSec, nil
 }
 
-func parseDuration(ffprobedata []byte) (durationSec int, err error) {
+func parseDuration(ffprobedata []byte) (durationSec float64, err error) {
 	var result domain.FfprobeResult
 	err = json.Unmarshal(ffprobedata, &result)
 	if err != nil {
@@ -138,5 +139,5 @@ func parseDuration(ffprobedata []byte) (durationSec int, err error) {
 	if err != nil {
 		return 0, err
 	}
-	return int(math.Round(durFloat)), nil
+	return durFloat, nil
 }
