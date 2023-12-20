@@ -17,7 +17,6 @@ import (
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/handlers"
 	"github.com/johannes-kuhfuss/mairlist-feeder/service"
-	"github.com/johannes-kuhfuss/services_utils/date"
 	"github.com/johannes-kuhfuss/services_utils/logger"
 )
 
@@ -129,19 +128,21 @@ func RegisterForOsSignals() {
 }
 
 func startServer() {
-	logger.Info(fmt.Sprintf("Listening on %v", cfg.RunTime.ListenAddr))
-	cfg.RunTime.StartDate = date.GetNowUtc()
-	if cfg.Server.UseTls {
-		if err := server.ListenAndServeTLS(cfg.Server.CertFile, cfg.Server.KeyFile); err != nil && err != http.ErrServerClosed {
-			logger.Error("Error while starting https server", err)
-			panic(err)
+	/*
+		logger.Info(fmt.Sprintf("Listening on %v", cfg.RunTime.ListenAddr))
+		cfg.RunTime.StartDate = date.GetNowUtc()
+		if cfg.Server.UseTls {
+			if err := server.ListenAndServeTLS(cfg.Server.CertFile, cfg.Server.KeyFile); err != nil && err != http.ErrServerClosed {
+				logger.Error("Error while starting https server", err)
+				panic(err)
+			}
+		} else {
+			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				logger.Error("Error while starting http server", err)
+				panic(err)
+			}
 		}
-	} else {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Error("Error while starting http server", err)
-			panic(err)
-		}
-	}
+	*/
 }
 
 func startFeederService() {

@@ -60,19 +60,40 @@ func FeedRun(s DefaultFeederService) {
 		logger.Error(fmt.Sprintf("Error crawling folder %v: ", rootFolder), err)
 	}
 	logger.Info(fmt.Sprintf("Number of entries in file list: %v", len(fileList)))
-	exp := regexp.MustCompile("(0[0-9]|1[0-9]|2[0-3])-(0[0-9]|[1-5][0-9])")
+	folderExp := regexp.MustCompile(`[\\/]+(0[0-9]|1[0-9]|2[0-3])-(0[0-9]|[1-5][0-9])`)
+	file1Exp := regexp.MustCompile(`([01][0-9]|2[0-3])[0-5][0-9]-([01][0-9]|2[0-3])[0-5][0-9]_`)
+	file2Exp := regexp.MustCompile(`([01][0-9]|2[0-3])[0-5][0-9]_`)
 	for idx, file := range fileList {
-		folder := filepath.Dir(file.Path)
-		if exp.MatchString(folder) {
-			timePos := exp.FindString(folder)
-			len, err := analyzeLength(file.Path, s.Cfg.MAirList.FfProbeTimeOut, s.Cfg.MAirList.FfprobePath)
-			if err != nil {
-				logger.Error("Could not analyze file length: ", err)
-			}
-			fileList[idx].Slot = timePos
-			fileList[idx].Duration = len
-			logger.Info(fmt.Sprintf("Time Slot: % v, File: %v - Length (sec): %v", timePos, file.Path, len))
+		var timeData string
+		len, err := analyzeLength(file.Path, s.Cfg.MAirList.FfProbeTimeOut, s.Cfg.MAirList.FfprobePath)
+		if err != nil {
+			logger.Error("Could not analyze file length: ", err)
 		}
+		fileList[idx].Duration = len
+		folderName := filepath.Dir(file.Path)
+		fileName := filepath.Base(file.Path)
+		switch {
+		// Case 1: file has been uploaded via calCMS, start time is coded in folder name: "\HH-MM" or "/HH-MM"
+		case folderExp.MatchString(folderName):
+			{
+				timeData = folderExp.FindString(folderName)
+				fileList[idx].FromCalCMS = true
+				fileList[idx].StartTime = timeData[1:3] + ":" + timeData[4:6]
+			}
+		// Case 2: file has been uploaded manually, time slot is coded in file name in the form "HHMM-HHMM_"
+		case file1Exp.MatchString(fileName):
+			{
+				timeData = file1Exp.FindString(fileName)
+				fileList[idx].StartTime = timeData[0:2] + ":" + timeData[2:4]
+			}
+		// Case 3: file has been uploaded manually, start time is coded in file name in the form "HHMM_"
+		case file2Exp.MatchString(fileName):
+			{
+				timeData = file2Exp.FindString(fileName)
+				fileList[idx].StartTime = timeData[0:2] + ":" + timeData[2:4]
+			}
+		}
+		logger.Info(fmt.Sprintf("Time Slot: % v, File: %v - Length (sec): %v", fileList[idx].StartTime, file.Path, len))
 	}
 }
 
@@ -86,6 +107,8 @@ func crawlFolder(rootFolder string, extensions []string) error {
 			if misc.SliceContainsString(extensions, filepath.Ext(path)) {
 				fi.FileInfo = info
 				fi.Path = path
+				fi.FromCalCMS = false
+				fi.ScanTime = time.Now()
 				fileList = append(fileList, fi)
 			}
 			return nil
@@ -98,14 +121,14 @@ func crawlFolder(rootFolder string, extensions []string) error {
 }
 
 func getTodayFolder(rootFolder string) string {
+	/*
+		year := fmt.Sprintf("%d", time.Now().Year())
+		month := fmt.Sprintf("%02d", time.Now().Month())
+		day := fmt.Sprintf("%02d", time.Now().Day())
 
-	year := fmt.Sprintf("%d", time.Now().Year())
-	month := fmt.Sprintf("%02d", time.Now().Month())
-	day := fmt.Sprintf("%02d", time.Now().Day())
-
-	return path.Join(rootFolder, year, month, day)
-
-	//return path.Join(rootFolder, "2023", "12")
+		return path.Join(rootFolder, year, month, day)
+	*/
+	return path.Join(rootFolder, "2023", "12", "06")
 }
 
 func analyzeLength(path string, timeout int, ffprobe string) (len float64, err error) {
