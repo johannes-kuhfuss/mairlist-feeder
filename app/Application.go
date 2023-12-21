@@ -16,6 +16,7 @@ import (
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/handlers"
+	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/johannes-kuhfuss/mairlist-feeder/service"
 	"github.com/johannes-kuhfuss/services_utils/logger"
 )
@@ -28,6 +29,7 @@ var (
 	cancel         context.CancelFunc
 	statsUiHandler handlers.StatsUiHandler
 	feederService  service.DefaultFeederService
+	fileStore      repositories.DefaultFileRepository
 )
 
 func StartApp() {
@@ -114,7 +116,8 @@ func initServer() {
 
 func wireApp() {
 	statsUiHandler = handlers.NewStatsUiHandler(&cfg)
-	feederService = service.NewFeederService(&cfg)
+	fileStore = repositories.NewFileRepository(&cfg)
+	feederService = service.NewFeederService(&cfg, &fileStore)
 }
 
 func mapUrls() {

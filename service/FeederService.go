@@ -14,6 +14,7 @@ import (
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
+	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/johannes-kuhfuss/services_utils/logger"
 	"github.com/johannes-kuhfuss/services_utils/misc"
 )
@@ -23,16 +24,18 @@ type FeederService interface {
 }
 
 type DefaultFeederService struct {
-	Cfg *config.AppConfig
+	Cfg   *config.AppConfig
+	Store *repositories.DefaultFileRepository
 }
 
 var (
 	fileList domain.FileList
 )
 
-func NewFeederService(cfg *config.AppConfig) DefaultFeederService {
+func NewFeederService(cfg *config.AppConfig, store *repositories.DefaultFileRepository) DefaultFeederService {
 	return DefaultFeederService{
-		Cfg: cfg,
+		Cfg:   cfg,
+		Store: store,
 	}
 }
 
