@@ -54,6 +54,17 @@ func (fr DefaultFileRepository) GetFileData(filePath string) *domain.FileInfo {
 	return &fi
 }
 
+func (fr DefaultFileRepository) GetAll() *domain.FileList {
+	var list domain.FileList
+	if fr.Size() == 0 {
+		return nil
+	}
+	for _, file := range fileList.files {
+		list = append(list, file)
+	}
+	return &list
+}
+
 func (fr DefaultFileRepository) Store(fi domain.FileInfo) error {
 	fileList.mu.Lock()
 	fileList.files[fi.Path] = fi

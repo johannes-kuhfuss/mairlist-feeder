@@ -28,10 +28,6 @@ type DefaultFeederService struct {
 	Store *repositories.DefaultFileRepository
 }
 
-var (
-	fileList domain.FileList
-)
-
 func NewFeederService(cfg *config.AppConfig, store *repositories.DefaultFileRepository) DefaultFeederService {
 	return DefaultFeederService{
 		Cfg:   cfg,
@@ -53,26 +49,29 @@ func (s DefaultFeederService) Feed() {
 			time.Sleep(time.Duration(5 * time.Second))
 		}
 	*/
-	FeedRun(s)
+	s.FeedRun()
 }
 
-func FeedRun(s DefaultFeederService) {
+func (s DefaultFeederService) FeedRun() {
 	rootFolder := s.Cfg.MAirList.RootFolder
-	err := crawlFolder(rootFolder, s.Cfg.MAirList.Extensions)
+	err := s.crawlFolder(rootFolder, s.Cfg.MAirList.Extensions)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Error crawling folder %v: ", rootFolder), err)
 	}
-	logger.Info(fmt.Sprintf("Number of entries in file list: %v", len(fileList)))
+	size := s.Store.Size()
+	logger.Info(fmt.Sprintf("Number of entries in file list: %v", size))
 	folderExp := regexp.MustCompile(`[\\/]+(0[0-9]|1[0-9]|2[0-3])-(0[0-9]|[1-5][0-9])`)
 	file1Exp := regexp.MustCompile(`([01][0-9]|2[0-3])[0-5][0-9]-([01][0-9]|2[0-3])[0-5][0-9]_`)
 	file2Exp := regexp.MustCompile(`([01][0-9]|2[0-3])[0-5][0-9]_`)
-	for idx, file := range fileList {
+	files := s.Store.GetAll()
+	for _, file := range *files {
 		var timeData string
+		var newInfo domain.FileInfo
 		len, err := analyzeLength(file.Path, s.Cfg.MAirList.FfProbeTimeOut, s.Cfg.MAirList.FfprobePath)
 		if err != nil {
 			logger.Error("Could not analyze file length: ", err)
 		}
-		fileList[idx].Duration = len
+		newInfo.Duration = len
 		folderName := filepath.Dir(file.Path)
 		fileName := filepath.Base(file.Path)
 		switch {
@@ -80,27 +79,31 @@ func FeedRun(s DefaultFeederService) {
 		case folderExp.MatchString(folderName):
 			{
 				timeData = folderExp.FindString(folderName)
-				fileList[idx].FromCalCMS = true
-				fileList[idx].StartTime = timeData[1:3] + ":" + timeData[4:6]
+				newInfo.FromCalCMS = true
+				newInfo.StartTime = timeData[1:3] + ":" + timeData[4:6]
 			}
 		// Case 2: file has been uploaded manually, time slot is coded in file name in the form "HHMM-HHMM_"
 		case file1Exp.MatchString(fileName):
 			{
 				timeData = file1Exp.FindString(fileName)
-				fileList[idx].StartTime = timeData[0:2] + ":" + timeData[2:4]
+				newInfo.StartTime = timeData[0:2] + ":" + timeData[2:4]
 			}
 		// Case 3: file has been uploaded manually, start time is coded in file name in the form "HHMM_"
 		case file2Exp.MatchString(fileName):
 			{
 				timeData = file2Exp.FindString(fileName)
-				fileList[idx].StartTime = timeData[0:2] + ":" + timeData[2:4]
+				newInfo.StartTime = timeData[0:2] + ":" + timeData[2:4]
 			}
 		}
-		logger.Info(fmt.Sprintf("Time Slot: % v, File: %v - Length (sec): %v", fileList[idx].StartTime, file.Path, len))
+		err = s.Store.Store(newInfo)
+		if err != nil {
+			logger.Error("Error while storing data: ", err)
+		}
+		logger.Info(fmt.Sprintf("Time Slot: % v, File: %v - Length (sec): %v", newInfo.StartTime, file.Path, len))
 	}
 }
 
-func crawlFolder(rootFolder string, extensions []string) error {
+func (s DefaultFeederService) crawlFolder(rootFolder string, extensions []string) error {
 	var fi domain.FileInfo
 	err := filepath.Walk(getTodayFolder(rootFolder),
 		func(path string, info os.FileInfo, err error) error {
@@ -112,7 +115,7 @@ func crawlFolder(rootFolder string, extensions []string) error {
 				fi.Path = path
 				fi.FromCalCMS = false
 				fi.ScanTime = time.Now()
-				fileList = append(fileList, fi)
+				s.Store.Store(fi)
 			}
 			return nil
 		})

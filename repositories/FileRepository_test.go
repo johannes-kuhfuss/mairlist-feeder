@@ -52,7 +52,7 @@ func TestAddAndGet(t *testing.T) {
 	assert.EqualValues(t, 1.0, res.Duration)
 }
 
-func TestAddTwoElementsLength(t *testing.T) {
+func TestAddAndGetAll(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
@@ -67,8 +67,10 @@ func TestAddTwoElementsLength(t *testing.T) {
 	repo.Store(fi1)
 	repo.Store(fi2)
 
-	len := repo.Size()
+	size := repo.Size()
+	res := repo.GetAll()
 
-	assert.NotNil(t, len)
-	assert.EqualValues(t, 2, len)
+	assert.NotNil(t, size)
+	assert.EqualValues(t, 2, size)
+	assert.EqualValues(t, 2, len(*res))
 }
