@@ -8,7 +8,7 @@ import (
 )
 
 type FileRepository interface {
-	IsPresent(string) bool
+	Exists(string) bool
 	Size() int
 	GetFileData(string) domain.FileInfo
 	StoreFileData(domain.FileInfo) error
@@ -20,7 +20,7 @@ type DefaultFileRepository struct {
 
 type safeFileList struct {
 	mu    sync.Mutex
-	files []domain.FileInfo
+	files map[string]domain.FileInfo
 }
 
 var (
@@ -28,27 +28,35 @@ var (
 )
 
 func NewFileRepository(cfg *config.AppConfig) DefaultFileRepository {
+	fileList.files = make(map[string]domain.FileInfo)
 	return DefaultFileRepository{
 		Cfg: cfg,
 	}
 }
 
-func (fr DefaultFileRepository) IsPresent(filePath string) bool {
-	return false
+func (fr DefaultFileRepository) Exists(filePath string) bool {
+	_, ok := fileList.files[filePath]
+	return ok
 }
 
 func (fr DefaultFileRepository) Size() int {
 	return len(fileList.files)
 }
 
-func (fr DefaultFileRepository) GetFileData(filePath string) domain.FileInfo {
+func (fr DefaultFileRepository) GetFileData(filePath string) *domain.FileInfo {
 	var fi domain.FileInfo
-	return fi
+	if !fr.Exists(filePath) {
+		return nil
+	}
+	fileList.mu.Lock()
+	fi = fileList.files[filePath]
+	fileList.mu.Unlock()
+	return &fi
 }
 
 func (fr DefaultFileRepository) Store(fi domain.FileInfo) error {
 	fileList.mu.Lock()
-	fileList.files = append(fileList.files, fi)
+	fileList.files[fi.Path] = fi
 	fileList.mu.Unlock()
 	return nil
 }
