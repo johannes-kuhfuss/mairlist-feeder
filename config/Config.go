@@ -25,17 +25,19 @@ type AppConfig struct {
 		Mode         string `envconfig:"GIN_MODE" default:"release"`
 		TemplatePath string `envconfig:"TEMPLATE_PATH" default:"./templates/"`
 	}
-	MAirList struct {
+	Crawl struct {
 		RootFolder     string   `envconfig:"ROOT_FOLDER" default:"Z:\\sendungen"`
 		Extensions     []string `envconfig:"EXTENSIONS" default:".mp3,.m4a,.wav"`
 		FfprobePath    string   `envconfig:"FFPROBE_PATH" default:"/usr/bin/ffprobe"`
 		FfProbeTimeOut int      `envconfig:"FFPROBE_TIMEOUT" default:"60"`
+		CrawlCycleMin  int      `envconfig:"CRAWL_CYCLE_MIN" default:"5"`
 	}
 	RunTime struct {
-		Router     *gin.Engine
-		ListenAddr string
-		StartDate  time.Time
-		RunFeeder  bool
+		Router         *gin.Engine
+		ListenAddr     string
+		StartDate      time.Time
+		RunFeeder      bool
+		CrawlRunNumber int
 	}
 }
 
@@ -50,9 +52,14 @@ func InitConfig(file string, config *AppConfig) api_error.ApiErr {
 	if err != nil {
 		return api_error.NewInternalServerError("Could not initalize configuration. Check your environment variables", err)
 	}
-	config.RunTime.RunFeeder = false
+	setDefaults(config)
 	logger.Info("Done initalizing configuration")
 	return nil
+}
+
+func setDefaults(config *AppConfig) {
+	config.RunTime.RunFeeder = false
+	config.RunTime.CrawlRunNumber = 0
 }
 
 func loadConfig(file string) error {

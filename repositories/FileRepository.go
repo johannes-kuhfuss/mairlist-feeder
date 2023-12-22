@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
@@ -67,6 +68,9 @@ func (fr DefaultFileRepository) GetAll() *domain.FileList {
 
 func (fr DefaultFileRepository) Store(fi domain.FileInfo) error {
 	fileList.mu.Lock()
+	if fi.Path == "" {
+		return errors.New("cannot add item with empty path to list")
+	}
 	fileList.files[fi.Path] = fi
 	fileList.mu.Unlock()
 	return nil

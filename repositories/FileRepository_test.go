@@ -35,6 +35,17 @@ func TestGetOnEmptyList(t *testing.T) {
 	assert.Nil(t, res)
 }
 
+func TestAddItemWithEmptyPath(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	fi := domain.FileInfo{}
+	err := repo.Store(fi)
+
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "cannot add item with empty path to list", err.Error())
+}
+
 func TestAddAndGet(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
@@ -43,10 +54,11 @@ func TestAddAndGet(t *testing.T) {
 		Path:     "A",
 		Duration: 1.0,
 	}
-	repo.Store(fi)
+	err := repo.Store(fi)
 
 	res := repo.GetFileData("A")
 
+	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.EqualValues(t, "A", res.Path)
 	assert.EqualValues(t, 1.0, res.Duration)
