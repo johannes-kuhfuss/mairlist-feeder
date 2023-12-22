@@ -30,7 +30,7 @@ func TestGetOnEmptyList(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
 
-	res := repo.GetFileData("B")
+	res := repo.Get("B")
 
 	assert.Nil(t, res)
 }
@@ -56,7 +56,7 @@ func TestAddAndGet(t *testing.T) {
 	}
 	err := repo.Store(fi)
 
-	res := repo.GetFileData("A")
+	res := repo.Get("A")
 
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -85,4 +85,33 @@ func TestAddAndGetAll(t *testing.T) {
 	assert.NotNil(t, size)
 	assert.EqualValues(t, 2, size)
 	assert.EqualValues(t, 2, len(*res))
+}
+
+func TestDeleteEmpty(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	err := repo.Delete("A")
+
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "item does not exist", err.Error())
+}
+
+func TestDeleteItem(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	fi := domain.FileInfo{
+		Path:     "A",
+		Duration: 1.0,
+	}
+	repo.Store(fi)
+	sizeBefore := repo.Size()
+
+	err := repo.Delete("A")
+	sizeAfter := repo.Size()
+
+	assert.Nil(t, err)
+	assert.EqualValues(t, 1, sizeBefore)
+	assert.EqualValues(t, 0, sizeAfter)
 }

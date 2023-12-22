@@ -44,7 +44,7 @@ func (fr DefaultFileRepository) Size() int {
 	return len(fileList.files)
 }
 
-func (fr DefaultFileRepository) GetFileData(filePath string) *domain.FileInfo {
+func (fr DefaultFileRepository) Get(filePath string) *domain.FileInfo {
 	var fi domain.FileInfo
 	if !fr.Exists(filePath) {
 		return nil
@@ -72,6 +72,16 @@ func (fr DefaultFileRepository) Store(fi domain.FileInfo) error {
 		return errors.New("cannot add item with empty path to list")
 	}
 	fileList.files[fi.Path] = fi
+	fileList.mu.Unlock()
+	return nil
+}
+
+func (fr DefaultFileRepository) Delete(filePath string) error {
+	if !fr.Exists(filePath) {
+		return errors.New("item does not exist")
+	}
+	fileList.mu.Lock()
+	delete(fileList.files, filePath)
 	fileList.mu.Unlock()
 	return nil
 }
