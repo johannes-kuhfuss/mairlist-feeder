@@ -28,8 +28,9 @@ var (
 	ctx            context.Context
 	cancel         context.CancelFunc
 	statsUiHandler handlers.StatsUiHandler
-	crawlService   service.DefaultCrawlService
 	fileRepo       repositories.DefaultFileRepository
+	crawlService   service.DefaultCrawlService
+	cleanService   service.DefaultCleanService
 )
 
 func StartApp() {
@@ -47,7 +48,8 @@ func StartApp() {
 	RegisterForOsSignals()
 
 	go startServer()
-	go startFeederService()
+	go startCrawlService()
+	go startCleanService()
 
 	<-appEnd
 	cleanUp()
@@ -117,7 +119,8 @@ func initServer() {
 func wireApp() {
 	statsUiHandler = handlers.NewStatsUiHandler(&cfg)
 	fileRepo = repositories.NewFileRepository(&cfg)
-	crawlService = service.NewFeederService(&cfg, &fileRepo)
+	crawlService = service.NewCrawlService(&cfg, &fileRepo)
+	cleanService = service.NewCleanService(&cfg, &fileRepo)
 }
 
 func mapUrls() {
@@ -148,8 +151,12 @@ func startServer() {
 	*/
 }
 
-func startFeederService() {
+func startCrawlService() {
 	crawlService.Crawl()
+}
+
+func startCleanService() {
+	cleanService.Clean()
 }
 
 func cleanUp() {

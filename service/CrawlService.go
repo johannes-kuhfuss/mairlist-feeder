@@ -29,7 +29,7 @@ type DefaultCrawlService struct {
 	Repo *repositories.DefaultFileRepository
 }
 
-func NewFeederService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository) DefaultCrawlService {
+func NewCrawlService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository) DefaultCrawlService {
 	return DefaultCrawlService{
 		Cfg:  cfg,
 		Repo: repo,
