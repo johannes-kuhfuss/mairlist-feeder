@@ -20,23 +20,23 @@ import (
 	"github.com/johannes-kuhfuss/services_utils/misc"
 )
 
-type FeederService interface {
-	Feed()
+type CrawlService interface {
+	Crawl()
 }
 
-type DefaultFeederService struct {
+type DefaultCrawlService struct {
 	Cfg  *config.AppConfig
 	Repo *repositories.DefaultFileRepository
 }
 
-func NewFeederService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository) DefaultFeederService {
-	return DefaultFeederService{
+func NewFeederService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository) DefaultCrawlService {
+	return DefaultCrawlService{
 		Cfg:  cfg,
 		Repo: repo,
 	}
 }
 
-func (s DefaultFeederService) Feed() {
+func (s DefaultCrawlService) Crawl() {
 	if s.Cfg.Crawl.RootFolder == "" {
 		logger.Warn("No root folder given. Not running")
 		s.Cfg.RunTime.RunFeeder = false
@@ -45,12 +45,12 @@ func (s DefaultFeederService) Feed() {
 		s.Cfg.RunTime.RunFeeder = true
 	}
 	for s.Cfg.RunTime.RunFeeder {
-		s.FeedRun()
+		s.CrawlRun()
 		time.Sleep(time.Duration(s.Cfg.Crawl.CrawlCycleMin) * time.Minute)
 	}
 }
 
-func (s DefaultFeederService) FeedRun() {
+func (s DefaultCrawlService) CrawlRun() {
 	rootFolder := s.Cfg.Crawl.RootFolder
 	s.Cfg.RunTime.CrawlRunNumber++
 	logger.Info(fmt.Sprintf("Starting crawl run #%v...", s.Cfg.RunTime.CrawlRunNumber))
@@ -65,7 +65,7 @@ func (s DefaultFeederService) FeedRun() {
 	logger.Info("Finished extracting file data.")
 }
 
-func (s DefaultFeederService) crawlFolder(rootFolder string, extensions []string) error {
+func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string) error {
 	var fi domain.FileInfo
 	today := getTodayFolder()
 	err := filepath.Walk(path.Join(rootFolder, today),
@@ -110,7 +110,7 @@ func getTodayFolder() string {
 	//return path.Join("2023", "12", "06")
 }
 
-func (s DefaultFeederService) extractFileInfo() error {
+func (s DefaultCrawlService) extractFileInfo() error {
 	var startTimeDisplay string
 	folderExp := regexp.MustCompile(`[\\/]+(0[0-9]|1[0-9]|2[0-3])-(0[0-9]|[1-5][0-9])`)
 	file1Exp := regexp.MustCompile(`([01][0-9]|2[0-3])[0-5][0-9]-([01][0-9]|2[0-3])[0-5][0-9]_`)
