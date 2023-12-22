@@ -13,6 +13,7 @@ type FileInfo struct {
 	FromCalCMS    bool
 	InfoExtracted bool
 	ScanTime      time.Time
+	FolderDate    string
 }
 
 type FileList []FileInfo

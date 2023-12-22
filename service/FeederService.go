@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
@@ -66,7 +67,8 @@ func (s DefaultFeederService) FeedRun() {
 
 func (s DefaultFeederService) crawlFolder(rootFolder string, extensions []string) error {
 	var fi domain.FileInfo
-	err := filepath.Walk(getTodayFolder(rootFolder),
+	today := getTodayFolder()
+	err := filepath.Walk(path.Join(rootFolder, today),
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
@@ -83,6 +85,7 @@ func (s DefaultFeederService) crawlFolder(rootFolder string, extensions []string
 				fi.Path = path
 				fi.FromCalCMS = false
 				fi.ScanTime = time.Now()
+				fi.FolderDate = strings.Replace(today, "/", "-", -1)
 				fi.InfoExtracted = false
 				s.Repo.Store(fi)
 				logger.Info(fmt.Sprintf("File %v added", path))
@@ -96,15 +99,15 @@ func (s DefaultFeederService) crawlFolder(rootFolder string, extensions []string
 	}
 }
 
-func getTodayFolder(rootFolder string) string {
+func getTodayFolder() string {
 
 	year := fmt.Sprintf("%d", time.Now().Year())
 	month := fmt.Sprintf("%02d", time.Now().Month())
 	day := fmt.Sprintf("%02d", time.Now().Day())
 
-	return path.Join(rootFolder, year, month, day)
+	return path.Join(year, month, day)
 
-	//return path.Join(rootFolder, "2023", "12", "06")
+	//return path.Join("2023", "12", "06")
 }
 
 func (s DefaultFeederService) extractFileInfo() error {
