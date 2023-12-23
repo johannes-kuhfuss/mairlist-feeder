@@ -25,12 +25,15 @@ type AppConfig struct {
 		Mode         string `envconfig:"GIN_MODE" default:"release"`
 		TemplatePath string `envconfig:"TEMPLATE_PATH" default:"./templates/"`
 	}
+	Misc struct {
+		Test bool `envconfig:"TEST" default:"false"`
+	}
 	Crawl struct {
 		RootFolder     string   `envconfig:"ROOT_FOLDER" default:"Z:\\sendungen"`
 		Extensions     []string `envconfig:"EXTENSIONS" default:".mp3,.m4a,.wav"`
 		FfprobePath    string   `envconfig:"FFPROBE_PATH" default:"/usr/bin/ffprobe"`
 		FfProbeTimeOut int      `envconfig:"FFPROBE_TIMEOUT" default:"60"`
-		CrawlCycleMin  int      `envconfig:"CRAWL_CYCLE_MIN" default:"5"`
+		CrawlCycleMin  int      `envconfig:"CRAWL_CYCLE_MIN" default:"20"`
 	}
 	RunTime struct {
 		Router         *gin.Engine

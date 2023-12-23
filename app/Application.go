@@ -9,10 +9,12 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/robfig/cron"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/handlers"
@@ -31,6 +33,7 @@ var (
 	fileRepo       repositories.DefaultFileRepository
 	crawlService   service.DefaultCrawlService
 	cleanService   service.DefaultCleanService
+	bgJobs         *cron.Cron
 )
 
 func StartApp() {
@@ -46,10 +49,12 @@ func StartApp() {
 	wireApp()
 	mapUrls()
 	RegisterForOsSignals()
+	scheduleBgJobs()
+	crawlService.Crawl()
+	time.Sleep(30 * time.Second)
+	cleanService.Clean()
 
 	go startServer()
-	go startCrawlService()
-	go startCleanService()
 
 	<-appEnd
 	cleanUp()
@@ -133,6 +138,19 @@ func RegisterForOsSignals() {
 	signal.Notify(appEnd, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 }
 
+func scheduleBgJobs() {
+	logger.Info("Scheduling jobs...")
+	crawlCycle := "@every " + strconv.Itoa(cfg.Crawl.CrawlCycleMin) + "m"
+	bgJobs = cron.New()
+	bgJobs.AddFunc(crawlCycle, crawlService.Crawl)
+	bgJobs.AddFunc("0 3 2 * * *", cleanService.Clean)
+	bgJobs.Start()
+	for _, job := range bgJobs.Entries() {
+		logger.Info(fmt.Sprintf("Job: %v - Next execution: %v", job.Job, job.Next.String()))
+	}
+	logger.Info("Jobs scheduled")
+}
+
 func startServer() {
 	/*
 		logger.Info(fmt.Sprintf("Listening on %v", cfg.RunTime.ListenAddr))
@@ -151,15 +169,8 @@ func startServer() {
 	*/
 }
 
-func startCrawlService() {
-	crawlService.Crawl()
-}
-
-func startCleanService() {
-	cleanService.Clean()
-}
-
 func cleanUp() {
+	bgJobs.Stop()
 	shutdownTime := time.Duration(cfg.Server.GracefulShutdownTime) * time.Second
 	ctx, cancel = context.WithTimeout(context.Background(), shutdownTime)
 	defer func() {

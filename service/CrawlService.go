@@ -44,10 +44,7 @@ func (s DefaultCrawlService) Crawl() {
 		logger.Info(fmt.Sprintf("Root folder defined as %v. Starting to crawl.", s.Cfg.Crawl.RootFolder))
 		s.Cfg.RunTime.RunFeeder = true
 	}
-	for s.Cfg.RunTime.RunFeeder {
-		s.CrawlRun()
-		time.Sleep(time.Duration(s.Cfg.Crawl.CrawlCycleMin) * time.Minute)
-	}
+	s.CrawlRun()
 }
 
 func (s DefaultCrawlService) CrawlRun() {
@@ -97,17 +94,6 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string)
 	} else {
 		return nil
 	}
-}
-
-func getTodayFolder() string {
-
-	year := fmt.Sprintf("%d", time.Now().Year())
-	month := fmt.Sprintf("%02d", time.Now().Month())
-	day := fmt.Sprintf("%02d", time.Now().Day())
-
-	return path.Join(year, month, day)
-
-	//return path.Join("2023", "12", "06")
 }
 
 func (s DefaultCrawlService) extractFileInfo() error {
