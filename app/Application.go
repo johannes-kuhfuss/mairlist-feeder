@@ -33,6 +33,7 @@ var (
 	fileRepo       repositories.DefaultFileRepository
 	crawlService   service.DefaultCrawlService
 	cleanService   service.DefaultCleanService
+	exportService  service.DefaultExportService
 	bgJobs         *cron.Cron
 )
 
@@ -126,6 +127,7 @@ func wireApp() {
 	fileRepo = repositories.NewFileRepository(&cfg)
 	crawlService = service.NewCrawlService(&cfg, &fileRepo)
 	cleanService = service.NewCleanService(&cfg, &fileRepo)
+	exportService = service.NewExportService(&cfg, &fileRepo)
 }
 
 func mapUrls() {
@@ -142,8 +144,12 @@ func scheduleBgJobs() {
 	logger.Info("Scheduling jobs...")
 	crawlCycle := "@every " + strconv.Itoa(cfg.Crawl.CrawlCycleMin) + "m"
 	bgJobs = cron.New()
+	// Crawl every x minutes
 	bgJobs.AddFunc(crawlCycle, crawlService.Crawl)
+	// Clean 02:03 local time
 	bgJobs.AddFunc("0 3 2 * * *", cleanService.Clean)
+	// Export every hour, 10 minutes to the hour
+	bgJobs.AddFunc("0 50 * * * *", exportService.Export)
 	bgJobs.Start()
 	for _, job := range bgJobs.Entries() {
 		logger.Info(fmt.Sprintf("Job: %v - Next execution: %v", job.Job, job.Next.String()))
