@@ -52,6 +52,7 @@ func StartApp() {
 	RegisterForOsSignals()
 	scheduleBgJobs()
 	crawlService.Crawl()
+	exportService.Export()
 
 	go startServer()
 

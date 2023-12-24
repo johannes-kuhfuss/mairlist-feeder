@@ -115,15 +115,15 @@ func (s DefaultCrawlService) extractFileInfo() error {
 		for _, file := range *files {
 			if !file.InfoExtracted {
 				var timeData string
-				var newInfo domain.FileInfo
+				var newInfo domain.FileInfo = file
+
 				len, err := analyzeLength(file.Path, s.Cfg.Crawl.FfProbeTimeOut, s.Cfg.Crawl.FfprobePath)
 				if err != nil {
 					logger.Error("Could not analyze file length: ", err)
 				}
-				newInfo = file
+				newInfo.Duration = len
 				folderName := filepath.Dir(file.Path)
 				fileName := filepath.Base(file.Path)
-				//fileName = strings.Replace(fileName, " ", "", -1)
 				switch {
 				// Case 1: file has been uploaded via calCMS, start time is coded in folder name: "\HH-MM" or "/HH-MM"
 				case folderExp.MatchString(folderName):
