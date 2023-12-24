@@ -35,6 +35,15 @@ func TestGetOnEmptyList(t *testing.T) {
 	assert.Nil(t, res)
 }
 
+func TestGetAllOnEmptyList(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	res := repo.GetAll()
+
+	assert.Nil(t, res)
+}
+
 func TestAddItemWithEmptyPath(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()

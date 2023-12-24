@@ -52,8 +52,6 @@ func StartApp() {
 	RegisterForOsSignals()
 	scheduleBgJobs()
 	crawlService.Crawl()
-	time.Sleep(30 * time.Second)
-	cleanService.Clean()
 
 	go startServer()
 

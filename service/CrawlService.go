@@ -56,10 +56,16 @@ func (s DefaultCrawlService) CrawlRun() {
 		logger.Error(fmt.Sprintf("Error crawling folder %v: ", rootFolder), err)
 	}
 	logger.Info(fmt.Sprintf("Finished crawl run #%v.", s.Cfg.RunTime.CrawlRunNumber))
-	logger.Info(fmt.Sprintf("Number of entries in file list: %v", s.Repo.Size()))
-	logger.Info("Starting to extract file data...")
-	s.extractFileInfo()
-	logger.Info("Finished extracting file data.")
+	numEntries := s.Repo.Size()
+	logger.Info(fmt.Sprintf("Number of entries in file list: %v", numEntries))
+	if numEntries > 0 {
+		logger.Info("Starting to extract file data...")
+		s.extractFileInfo()
+		logger.Info("Finished extracting file data.")
+	} else {
+		logger.Info("No files in file list. No extraction needed.")
+	}
+
 }
 
 func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string) error {
@@ -85,7 +91,9 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string)
 				fi.FolderDate = strings.Replace(today, "/", "-", -1)
 				fi.InfoExtracted = false
 				s.Repo.Store(fi)
-				logger.Info(fmt.Sprintf("File %v added", path))
+				if s.Cfg.Misc.Test {
+					logger.Info(fmt.Sprintf("File %v added", path))
+				}
 			}
 			return nil
 		})
@@ -99,52 +107,63 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string)
 func (s DefaultCrawlService) extractFileInfo() error {
 	var startTimeDisplay string
 	folderExp := regexp.MustCompile(`[\\/]+(0[0-9]|1[0-9]|2[0-3])-(0[0-9]|[1-5][0-9])`)
-	file1Exp := regexp.MustCompile(`([01][0-9]|2[0-3])[0-5][0-9]-([01][0-9]|2[0-3])[0-5][0-9]_`)
-	file2Exp := regexp.MustCompile(`([01][0-9]|2[0-3])[0-5][0-9]_`)
+	file1Exp := regexp.MustCompile(`([01][0-9]|2[0-3])[0-5][0]\s?-\s?([01][0-9]|2[0-3])[0-5][0][_ -]`)
+	file2Exp := regexp.MustCompile(`([01][0-9]|2[0-3])[0-5][0][_ -]`)
+	file3Exp := regexp.MustCompile(`([01][0-9]|2[0-3])[_-]([01][0-9]|2[0-3])[_ -]?Uhr`)
 	files := s.Repo.GetAll()
-	for _, file := range *files {
-		if !file.InfoExtracted {
-			var timeData string
-			var newInfo domain.FileInfo
-			len, err := analyzeLength(file.Path, s.Cfg.Crawl.FfProbeTimeOut, s.Cfg.Crawl.FfprobePath)
-			if err != nil {
-				logger.Error("Could not analyze file length: ", err)
-			}
-			newInfo = file
-			folderName := filepath.Dir(file.Path)
-			fileName := filepath.Base(file.Path)
-			switch {
-			// Case 1: file has been uploaded via calCMS, start time is coded in folder name: "\HH-MM" or "/HH-MM"
-			case folderExp.MatchString(folderName):
-				{
-					timeData = folderExp.FindString(folderName)
-					newInfo.FromCalCMS = true
-					newInfo.StartTime = timeData[1:3] + ":" + timeData[4:6]
+	if files != nil {
+		for _, file := range *files {
+			if !file.InfoExtracted {
+				var timeData string
+				var newInfo domain.FileInfo
+				len, err := analyzeLength(file.Path, s.Cfg.Crawl.FfProbeTimeOut, s.Cfg.Crawl.FfprobePath)
+				if err != nil {
+					logger.Error("Could not analyze file length: ", err)
 				}
-			// Case 2: file has been uploaded manually, time slot is coded in file name in the form "HHMM-HHMM_"
-			case file1Exp.MatchString(fileName):
-				{
-					timeData = file1Exp.FindString(fileName)
-					newInfo.StartTime = timeData[0:2] + ":" + timeData[2:4]
+				newInfo = file
+				folderName := filepath.Dir(file.Path)
+				fileName := filepath.Base(file.Path)
+				//fileName = strings.Replace(fileName, " ", "", -1)
+				switch {
+				// Case 1: file has been uploaded via calCMS, start time is coded in folder name: "\HH-MM" or "/HH-MM"
+				case folderExp.MatchString(folderName):
+					{
+						timeData = folderExp.FindString(folderName)
+						newInfo.FromCalCMS = true
+						newInfo.StartTime = timeData[1:3] + ":" + timeData[4:6]
+					}
+				// Case 2: file has been uploaded manually, time slot is coded in file name in the form "HHMM-HHMM_"
+				case file1Exp.MatchString(fileName):
+					{
+						timeData = file1Exp.FindString(fileName)
+						newInfo.StartTime = timeData[0:2] + ":" + timeData[2:4]
+					}
+				// Case 3: file has been uploaded manually, start time is coded in file name in the form "HHMM_"
+				case file2Exp.MatchString(fileName):
+					{
+						timeData = file2Exp.FindString(fileName)
+						newInfo.StartTime = timeData[0:2] + ":" + timeData[2:4]
+					}
+				// Case 4: file has been uploaded manually, start time is coded in file name in the form "HH-HH_Uhr"
+				case file3Exp.MatchString(fileName):
+					{
+						timeData = file3Exp.FindString(fileName)
+						newInfo.StartTime = timeData[0:2] + ":00"
+					}
 				}
-			// Case 3: file has been uploaded manually, start time is coded in file name in the form "HHMM_"
-			case file2Exp.MatchString(fileName):
-				{
-					timeData = file2Exp.FindString(fileName)
-					newInfo.StartTime = timeData[0:2] + ":" + timeData[2:4]
+
+				newInfo.InfoExtracted = true
+				err = s.Repo.Store(newInfo)
+				if err != nil {
+					logger.Error("Error while storing data: ", err)
 				}
+				if newInfo.StartTime == "" {
+					startTimeDisplay = "N/A"
+				} else {
+					startTimeDisplay = newInfo.StartTime
+				}
+				logger.Info(fmt.Sprintf("Time Slot: % v, File: %v - Length (sec): %v", startTimeDisplay, file.Path, len))
 			}
-			newInfo.InfoExtracted = true
-			err = s.Repo.Store(newInfo)
-			if err != nil {
-				logger.Error("Error while storing data: ", err)
-			}
-			if newInfo.StartTime == "" {
-				startTimeDisplay = "N/A"
-			} else {
-				startTimeDisplay = newInfo.StartTime
-			}
-			logger.Info(fmt.Sprintf("Time Slot: % v, File: %v - Length (sec): %v", startTimeDisplay, file.Path, len))
 		}
 	}
 	return nil
