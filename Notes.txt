@@ -16,3 +16,4 @@ https://wiki.mairlist.com/reference:text_playlist_import_format_specification
 
 https://github.com/stephenafamo/kronika
 
+Deal with cron jobs started before old one completes

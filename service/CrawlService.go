@@ -131,27 +131,38 @@ func (s DefaultCrawlService) extractFileInfo() error {
 						timeData = folderExp.FindString(folderName)
 						newInfo.FromCalCMS = true
 						newInfo.StartTime = timeData[1:3] + ":" + timeData[4:6]
+						newInfo.RuleMatched = "calCMS Folder Rule"
 					}
 				// Case 2: file has been uploaded manually, time slot is coded in file name in the form "HHMM-HHMM_"
 				case file1Exp.MatchString(fileName):
 					{
 						timeData = file1Exp.FindString(fileName)
+						timeData = strings.Replace(timeData, " ", "", -1)
 						newInfo.StartTime = timeData[0:2] + ":" + timeData[2:4]
+						newInfo.EndTime = timeData[5:7] + ":" + timeData[7:9]
+						newInfo.RuleMatched = "Manual, File Name HHMM-HHMM"
 					}
 				// Case 3: file has been uploaded manually, start time is coded in file name in the form "HHMM_"
 				case file2Exp.MatchString(fileName):
 					{
 						timeData = file2Exp.FindString(fileName)
 						newInfo.StartTime = timeData[0:2] + ":" + timeData[2:4]
+						newInfo.RuleMatched = "Manual, File Name HHMM"
 					}
 				// Case 4: file has been uploaded manually, start time is coded in file name in the form "HH-HH_Uhr"
 				case file3Exp.MatchString(fileName):
 					{
 						timeData = file3Exp.FindString(fileName)
+						timeData = strings.Replace(timeData, " ", "", -1)
 						newInfo.StartTime = timeData[0:2] + ":00"
+						newInfo.EndTime = timeData[3:5] + ":00"
+						newInfo.RuleMatched = "Manual, File Name HH-HH Uhr"
+					}
+				default:
+					{
+						newInfo.RuleMatched = "None"
 					}
 				}
-
 				newInfo.InfoExtracted = true
 				err = s.Repo.Store(newInfo)
 				if err != nil {

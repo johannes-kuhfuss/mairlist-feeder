@@ -3,6 +3,7 @@ package service
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
@@ -28,21 +29,29 @@ func NewExportService(cfg *config.AppConfig, repo *repositories.DefaultFileRepos
 
 func (s DefaultExportService) Export() {
 	logger.Info("Starting export...")
-	var timeSlot string
-	logFile, err := os.OpenFile("filescan.txt", os.O_APPEND|os.O_CREATE, 0644)
+	var (
+		startTimeSlot string
+		endTimeSlot   string
+	)
+	logFile, err := os.OpenFile("filescan.csv", os.O_APPEND|os.O_CREATE, 0644)
 	dataWriter := bufio.NewWriter(logFile)
 	if err != nil {
 		logger.Error("Error writing log file: ", err)
 	} else {
 		files := s.Repo.GetAll()
+		_, _ = dataWriter.WriteString("Index;StartTime;EndTime;Path;RuleMatched;Length\n")
 		for idx, file := range *files {
-
 			if file.StartTime == "" {
-				timeSlot = "N/A"
+				startTimeSlot = "N/A"
 			} else {
-				timeSlot = file.StartTime
+				startTimeSlot = file.StartTime
 			}
-			infoString := fmt.Sprintf("Index: %04d - Time slot: %v - Path: %v\n", idx, timeSlot, file.Path)
+			if file.EndTime == "" {
+				endTimeSlot = "N/A"
+			} else {
+				endTimeSlot = file.EndTime
+			}
+			infoString := fmt.Sprintf("%04d;%v;%v;%v;%v;%v\n", idx, startTimeSlot, endTimeSlot, file.Path, file.RuleMatched, math.Round(file.Duration))
 			_, _ = dataWriter.WriteString(infoString)
 		}
 	}
