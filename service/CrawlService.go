@@ -117,8 +117,7 @@ func (s DefaultCrawlService) extractFileInfo() error {
 	// HH-HH_Uhr
 	file2Exp := regexp.MustCompile(`([01][0-9]|2[0-3])[_-]([01][0-9]|2[0-3])[_ -]?Uhr`)
 	// HHMM_
-	// This needs to be reworked to match HHMM, but not dates YYYY-MM-DD
-	file3Exp := regexp.MustCompile(`^([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])[_-]`)
+	file3Exp := regexp.MustCompile(`^([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])[_ -][a-zA-Z]+`)
 	files := s.Repo.GetAll()
 	if files != nil {
 		for _, file := range *files {
@@ -126,16 +125,15 @@ func (s DefaultCrawlService) extractFileInfo() error {
 				var timeData string
 				var newInfo domain.FileInfo = file
 
-				/*len, err := analyzeLength(file.Path, s.Cfg.Crawl.FfProbeTimeOut, s.Cfg.Crawl.FfprobePath)
+				len, err := analyzeLength(file.Path, s.Cfg.Crawl.FfProbeTimeOut, s.Cfg.Crawl.FfprobePath)
 				if err != nil {
 					logger.Error("Could not analyze file length: ", err)
-				}*/
-				len := 0.0
+				}
 				newInfo.Duration = len
 				folderName := filepath.Dir(file.Path)
 				fileName := filepath.Base(file.Path)
 				switch {
-				// Condition: start time is coded in folder name: "/HH-MM" (calCMS)
+				// Condition: only start time is encoded in folder name: "/HH-MM" (calCMS)
 				case folder1Exp.MatchString(folderName):
 					{
 						timeData = folder1Exp.FindString(folderName)
@@ -143,7 +141,7 @@ func (s DefaultCrawlService) extractFileInfo() error {
 						newInfo.StartTime = timeData[1:3] + ":" + timeData[4:6]
 						newInfo.RuleMatched = "HH-MM folder name rule (calcms)"
 					}
-				// Condition: time is coded in folder name: "/HHMM-HHMM"
+				// Condition: start time and end time is encoded in folder name: "/HHMM-HHMM"
 				case folder2Exp.MatchString(folderName):
 					{
 						timeData = folder2Exp.FindString(folderName)
@@ -153,7 +151,7 @@ func (s DefaultCrawlService) extractFileInfo() error {
 						newInfo.EndTime = timeData[6:8] + ":" + timeData[8:10]
 						newInfo.RuleMatched = "HHMM-HHMM folder name rule"
 					}
-				// Condition: time is coded in folder name: "HH bis HH"
+				// Condition: start time (hour) and end time (hour) is encoded in folder name: "HH bis HH"
 				case folder3Exp.MatchString(folderName):
 					{
 						timeData = folder3Exp.FindString(folderName)
@@ -163,7 +161,7 @@ func (s DefaultCrawlService) extractFileInfo() error {
 						newInfo.EndTime = timeData[6:8] + ":00"
 						newInfo.RuleMatched = "HH bis HH folder name rule"
 					}
-				// Condition: time slot is coded in file name in the form "HHMM-HHMM_"
+				// Condition: start time and end time is encoded in file name in the form "HHMM-HHMM_"
 				case file1Exp.MatchString(fileName):
 					{
 						timeData = file1Exp.FindString(fileName)
@@ -172,7 +170,7 @@ func (s DefaultCrawlService) extractFileInfo() error {
 						newInfo.EndTime = timeData[5:7] + ":" + timeData[7:9]
 						newInfo.RuleMatched = "HHMM-HHMM file name rule"
 					}
-				// Condition: start time is coded in file name in the form "HH-HH_Uhr"
+				// Condition: start time (hour) and end time (hour) is encoded in file name in the form "HH-HH_Uhr"
 				case file2Exp.MatchString(fileName):
 					{
 						timeData = file2Exp.FindString(fileName)
@@ -181,7 +179,7 @@ func (s DefaultCrawlService) extractFileInfo() error {
 						newInfo.EndTime = timeData[3:5] + ":00"
 						newInfo.RuleMatched = "HH-HH Uhr file name rule"
 					}
-				// Condition: start time is coded in file name in the form "HHMM_"
+				// Condition: only start time is encoded in the file name in the form of "HHMM_" (beware of date matching!)
 				case file3Exp.MatchString(fileName):
 					{
 						timeData = file3Exp.FindString(fileName)
@@ -194,7 +192,7 @@ func (s DefaultCrawlService) extractFileInfo() error {
 					}
 				}
 				newInfo.InfoExtracted = true
-				err := s.Repo.Store(newInfo)
+				err = s.Repo.Store(newInfo)
 				if err != nil {
 					logger.Error("Error while storing data: ", err)
 				}
