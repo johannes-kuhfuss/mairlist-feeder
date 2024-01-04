@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"errors"
+	"strings"
 	"sync"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
@@ -64,6 +65,24 @@ func (fr DefaultFileRepository) GetAll() *domain.FileList {
 		list = append(list, file)
 	}
 	return &list
+}
+
+func (fr DefaultFileRepository) GetForHour(hour string) *domain.FileList {
+	var list domain.FileList
+	if fr.Size() == 0 {
+		return nil
+	}
+	for _, file := range fileList.files {
+		if strings.HasPrefix(file.StartTime, hour) {
+			list = append(list, file)
+		}
+	}
+	if len(list) > 0 {
+		return &list
+	} else {
+		return nil
+	}
+
 }
 
 func (fr DefaultFileRepository) Store(fi domain.FileInfo) error {

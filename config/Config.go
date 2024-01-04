@@ -35,6 +35,10 @@ type AppConfig struct {
 		FfProbeTimeOut int      `envconfig:"FFPROBE_TIMEOUT" default:"60"`
 		CrawlCycleMin  int      `envconfig:"CRAWL_CYCLE_MIN" default:"20"`
 	}
+	Export struct {
+		ExportFolder       string `envconfig:"EXPORT_FOLDER" default:"C:\\TEMP"`
+		TimeDeltaAllowance int    `envconfig:"TIME_DELTA_ALLOWANCE" default:"2"`
+	}
 	RunTime struct {
 		Router         *gin.Engine
 		ListenAddr     string

@@ -90,10 +90,14 @@ func TestAddAndGetAll(t *testing.T) {
 
 	size := repo.Size()
 	res := repo.GetAll()
+	el1 := (*res)[0]
+	el2 := (*res)[1]
 
 	assert.NotNil(t, size)
 	assert.EqualValues(t, 2, size)
 	assert.EqualValues(t, 2, len(*res))
+	assert.EqualValues(t, "A", el1.Path)
+	assert.EqualValues(t, "B", el2.Path)
 }
 
 func TestDeleteEmpty(t *testing.T) {
@@ -123,4 +127,64 @@ func TestDeleteItem(t *testing.T) {
 	assert.Nil(t, err)
 	assert.EqualValues(t, 1, sizeBefore)
 	assert.EqualValues(t, 0, sizeAfter)
+}
+
+func TestGetForHourNoResult(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	fi := domain.FileInfo{
+		Path:      "A",
+		StartTime: "12:00",
+	}
+	repo.Store(fi)
+
+	res := repo.GetForHour("13")
+
+	assert.Nil(t, res)
+}
+
+func TestGetForHourOneResult(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	fi := domain.FileInfo{
+		Path:      "A",
+		StartTime: "12:00",
+	}
+	repo.Store(fi)
+
+	res := repo.GetForHour("12")
+	el := (*res)[0]
+
+	assert.NotNil(t, *res)
+	assert.EqualValues(t, 1, len(*res))
+	assert.EqualValues(t, "A", el.Path)
+	assert.EqualValues(t, "12:00", el.StartTime)
+}
+
+func TestGetForHourTwoResults(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	fi1 := domain.FileInfo{
+		Path:      "A",
+		StartTime: "11:00",
+	}
+	fi2 := domain.FileInfo{
+		Path:      "B",
+		StartTime: "12:00",
+	}
+	fi3 := domain.FileInfo{
+		Path:      "C",
+		StartTime: "12:30",
+	}
+	repo.Store(fi1)
+	repo.Store(fi2)
+	repo.Store(fi3)
+
+	res := repo.GetForHour("12")
+
+	assert.NotNil(t, *res)
+	assert.EqualValues(t, 2, len(*res))
 }
