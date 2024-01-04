@@ -39,20 +39,24 @@ func (s DefaultExportService) Export() {
 		logger.Error("Error writing log file: ", err)
 	} else {
 		files := s.Repo.GetAll()
-		_, _ = dataWriter.WriteString("Index;StartTime;EndTime;Path;RuleMatched;Length\n")
-		for idx, file := range *files {
-			if file.StartTime == "" {
-				startTimeSlot = "N/A"
-			} else {
-				startTimeSlot = file.StartTime
+		if files != nil {
+			_, _ = dataWriter.WriteString("Index;StartTime;EndTime;Path;RuleMatched;Length\n")
+			for idx, file := range *files {
+				if file.StartTime == "" {
+					startTimeSlot = "N/A"
+				} else {
+					startTimeSlot = file.StartTime
+				}
+				if file.EndTime == "" {
+					endTimeSlot = "N/A"
+				} else {
+					endTimeSlot = file.EndTime
+				}
+				infoString := fmt.Sprintf("%04d;%v;%v;%v;%v;%v\n", idx, startTimeSlot, endTimeSlot, file.Path, file.RuleMatched, math.Round(file.Duration))
+				_, _ = dataWriter.WriteString(infoString)
 			}
-			if file.EndTime == "" {
-				endTimeSlot = "N/A"
-			} else {
-				endTimeSlot = file.EndTime
-			}
-			infoString := fmt.Sprintf("%04d;%v;%v;%v;%v;%v\n", idx, startTimeSlot, endTimeSlot, file.Path, file.RuleMatched, math.Round(file.Duration))
-			_, _ = dataWriter.WriteString(infoString)
+		} else {
+			logger.Info("No files found to export.")
 		}
 	}
 	dataWriter.Flush()
