@@ -27,7 +27,7 @@ type AppConfig struct {
 	}
 	Misc struct {
 		Test         bool   `envconfig:"TEST" default:"false"`
-		FileSaveFile string `envconfig:"TEST" default:"files.dta"`
+		FileSaveFile string `envconfig:"FILE_SAVE_FILE" default:"files.dta"`
 	}
 	Crawl struct {
 		RootFolder     string   `envconfig:"ROOT_FOLDER" default:"Z:\\sendungen"`
