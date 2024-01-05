@@ -79,12 +79,12 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string)
 			if misc.SliceContainsString(extensions, filepath.Ext(path)) {
 				if s.Repo.Exists(path) {
 					oldFile := s.Repo.Get(path)
-					if oldFile.FileInfo.ModTime() == info.ModTime() {
+					if oldFile.ModTime == info.ModTime() {
 						logger.Info(fmt.Sprintf("File %v already exists and is unmodified. Not adding", path))
 						return nil
 					}
 				}
-				fi.FileInfo = info
+				fi.ModTime = info.ModTime()
 				fi.Path = path
 				fi.FromCalCMS = false
 				fi.ScanTime = time.Now()

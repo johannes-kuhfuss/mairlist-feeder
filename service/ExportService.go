@@ -31,7 +31,7 @@ func NewExportService(cfg *config.AppConfig, repo *repositories.DefaultFileRepos
 
 func (s DefaultExportService) Export() {
 	//nextHour := getNextHour()
-	nextHour := "21"
+	nextHour := "20"
 	logger.Info(fmt.Sprintf("Starting export for timeslot %v:00 ...", nextHour))
 	files := s.Repo.GetForHour(nextHour)
 	if files != nil {
@@ -39,7 +39,7 @@ func (s DefaultExportService) Export() {
 			ok, info := checkTime(file, s.Cfg.Export.TimeDeltaAllowance)
 			/// remove duplicates / determine latest version
 			/// perform sanity check on duration
-			//// Absolute duration: 30min+/-2min, 45min+/-2min, 60min+/-2min, 75min+/-2min, 90min+/-2min, 120min+/-2min
+			//// Absolute duration
 			//// Compare to end time if available
 			/// Add to export list
 			logger.Info(fmt.Sprintf("File: %v, IsOK: %v, Info: %v", file.Path, ok, info))
@@ -68,21 +68,25 @@ func checkTime(fi domain.FileInfo, deltaAllow float64) (ok bool, info string) {
 	is90Min := (roundedDurationMin >= 90.0-deltaAllow) && (roundedDurationMin <= 90.0+deltaAllow)
 	is120Min := (roundedDurationMin >= 120.0-deltaAllow) && (roundedDurationMin <= 120.0+deltaAllow)
 	lengthOk := is30Min || is45Min || is60Min || is90Min || is120Min
+	// compare end time, if available
 	switch {
 	case is30Min:
 		lengthSlot = "30min"
-		deltaMin = 0.0
+		deltaMin = 30.0 - roundedDurationMin
 	case is45Min:
 		lengthSlot = "45min"
-		deltaMin = 0.0
+		deltaMin = 45.0 - roundedDurationMin
 	case is60Min:
 		lengthSlot = "60min"
-		deltaMin = 0.0
+		deltaMin = 60.0 - roundedDurationMin
 	case is90Min:
 		lengthSlot = "60min"
-		deltaMin = 0.0
+		deltaMin = 90.0 - roundedDurationMin
 	case is120Min:
 		lengthSlot = "120min"
+		deltaMin = 120.0 - roundedDurationMin
+	default:
+		lengthSlot = "N/A"
 		deltaMin = 0.0
 	}
 	detail := fmt.Sprintf("Rounded Duration: %v min, Slot: %v, Delta: %v", roundedDurationMin, lengthSlot, deltaMin)

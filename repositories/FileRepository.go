@@ -1,12 +1,16 @@
 package repositories
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
+	"os"
 	"strings"
 	"sync"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
+	"github.com/johannes-kuhfuss/services_utils/logger"
 )
 
 type FileRepository interface {
@@ -14,6 +18,8 @@ type FileRepository interface {
 	Size() int
 	GetFileData(string) domain.FileInfo
 	StoreFileData(domain.FileInfo) error
+	SaveToDisk(string)
+	LoadFromDisk(string)
 }
 
 type DefaultFileRepository struct {
@@ -103,4 +109,36 @@ func (fr DefaultFileRepository) Delete(filePath string) error {
 	delete(fileList.files, filePath)
 	fileList.mu.Unlock()
 	return nil
+}
+
+func (fr DefaultFileRepository) SaveToDisk(fileName string) {
+	logger.Info("Saving files data to disk...")
+	b, err := json.Marshal(fileList.files)
+	if err != nil {
+		logger.Error("Error while converting file list to JSON: ", err)
+	}
+	err = os.WriteFile(fileName, b, 0644)
+	if err != nil {
+		logger.Error("Error while writing files data to disk: ", err)
+	}
+	logger.Info(fmt.Sprintf("Done saving files data to disk (%v items).", len(fileList.files)))
+}
+
+func (fr DefaultFileRepository) LoadFromDisk(fileName string) {
+	logger.Info("Reading files data from disk...")
+	fileDta := make(map[string]domain.FileInfo)
+	b, err := os.ReadFile(fileName)
+	if err != nil {
+		logger.Error("Error while reading files data from disk: ", err)
+	}
+	err = json.Unmarshal(b, &fileDta)
+	if err != nil {
+		logger.Error("Error while converting files data to json: ", err)
+	}
+	fileList.files = fileDta
+	logger.Info(fmt.Sprintf("Done reading files data from disk (%v items).", len(fileList.files)))
+}
+
+func (fr DefaultFileRepository) DeleteAllData() {
+	fileList.files = make(map[string]domain.FileInfo)
 }

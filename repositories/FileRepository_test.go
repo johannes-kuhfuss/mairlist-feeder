@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"os"
 	"testing"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
@@ -187,4 +188,35 @@ func TestGetForHourTwoResults(t *testing.T) {
 
 	assert.NotNil(t, *res)
 	assert.EqualValues(t, 2, len(*res))
+}
+
+func TestSaveToDiskAndLoad(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	fi1 := domain.FileInfo{
+		Path:      "A",
+		StartTime: "11:00",
+	}
+	fi2 := domain.FileInfo{
+		Path:      "B",
+		StartTime: "12:00",
+	}
+	fi3 := domain.FileInfo{
+		Path:      "C",
+		StartTime: "12:30",
+	}
+	repo.Store(fi1)
+	repo.Store(fi2)
+	repo.Store(fi3)
+
+	repo.SaveToDisk("test.dta")
+	repo.DeleteAllData()
+	sizeBefore := repo.Size()
+	repo.LoadFromDisk("test.dta")
+	sizeAfter := repo.Size()
+
+	assert.EqualValues(t, 0, sizeBefore)
+	assert.EqualValues(t, 3, sizeAfter)
+	os.Remove("test.dta")
 }

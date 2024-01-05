@@ -1,13 +1,12 @@
 package domain
 
 import (
-	"os"
 	"time"
 )
 
 type FileInfo struct {
 	Path          string
-	FileInfo      os.FileInfo
+	ModTime       time.Time
 	Duration      float64
 	StartTime     string
 	EndTime       string

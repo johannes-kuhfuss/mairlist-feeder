@@ -26,7 +26,8 @@ type AppConfig struct {
 		TemplatePath string `envconfig:"TEMPLATE_PATH" default:"./templates/"`
 	}
 	Misc struct {
-		Test bool `envconfig:"TEST" default:"false"`
+		Test         bool   `envconfig:"TEST" default:"false"`
+		FileSaveFile string `envconfig:"TEST" default:"files.dta"`
 	}
 	Crawl struct {
 		RootFolder     string   `envconfig:"ROOT_FOLDER" default:"Z:\\sendungen"`
@@ -37,7 +38,7 @@ type AppConfig struct {
 	}
 	Export struct {
 		ExportFolder       string  `envconfig:"EXPORT_FOLDER" default:"C:\\TEMP"`
-		TimeDeltaAllowance float64 `envconfig:"TIME_DELTA_ALLOWANCE" default:"2.0"`
+		TimeDeltaAllowance float64 `envconfig:"TIME_DELTA_ALLOWANCE" default:"5.0"`
 	}
 	RunTime struct {
 		Router         *gin.Engine
