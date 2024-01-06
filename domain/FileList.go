@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"sync"
 	"time"
 )
 
@@ -18,3 +19,8 @@ type FileInfo struct {
 }
 
 type FileList []FileInfo
+
+type SafeFileList struct {
+	Mu    sync.Mutex
+	Files map[string]FileInfo
+}

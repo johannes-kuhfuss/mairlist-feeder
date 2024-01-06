@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
+	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/johannes-kuhfuss/services_utils/logger"
 )
@@ -29,7 +30,7 @@ func NewCleanService(cfg *config.AppConfig, repo *repositories.DefaultFileReposi
 func (s DefaultCleanService) Clean() {
 	logger.Info("Starting file list clean-up...")
 	const dateLayout = "2006-01-02"
-	today, err := time.Parse(dateLayout, strings.Replace(getTodayFolder(), "/", "-", -1))
+	today, err := time.Parse(dateLayout, strings.Replace(helper.GetTodayFolder(), "/", "-", -1))
 	if err != nil {
 		logger.Error("Could not convert date: ", err)
 	}

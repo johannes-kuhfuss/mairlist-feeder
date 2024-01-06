@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"sync"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
+	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/johannes-kuhfuss/services_utils/logger"
 )
 
@@ -26,29 +26,24 @@ type DefaultFileRepository struct {
 	Cfg *config.AppConfig
 }
 
-type safeFileList struct {
-	mu    sync.Mutex
-	files map[string]domain.FileInfo
-}
-
 var (
-	fileList safeFileList
+	fileList domain.SafeFileList
 )
 
 func NewFileRepository(cfg *config.AppConfig) DefaultFileRepository {
-	fileList.files = make(map[string]domain.FileInfo)
+	fileList.Files = make(map[string]domain.FileInfo)
 	return DefaultFileRepository{
 		Cfg: cfg,
 	}
 }
 
 func (fr DefaultFileRepository) Exists(filePath string) bool {
-	_, ok := fileList.files[filePath]
+	_, ok := fileList.Files[filePath]
 	return ok
 }
 
 func (fr DefaultFileRepository) Size() int {
-	return len(fileList.files)
+	return len(fileList.Files)
 }
 
 func (fr DefaultFileRepository) Get(filePath string) *domain.FileInfo {
@@ -56,9 +51,9 @@ func (fr DefaultFileRepository) Get(filePath string) *domain.FileInfo {
 	if !fr.Exists(filePath) {
 		return nil
 	}
-	fileList.mu.Lock()
-	fi = fileList.files[filePath]
-	fileList.mu.Unlock()
+	fileList.Mu.Lock()
+	fi = fileList.Files[filePath]
+	fileList.Mu.Unlock()
 	return &fi
 }
 
@@ -67,7 +62,7 @@ func (fr DefaultFileRepository) GetAll() *domain.FileList {
 	if fr.Size() == 0 {
 		return nil
 	}
-	for _, file := range fileList.files {
+	for _, file := range fileList.Files {
 		list = append(list, file)
 	}
 	return &list
@@ -78,8 +73,9 @@ func (fr DefaultFileRepository) GetForHour(hour string) *domain.FileList {
 	if fr.Size() == 0 {
 		return nil
 	}
-	for _, file := range fileList.files {
-		if strings.HasPrefix(file.StartTime, hour) {
+	folderDate := strings.Replace(helper.GetTodayFolder(), "/", "-", -1)
+	for _, file := range fileList.Files {
+		if (strings.HasPrefix(file.StartTime, hour)) && (file.FolderDate == folderDate) {
 			list = append(list, file)
 		}
 	}
@@ -92,12 +88,12 @@ func (fr DefaultFileRepository) GetForHour(hour string) *domain.FileList {
 }
 
 func (fr DefaultFileRepository) Store(fi domain.FileInfo) error {
-	fileList.mu.Lock()
+	fileList.Mu.Lock()
 	if fi.Path == "" {
 		return errors.New("cannot add item with empty path to list")
 	}
-	fileList.files[fi.Path] = fi
-	fileList.mu.Unlock()
+	fileList.Files[fi.Path] = fi
+	fileList.Mu.Unlock()
 	return nil
 }
 
@@ -105,15 +101,15 @@ func (fr DefaultFileRepository) Delete(filePath string) error {
 	if !fr.Exists(filePath) {
 		return errors.New("item does not exist")
 	}
-	fileList.mu.Lock()
-	delete(fileList.files, filePath)
-	fileList.mu.Unlock()
+	fileList.Mu.Lock()
+	delete(fileList.Files, filePath)
+	fileList.Mu.Unlock()
 	return nil
 }
 
 func (fr DefaultFileRepository) SaveToDisk(fileName string) {
 	logger.Info("Saving files data to disk...")
-	b, err := json.Marshal(fileList.files)
+	b, err := json.Marshal(fileList.Files)
 	if err != nil {
 		logger.Error("Error while converting file list to JSON: ", err)
 	}
@@ -121,7 +117,7 @@ func (fr DefaultFileRepository) SaveToDisk(fileName string) {
 	if err != nil {
 		logger.Error("Error while writing files data to disk: ", err)
 	}
-	logger.Info(fmt.Sprintf("Done saving files data to disk (%v items).", len(fileList.files)))
+	logger.Info(fmt.Sprintf("Done saving files data to disk (%v items).", len(fileList.Files)))
 }
 
 func (fr DefaultFileRepository) LoadFromDisk(fileName string) {
@@ -135,10 +131,10 @@ func (fr DefaultFileRepository) LoadFromDisk(fileName string) {
 	if err != nil {
 		logger.Error("Error while converting files data to json: ", err)
 	}
-	fileList.files = fileDta
-	logger.Info(fmt.Sprintf("Done reading files data from disk (%v items).", len(fileList.files)))
+	fileList.Files = fileDta
+	logger.Info(fmt.Sprintf("Done reading files data from disk (%v items).", len(fileList.Files)))
 }
 
 func (fr DefaultFileRepository) DeleteAllData() {
-	fileList.files = make(map[string]domain.FileInfo)
+	fileList.Files = make(map[string]domain.FileInfo)
 }

@@ -2,10 +2,12 @@ package repositories
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
+	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -135,8 +137,9 @@ func TestGetForHourNoResult(t *testing.T) {
 	defer teardown()
 
 	fi := domain.FileInfo{
-		Path:      "A",
-		StartTime: "12:00",
+		Path:       "A",
+		StartTime:  "12:00",
+		FolderDate: strings.Replace(helper.GetTodayFolder(), "/", "-", -1),
 	}
 	repo.Store(fi)
 
@@ -150,8 +153,9 @@ func TestGetForHourOneResult(t *testing.T) {
 	defer teardown()
 
 	fi := domain.FileInfo{
-		Path:      "A",
-		StartTime: "12:00",
+		Path:       "A",
+		StartTime:  "12:00",
+		FolderDate: strings.Replace(helper.GetTodayFolder(), "/", "-", -1),
 	}
 	repo.Store(fi)
 

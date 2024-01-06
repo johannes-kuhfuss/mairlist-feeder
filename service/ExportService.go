@@ -22,7 +22,12 @@ type DefaultExportService struct {
 	Repo *repositories.DefaultFileRepository
 }
 
+var (
+	fileExportList domain.SafeFileList
+)
+
 func NewExportService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository) DefaultExportService {
+	fileExportList.Files = make(map[string]domain.FileInfo)
 	return DefaultExportService{
 		Cfg:  cfg,
 		Repo: repo,
@@ -30,19 +35,16 @@ func NewExportService(cfg *config.AppConfig, repo *repositories.DefaultFileRepos
 }
 
 func (s DefaultExportService) Export() {
-	//nextHour := getNextHour()
-	nextHour := "20"
+	nextHour := getNextHour()
 	logger.Info(fmt.Sprintf("Starting export for timeslot %v:00 ...", nextHour))
 	files := s.Repo.GetForHour(nextHour)
 	if files != nil {
 		for _, file := range *files {
-			ok, info := checkTime(file, s.Cfg.Export.TimeDeltaAllowance)
+			lengthOk, info := checkTime(file, s.Cfg.Export.ShortDeltaAllowance, s.Cfg.Export.LongDeltaAllowance)
+			logger.Info(fmt.Sprintf("File: %v, IsOK: %v, Info: %v", file.Path, lengthOk, info))
+			fileExportList.Files[file.StartTime] = file
 			/// remove duplicates / determine latest version
-			/// perform sanity check on duration
-			//// Absolute duration
-			//// Compare to end time if available
 			/// Add to export list
-			logger.Info(fmt.Sprintf("File: %v, IsOK: %v, Info: %v", file.Path, ok, info))
 		}
 	} else {
 		logger.Info(fmt.Sprintf("No files to export for timeslot %v:00 ...", nextHour))
@@ -52,45 +54,60 @@ func (s DefaultExportService) Export() {
 }
 
 func getNextHour() string {
-	nextHour := (time.Now().Hour()) + 1
-	return fmt.Sprintf("%02d", nextHour)
+	/*
+		nextHour := (time.Now().Hour()) + 1
+		return fmt.Sprintf("%02d", nextHour)
+	*/
+	return "20"
 }
 
-func checkTime(fi domain.FileInfo, deltaAllow float64) (ok bool, info string) {
+func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengthOk bool, info string) {
 	var (
-		lengthSlot string
-		deltaMin   float64
+		lengthSlot   string
+		slotDelta    float64
+		plannedDur   float64
+		durDelta     float64
+		plannedAvail bool
 	)
 	roundedDurationMin := math.Round(fi.Duration / 60)
-	is30Min := (roundedDurationMin >= 30.0-deltaAllow) && (roundedDurationMin <= 30.0+deltaAllow)
-	is45Min := (roundedDurationMin >= 45.0-deltaAllow) && (roundedDurationMin <= 45.0+deltaAllow)
-	is60Min := (roundedDurationMin >= 60.0-deltaAllow) && (roundedDurationMin <= 60.0+deltaAllow)
-	is90Min := (roundedDurationMin >= 90.0-deltaAllow) && (roundedDurationMin <= 90.0+deltaAllow)
-	is120Min := (roundedDurationMin >= 120.0-deltaAllow) && (roundedDurationMin <= 120.0+deltaAllow)
-	lengthOk := is30Min || is45Min || is60Min || is90Min || is120Min
-	// compare end time, if available
+	is30Min := (roundedDurationMin >= 30.0-shortDelta) && (roundedDurationMin <= 30.0+longDelta)
+	is45Min := (roundedDurationMin >= 45.0-shortDelta) && (roundedDurationMin <= 45.0+longDelta)
+	is60Min := (roundedDurationMin >= 60.0-shortDelta) && (roundedDurationMin <= 60.0+longDelta)
+	is90Min := (roundedDurationMin >= 90.0-shortDelta) && (roundedDurationMin <= 90.0+longDelta)
+	is120Min := (roundedDurationMin >= 120.0-shortDelta) && (roundedDurationMin <= 120.0+longDelta)
 	switch {
 	case is30Min:
 		lengthSlot = "30min"
-		deltaMin = 30.0 - roundedDurationMin
+		slotDelta = roundedDurationMin - 30.0
 	case is45Min:
 		lengthSlot = "45min"
-		deltaMin = 45.0 - roundedDurationMin
+		slotDelta = roundedDurationMin - 45.0
 	case is60Min:
 		lengthSlot = "60min"
-		deltaMin = 60.0 - roundedDurationMin
+		slotDelta = roundedDurationMin - 60.0
 	case is90Min:
-		lengthSlot = "60min"
-		deltaMin = 90.0 - roundedDurationMin
+		lengthSlot = "90min"
+		slotDelta = roundedDurationMin - 90.0
 	case is120Min:
 		lengthSlot = "120min"
-		deltaMin = 120.0 - roundedDurationMin
+		slotDelta = roundedDurationMin - 120.0
 	default:
 		lengthSlot = "N/A"
-		deltaMin = 0.0
+		slotDelta = 0.0
 	}
-	detail := fmt.Sprintf("Rounded Duration: %v min, Slot: %v, Delta: %v", roundedDurationMin, lengthSlot, deltaMin)
-	return lengthOk, detail
+	if fi.EndTime != "" {
+		start, _ := time.Parse("15:04", fi.StartTime)
+		end, _ := time.Parse("15:04", fi.EndTime)
+		plannedDur = end.Sub(start).Minutes()
+		durDelta = roundedDurationMin - plannedDur
+		plannedAvail = true
+	} else {
+		plannedAvail = false
+	}
+	lOk := is30Min || is45Min || is60Min || is90Min || is120Min
+	detail := fmt.Sprintf("Rounded actual duration: %v min, Slot: %v, Delta to slot: %v, planned duration data available: %v, planned duration: %v, delta to planned duration: %v",
+		roundedDurationMin, lengthSlot, slotDelta, plannedAvail, plannedDur, durDelta)
+	return lOk, detail
 }
 
 func (s DefaultExportService) exportToCsv() {

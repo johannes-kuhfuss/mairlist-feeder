@@ -37,8 +37,9 @@ type AppConfig struct {
 		CrawlCycleMin  int      `envconfig:"CRAWL_CYCLE_MIN" default:"20"`
 	}
 	Export struct {
-		ExportFolder       string  `envconfig:"EXPORT_FOLDER" default:"C:\\TEMP"`
-		TimeDeltaAllowance float64 `envconfig:"TIME_DELTA_ALLOWANCE" default:"5.0"`
+		ExportFolder        string  `envconfig:"EXPORT_FOLDER" default:"C:\\TEMP"`
+		ShortDeltaAllowance float64 `envconfig:"SHORT_DELTA_ALLOWANCE" default:"5.0"`
+		LongDeltaAllowance  float64 `envconfig:"LONG_DELTA_ALLOWANCE" default:"8.0"`
 	}
 	RunTime struct {
 		Router         *gin.Engine
