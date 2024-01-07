@@ -12,5 +12,5 @@ func GetTodayFolder() string {
 
 		return path.Join(year, month, day)
 	*/
-	return path.Join("2023", "12")
+	return path.Join("2024", "01", "07")
 }

@@ -42,14 +42,15 @@ func (s DefaultExportService) Export() {
 		for _, file := range *files {
 			lengthOk, info := checkTime(file, s.Cfg.Export.ShortDeltaAllowance, s.Cfg.Export.LongDeltaAllowance)
 			logger.Info(fmt.Sprintf("File: %v, IsOK: %v, Info: %v", file.Path, lengthOk, info))
-			fileExportList.Files[file.StartTime] = file
-			/// remove duplicates / determine latest version
-			/// Add to export list
+			if lengthOk {
+				/// remove duplicates / determine latest version
+				fileExportList.Files[file.StartTime] = file
+			}
 		}
 	} else {
 		logger.Info(fmt.Sprintf("No files to export for timeslot %v:00 ...", nextHour))
 	}
-	// write export list ot mAirlist-compatible file
+	s.ExportToPlayout()
 	logger.Info(fmt.Sprintf("Finished exporting for timeslot %v:00 ...", nextHour))
 }
 
@@ -58,7 +59,7 @@ func getNextHour() string {
 		nextHour := (time.Now().Hour()) + 1
 		return fmt.Sprintf("%02d", nextHour)
 	*/
-	return "20"
+	return "15"
 }
 
 func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengthOk bool, info string) {
@@ -143,4 +144,17 @@ func (s DefaultExportService) exportToCsv() {
 	}
 	dataWriter.Flush()
 	logFile.Close()
+}
+
+func (s DefaultExportService) ExportToPlayout() {
+	// write export list ot mAirlist-compatible file
+	size := len(fileExportList.Files)
+	if size > 0 {
+		logger.Info(fmt.Sprintf("Export %v elements", size))
+		for slot, file := range fileExportList.Files {
+			logger.Info(fmt.Sprintf("Slot: %v, File: %v", slot, file.Path))
+		}
+	} else {
+		logger.Info("No elements to export.")
+	}
 }
