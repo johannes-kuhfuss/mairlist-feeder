@@ -44,7 +44,15 @@ func (s DefaultExportService) Export() {
 			lengthOk, info := checkTime(file, s.Cfg.Export.ShortDeltaAllowance, s.Cfg.Export.LongDeltaAllowance)
 			logger.Info(fmt.Sprintf("File: %v, ModDate: %v, IsOK: %v, Info: %v", file.Path, file.ModTime, lengthOk, info))
 			if lengthOk {
-				// To do: remove duplicates / determine latest version
+				preFile, exists := fileExportList.Files[file.StartTime]
+				if exists {
+					if preFile.ModTime.After(file.ModTime) {
+						logger.Info(fmt.Sprintf("Existing file %v is newer tahn file %v. Not updating.", preFile.Path, file.Path))
+					} else {
+						logger.Info(fmt.Sprintf("Existing file %v is older tahn file %v. Updating.", preFile.Path, file.Path))
+						fileExportList.Files[file.StartTime] = file
+					}
+				}
 				fileExportList.Files[file.StartTime] = file
 			}
 		}
@@ -161,7 +169,7 @@ func (s DefaultExportService) ExportToPlayout(hour string) {
 	var exportPath string
 	size := len(fileExportList.Files)
 	if size > 0 {
-		logger.Info(fmt.Sprintf("Exporting %v elements to mAirList for slot %v:00", size, hour+":00"))
+		logger.Info(fmt.Sprintf("Exporting %v elements to mAirList for slot %v:00", size, hour))
 		year := fmt.Sprintf("%d", time.Now().Year())
 		month := fmt.Sprintf("%02d", time.Now().Month())
 		day := fmt.Sprintf("%02d", time.Now().Day())
@@ -177,13 +185,15 @@ func (s DefaultExportService) ExportToPlayout(hour string) {
 				_, err := dataWriter.WriteString(expLine)
 				if err != nil {
 					logger.Error("Error when writing playlist entry: ", err)
+				} else {
+					delete(fileExportList.Files, file.StartTime)
 				}
 			}
 			dataWriter.Flush()
 			defer exportFile.Close()
 		}
 	} else {
-		logger.Info(fmt.Sprintf("No elements to export for slot %v:00. Exported file: %v", hour+":00", exportPath))
+		logger.Info(fmt.Sprintf("No elements to export for slot %v:00.", hour))
 	}
 
 }
