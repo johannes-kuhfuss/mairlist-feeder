@@ -50,8 +50,11 @@ func StartApp() {
 	mapUrls()
 	RegisterForOsSignals()
 	scheduleBgJobs()
-	//fileRepo.LoadFromDisk(cfg.Misc.FileSaveFile)
-	crawlService.Crawl()
+	if !cfg.Misc.Test {
+		crawlService.Crawl()
+	} else {
+		fileRepo.LoadFromDisk(cfg.Misc.FileSaveFile)
+	}
 	exportService.Export()
 	//fileRepo.SaveToDisk(cfg.Misc.FileSaveFile)
 

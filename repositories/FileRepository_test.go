@@ -139,7 +139,7 @@ func TestGetForHourNoResult(t *testing.T) {
 	fi := domain.FileInfo{
 		Path:       "A",
 		StartTime:  "12:00",
-		FolderDate: strings.Replace(helper.GetTodayFolder(), "/", "-", -1),
+		FolderDate: strings.Replace(helper.GetTodayFolder(false), "/", "-", -1),
 	}
 	repo.Store(fi)
 
@@ -155,7 +155,7 @@ func TestGetForHourOneResult(t *testing.T) {
 	fi := domain.FileInfo{
 		Path:       "A",
 		StartTime:  "12:00",
-		FolderDate: strings.Replace(helper.GetTodayFolder(), "/", "-", -1),
+		FolderDate: strings.Replace(helper.GetTodayFolder(false), "/", "-", -1),
 	}
 	repo.Store(fi)
 

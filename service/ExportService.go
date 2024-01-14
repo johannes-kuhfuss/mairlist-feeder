@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"path"
 	"time"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
@@ -35,31 +36,32 @@ func NewExportService(cfg *config.AppConfig, repo *repositories.DefaultFileRepos
 }
 
 func (s DefaultExportService) Export() {
-	nextHour := getNextHour()
+	nextHour := getNextHour(s.Cfg.Misc.Test)
 	logger.Info(fmt.Sprintf("Starting export for timeslot %v:00 ...", nextHour))
 	files := s.Repo.GetForHour(nextHour)
 	if files != nil {
 		for _, file := range *files {
 			lengthOk, info := checkTime(file, s.Cfg.Export.ShortDeltaAllowance, s.Cfg.Export.LongDeltaAllowance)
-			logger.Info(fmt.Sprintf("File: %v, IsOK: %v, Info: %v", file.Path, lengthOk, info))
+			logger.Info(fmt.Sprintf("File: %v, ModDate: %v, IsOK: %v, Info: %v", file.Path, file.ModTime, lengthOk, info))
 			if lengthOk {
-				/// remove duplicates / determine latest version
+				// To do: remove duplicates / determine latest version
 				fileExportList.Files[file.StartTime] = file
 			}
 		}
 	} else {
 		logger.Info(fmt.Sprintf("No files to export for timeslot %v:00 ...", nextHour))
 	}
-	s.ExportToPlayout()
+	s.ExportToPlayout(nextHour)
 	logger.Info(fmt.Sprintf("Finished exporting for timeslot %v:00 ...", nextHour))
 }
 
-func getNextHour() string {
-	/*
+func getNextHour(test bool) string {
+	if !test {
 		nextHour := (time.Now().Hour()) + 1
 		return fmt.Sprintf("%02d", nextHour)
-	*/
-	return "15"
+	} else {
+		return "20"
+	}
 }
 
 func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengthOk bool, info string) {
@@ -146,15 +148,42 @@ func (s DefaultExportService) exportToCsv() {
 	logFile.Close()
 }
 
-func (s DefaultExportService) ExportToPlayout() {
+func (s DefaultExportService) ExportToPlayout(hour string) {
 	// write export list ot mAirlist-compatible file
+	// Documentation: https://wiki.mairlist.com/reference:text_playlist_import_format_specification
+	// Tab separated
+	// Column layout:
+	/// 1 - start time = HH:MM
+	/// 2 - timing = H (hard fixed time)
+	/// 3 - line type = F (file)
+	/// 4 - Line data = full path file name
+	/// 5 - Optional values = omitted here
+	var exportPath string
 	size := len(fileExportList.Files)
 	if size > 0 {
-		logger.Info(fmt.Sprintf("Export %v elements", size))
-		for slot, file := range fileExportList.Files {
-			logger.Info(fmt.Sprintf("Slot: %v, File: %v", slot, file.Path))
+		logger.Info(fmt.Sprintf("Exporting %v elements to mAirList for slot %v:00", size, hour+":00"))
+		year := fmt.Sprintf("%d", time.Now().Year())
+		month := fmt.Sprintf("%02d", time.Now().Month())
+		day := fmt.Sprintf("%02d", time.Now().Day())
+		exportFileName := year + "-" + month + "-" + day + "-" + hour + ".txt"
+		exportPath = path.Join(s.Cfg.Export.ExportFolder, exportFileName)
+		exportFile, err := os.OpenFile(exportPath, os.O_CREATE, 0644)
+		dataWriter := bufio.NewWriter(exportFile)
+		if err != nil {
+			logger.Error("Error when creating playlist file for mAirlist: ", err)
+		} else {
+			for time, file := range fileExportList.Files {
+				expLine := fmt.Sprintf("%v\tH\tF\t%v\n", time, file.Path)
+				_, err := dataWriter.WriteString(expLine)
+				if err != nil {
+					logger.Error("Error when writing playlist entry: ", err)
+				}
+			}
+			dataWriter.Flush()
+			defer exportFile.Close()
 		}
 	} else {
-		logger.Info("No elements to export.")
+		logger.Info(fmt.Sprintf("No elements to export for slot %v:00. Exported file: %v", hour+":00", exportPath))
 	}
+
 }
