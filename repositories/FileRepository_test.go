@@ -227,3 +227,25 @@ func TestSaveToDiskAndLoad(t *testing.T) {
 	assert.EqualValues(t, 3, sizeAfter)
 	os.Remove("test.dta")
 }
+
+func TestDeleteAll(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	fi1 := domain.FileInfo{
+		Path:      "A",
+		StartTime: "11:00",
+	}
+	fi2 := domain.FileInfo{
+		Path:      "B",
+		StartTime: "12:00",
+	}
+	repo.Store(fi1)
+	repo.Store(fi2)
+	sizeBefore := repo.Size()
+	repo.DeleteAllData()
+	sizeAfter := repo.Size()
+
+	assert.EqualValues(t, 2, sizeBefore)
+	assert.EqualValues(t, 0, sizeAfter)
+}

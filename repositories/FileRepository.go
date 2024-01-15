@@ -20,6 +20,8 @@ type FileRepository interface {
 	StoreFileData(domain.FileInfo) error
 	SaveToDisk(string)
 	LoadFromDisk(string)
+	DeleteAllData()
+	NewFiles() bool
 }
 
 type DefaultFileRepository struct {
@@ -137,4 +139,18 @@ func (fr DefaultFileRepository) LoadFromDisk(fileName string) {
 
 func (fr DefaultFileRepository) DeleteAllData() {
 	fileList.Files = make(map[string]domain.FileInfo)
+}
+
+func (fr DefaultFileRepository) NewFiles() bool {
+	newFiles := false
+	if fr.Size() > 0 {
+		allFiles := fr.GetAll()
+		for _, file := range *allFiles {
+			if !file.InfoExtracted {
+				newFiles = true
+				break
+			}
+		}
+	}
+	return newFiles
 }
