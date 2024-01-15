@@ -71,7 +71,7 @@ func (s DefaultCrawlService) CrawlRun() {
 
 func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string) error {
 	var fi domain.FileInfo
-	today := helper.GetTodayFolder(s.Cfg.Misc.Test)
+	today := helper.GetTodayFolder(s.Cfg.Misc.Test, s.Cfg.Misc.TestDate)
 	err := filepath.Walk(path.Join(rootFolder, today),
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {

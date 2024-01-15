@@ -139,7 +139,7 @@ func TestGetForHourNoResult(t *testing.T) {
 	fi := domain.FileInfo{
 		Path:       "A",
 		StartTime:  "12:00",
-		FolderDate: strings.Replace(helper.GetTodayFolder(false), "/", "-", -1),
+		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
 	}
 	repo.Store(fi)
 
@@ -155,7 +155,7 @@ func TestGetForHourOneResult(t *testing.T) {
 	fi := domain.FileInfo{
 		Path:       "A",
 		StartTime:  "12:00",
-		FolderDate: strings.Replace(helper.GetTodayFolder(false), "/", "-", -1),
+		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
 	}
 	repo.Store(fi)
 
@@ -173,16 +173,19 @@ func TestGetForHourTwoResults(t *testing.T) {
 	defer teardown()
 
 	fi1 := domain.FileInfo{
-		Path:      "A",
-		StartTime: "11:00",
+		Path:       "A",
+		StartTime:  "11:00",
+		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
 	}
 	fi2 := domain.FileInfo{
-		Path:      "B",
-		StartTime: "12:00",
+		Path:       "B",
+		StartTime:  "12:00",
+		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
 	}
 	fi3 := domain.FileInfo{
-		Path:      "C",
-		StartTime: "12:30",
+		Path:       "C",
+		StartTime:  "12:30",
+		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
 	}
 	repo.Store(fi1)
 	repo.Store(fi2)

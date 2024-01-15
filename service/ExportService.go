@@ -36,10 +36,21 @@ func NewExportService(cfg *config.AppConfig, repo *repositories.DefaultFileRepos
 }
 
 func (s DefaultExportService) Export() {
-	nextHour := getNextHour(s.Cfg.Misc.Test)
-	logger.Info(fmt.Sprintf("Starting export for timeslot %v:00 ...", nextHour))
-	files := s.Repo.GetForHour(nextHour)
+	if s.Cfg.Misc.Test {
+		for hour := 0; hour < 24; hour++ {
+			s.ExportForHour(fmt.Sprintf("%02d", hour))
+		}
+	} else {
+		nextHour := getNextHour()
+		s.ExportForHour(nextHour)
+	}
+}
+
+func (s DefaultExportService) ExportForHour(hour string) {
+
+	files := s.Repo.GetForHour(hour)
 	if files != nil {
+		logger.Info(fmt.Sprintf("Starting export for timeslot %v:00 ...", hour))
 		for _, file := range *files {
 			lengthOk, info := checkTime(file, s.Cfg.Export.ShortDeltaAllowance, s.Cfg.Export.LongDeltaAllowance)
 			logger.Info(fmt.Sprintf("File: %v, ModDate: %v, IsOK: %v, Info: %v", file.Path, file.ModTime, lengthOk, info))
@@ -47,29 +58,25 @@ func (s DefaultExportService) Export() {
 				preFile, exists := fileExportList.Files[file.StartTime]
 				if exists {
 					if preFile.ModTime.After(file.ModTime) {
-						logger.Info(fmt.Sprintf("Existing file %v is newer tahn file %v. Not updating.", preFile.Path, file.Path))
+						logger.Info(fmt.Sprintf("Existing file %v is newer than file %v. Not updating.", preFile.Path, file.Path))
 					} else {
-						logger.Info(fmt.Sprintf("Existing file %v is older tahn file %v. Updating.", preFile.Path, file.Path))
+						logger.Info(fmt.Sprintf("Existing file %v is older than file %v. Updating.", preFile.Path, file.Path))
 						fileExportList.Files[file.StartTime] = file
 					}
 				}
 				fileExportList.Files[file.StartTime] = file
 			}
 		}
+		s.ExportToPlayout(hour)
+		logger.Info(fmt.Sprintf("Finished exporting for timeslot %v:00 ...", hour))
 	} else {
-		logger.Info(fmt.Sprintf("No files to export for timeslot %v:00 ...", nextHour))
+		logger.Info(fmt.Sprintf("No files to export for timeslot %v:00 ...", hour))
 	}
-	s.ExportToPlayout(nextHour)
-	logger.Info(fmt.Sprintf("Finished exporting for timeslot %v:00 ...", nextHour))
 }
 
-func getNextHour(test bool) string {
-	if !test {
-		nextHour := (time.Now().Hour()) + 1
-		return fmt.Sprintf("%02d", nextHour)
-	} else {
-		return "20"
-	}
+func getNextHour() string {
+	nextHour := (time.Now().Hour()) + 1
+	return fmt.Sprintf("%02d", nextHour)
 }
 
 func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengthOk bool, info string) {
@@ -166,14 +173,21 @@ func (s DefaultExportService) ExportToPlayout(hour string) {
 	/// 3 - line type = F (file)
 	/// 4 - Line data = full path file name
 	/// 5 - Optional values = omitted here
-	var exportPath string
+	var (
+		exportPath     string
+		exportFileName string
+	)
 	size := len(fileExportList.Files)
 	if size > 0 {
 		logger.Info(fmt.Sprintf("Exporting %v elements to mAirList for slot %v:00", size, hour))
-		year := fmt.Sprintf("%d", time.Now().Year())
-		month := fmt.Sprintf("%02d", time.Now().Month())
-		day := fmt.Sprintf("%02d", time.Now().Day())
-		exportFileName := year + "-" + month + "-" + day + "-" + hour + ".txt"
+		if s.Cfg.Misc.Test {
+			exportFileName = "Test_" + hour + ".txt"
+		} else {
+			year := fmt.Sprintf("%d", time.Now().Year())
+			month := fmt.Sprintf("%02d", time.Now().Month())
+			day := fmt.Sprintf("%02d", time.Now().Day())
+			exportFileName = year + "-" + month + "-" + day + "-" + hour + ".txt"
+		}
 		exportPath = path.Join(s.Cfg.Export.ExportFolder, exportFileName)
 		exportFile, err := os.OpenFile(exportPath, os.O_CREATE, 0644)
 		dataWriter := bufio.NewWriter(exportFile)

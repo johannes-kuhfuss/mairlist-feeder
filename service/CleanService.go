@@ -30,7 +30,7 @@ func NewCleanService(cfg *config.AppConfig, repo *repositories.DefaultFileReposi
 func (s DefaultCleanService) Clean() {
 	logger.Info("Starting file list clean-up...")
 	const dateLayout = "2006-01-02"
-	today, err := time.Parse(dateLayout, strings.Replace(helper.GetTodayFolder(false), "/", "-", -1))
+	today, err := time.Parse(dateLayout, strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1))
 	if err != nil {
 		logger.Error("Could not convert date: ", err)
 	}
