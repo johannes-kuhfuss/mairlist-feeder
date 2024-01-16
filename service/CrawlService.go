@@ -52,11 +52,11 @@ func (s DefaultCrawlService) CrawlRun() {
 	rootFolder := s.Cfg.Crawl.RootFolder
 	s.Cfg.RunTime.CrawlRunNumber++
 	logger.Info(fmt.Sprintf("Starting crawl run #%v...", s.Cfg.RunTime.CrawlRunNumber))
-	err := s.crawlFolder(rootFolder, s.Cfg.Crawl.Extensions)
+	fileCount, err := s.crawlFolder(rootFolder, s.Cfg.Crawl.Extensions)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Error crawling folder %v: ", rootFolder), err)
 	}
-	logger.Info(fmt.Sprintf("Finished crawl run #%v.", s.Cfg.RunTime.CrawlRunNumber))
+	logger.Info(fmt.Sprintf("Finished crawl run #%v. Scanned %v files.", s.Cfg.RunTime.CrawlRunNumber, fileCount))
 	if s.Repo.NewFiles() {
 		logger.Info("Starting to extract file data...")
 		s.extractFileInfo()
@@ -67,8 +67,11 @@ func (s DefaultCrawlService) CrawlRun() {
 
 }
 
-func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string) error {
-	var fi domain.FileInfo
+func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string) (int, error) {
+	var (
+		fi        domain.FileInfo
+		fileCount int = 0
+	)
 	today := helper.GetTodayFolder(s.Cfg.Misc.Test, s.Cfg.Misc.TestDate)
 	err := filepath.Walk(path.Join(rootFolder, today),
 		func(path string, info os.FileInfo, err error) error {
@@ -89,6 +92,7 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string)
 				fi.ScanTime = time.Now()
 				fi.FolderDate = strings.Replace(today, "/", "-", -1)
 				fi.InfoExtracted = false
+				fileCount++
 				s.Repo.Store(fi)
 				if s.Cfg.Misc.Test {
 					logger.Info(fmt.Sprintf("File %v added", path))
@@ -97,9 +101,9 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string)
 			return nil
 		})
 	if err != nil {
-		return err
+		return fileCount, err
 	} else {
-		return nil
+		return fileCount, err
 	}
 }
 
