@@ -76,6 +76,9 @@ func (s DefaultExportService) ExportForHour(hour string) {
 
 func getNextHour() string {
 	nextHour := (time.Now().Hour()) + 1
+	if nextHour == 24 {
+		nextHour = 0
+	}
 	return fmt.Sprintf("%02d", nextHour)
 }
 
