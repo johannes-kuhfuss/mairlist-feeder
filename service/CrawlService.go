@@ -59,8 +59,8 @@ func (s DefaultCrawlService) CrawlRun() {
 	logger.Info(fmt.Sprintf("Finished crawl run #%v. Scanned %v files.", s.Cfg.RunTime.CrawlRunNumber, fileCount))
 	if s.Repo.NewFiles() {
 		logger.Info("Starting to extract file data...")
-		s.extractFileInfo()
-		logger.Info("Finished extracting file data.")
+		fileCount, _ := s.extractFileInfo()
+		logger.Info(fmt.Sprintf("Finished extracting file data for %v files.", fileCount))
 	} else {
 		logger.Info("No (new) files in file list. No extraction needed.")
 	}
@@ -107,8 +107,11 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string)
 	}
 }
 
-func (s DefaultCrawlService) extractFileInfo() error {
-	var startTimeDisplay string
+func (s DefaultCrawlService) extractFileInfo() (int, error) {
+	var (
+		startTimeDisplay string
+		extractCount     int = 0
+	)
 	// /HH-MM
 	folder1Exp := regexp.MustCompile(`[\\/]+([01][0-9]|2[0-3])-(0[0-9]|[1-5][0-9])`)
 	// /HHMM-HHMM
@@ -195,6 +198,7 @@ func (s DefaultCrawlService) extractFileInfo() error {
 					}
 				}
 				newInfo.InfoExtracted = true
+				extractCount++
 				err = s.Repo.Store(newInfo)
 				if err != nil {
 					logger.Error("Error while storing data: ", err)
@@ -208,7 +212,7 @@ func (s DefaultCrawlService) extractFileInfo() error {
 			}
 		}
 	}
-	return nil
+	return extractCount, nil
 }
 
 func analyzeLength(path string, timeout int, ffprobe string) (len float64, err error) {
