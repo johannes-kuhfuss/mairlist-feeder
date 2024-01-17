@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"os/exec"
 	"path"
@@ -207,7 +208,8 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 				} else {
 					startTimeDisplay = newInfo.StartTime
 				}
-				logger.Info(fmt.Sprintf("Time Slot: % v, File: %v - Length (sec): %v", startTimeDisplay, file.Path, len))
+				roundedDurationMin := math.Round(len / 60)
+				logger.Info(fmt.Sprintf("Time Slot: % v, File: %v - Length (min): %v", startTimeDisplay, file.Path, roundedDurationMin))
 			}
 		}
 	}
