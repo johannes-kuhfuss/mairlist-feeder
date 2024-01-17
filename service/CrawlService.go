@@ -56,7 +56,8 @@ func (s DefaultCrawlService) CrawlRun() {
 	if err != nil {
 		logger.Error(fmt.Sprintf("Error crawling folder %v: ", rootFolder), err)
 	}
-	logger.Info(fmt.Sprintf("Finished crawl run #%v. Added %v new files.", s.Cfg.RunTime.CrawlRunNumber, fileCount))
+	totalCount := s.Repo.Size()
+	logger.Info(fmt.Sprintf("Finished crawl run #%v. Added %v new files. %v files in list total.", s.Cfg.RunTime.CrawlRunNumber, fileCount, totalCount))
 	if s.Repo.NewFiles() {
 		logger.Info("Starting to extract file data...")
 		fileCount, _ := s.extractFileInfo()
