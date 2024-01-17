@@ -89,6 +89,7 @@ func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengt
 		plannedDur   float64
 		durDelta     float64
 		plannedAvail bool
+		detail       string
 	)
 	roundedDurationMin := math.Round(fi.Duration / 60)
 	is30Min := (roundedDurationMin >= 30.0-shortDelta) && (roundedDurationMin <= 30.0+longDelta)
@@ -126,8 +127,13 @@ func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengt
 		plannedAvail = false
 	}
 	lOk := is30Min || is45Min || is60Min || is90Min || is120Min
-	detail := fmt.Sprintf("Rounded actual duration: %v min, Slot: %v, Delta to slot: %v, planned duration data available: %v, planned duration: %v, delta to planned duration: %v",
-		roundedDurationMin, lengthSlot, slotDelta, plannedAvail, plannedDur, durDelta)
+	if plannedAvail {
+		detail = fmt.Sprintf("Rounded actual duration: %v min, Slot: %v, Delta to slot: %v, planned duration: %v, delta to planned duration: %v",
+			roundedDurationMin, lengthSlot, slotDelta, plannedDur, durDelta)
+	} else {
+		detail = fmt.Sprintf("Rounded actual duration: %v min, Slot: %v, Delta to slot: %v, no planned duration data available",
+			roundedDurationMin, lengthSlot, slotDelta)
+	}
 	return lOk, detail
 }
 
