@@ -42,7 +42,6 @@ func (s DefaultCrawlService) Crawl() {
 		logger.Warn("No root folder given. Not running")
 		s.Cfg.RunTime.RunFeeder = false
 	} else {
-		logger.Info(fmt.Sprintf("Root folder defined as %v. Starting to crawl.", s.Cfg.Crawl.RootFolder))
 		s.Cfg.RunTime.RunFeeder = true
 	}
 	s.CrawlRun()
@@ -51,7 +50,7 @@ func (s DefaultCrawlService) Crawl() {
 func (s DefaultCrawlService) CrawlRun() {
 	rootFolder := s.Cfg.Crawl.RootFolder
 	s.Cfg.RunTime.CrawlRunNumber++
-	logger.Info(fmt.Sprintf("Starting crawl run #%v...", s.Cfg.RunTime.CrawlRunNumber))
+	logger.Info(fmt.Sprintf("Root folder: %v. Starting crawl #%v.", s.Cfg.Crawl.RootFolder, s.Cfg.RunTime.CrawlRunNumber))
 	fileCount, err := s.crawlFolder(rootFolder, s.Cfg.Crawl.Extensions)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Error crawling folder %v: ", rootFolder), err)
