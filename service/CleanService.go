@@ -28,6 +28,9 @@ func NewCleanService(cfg *config.AppConfig, repo *repositories.DefaultFileReposi
 }
 
 func (s DefaultCleanService) Clean() {
+	var (
+		cleanCounter int = 0
+	)
 	logger.Info("Starting file list clean-up...")
 	const dateLayout = "2006-01-02"
 	today, err := time.Parse(dateLayout, strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1))
@@ -46,9 +49,11 @@ func (s DefaultCleanService) Clean() {
 				err := s.Repo.Delete(file.Path)
 				if err != nil {
 					logger.Error("Could not remove entry: ", err)
+				} else {
+					cleanCounter++
 				}
 			}
 		}
 	}
-	logger.Info("File list clean-up done")
+	logger.Info(fmt.Sprintf("File list clean-up done. Cleaned %v entries.", cleanCounter))
 }
