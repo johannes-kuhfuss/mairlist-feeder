@@ -197,6 +197,8 @@ func (s DefaultExportService) ExportToPlayout(hour string) {
 			day := fmt.Sprintf("%02d", time.Now().Day())
 			exportFileName = year + "-" + month + "-" + day + "-" + hour + ".txt"
 		}
+		s.Cfg.RunTime.LastExportFileName = exportFileName
+		s.Cfg.RunTime.LastExportDate = time.Now()
 		exportPath = path.Join(s.Cfg.Export.ExportFolder, exportFileName)
 		exportFile, err := os.OpenFile(exportPath, os.O_CREATE, 0644)
 		dataWriter := bufio.NewWriter(exportFile)

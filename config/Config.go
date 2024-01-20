@@ -44,11 +44,15 @@ type AppConfig struct {
 		LongDeltaAllowance  float64 `envconfig:"LONG_DELTA_ALLOWANCE" default:"8.0"`
 	}
 	RunTime struct {
-		Router         *gin.Engine
-		ListenAddr     string
-		StartDate      time.Time
-		RunFeeder      bool
-		CrawlRunNumber int
+		Router             *gin.Engine
+		ListenAddr         string
+		StartDate          time.Time
+		RunFeeder          bool
+		CrawlRunNumber     int
+		LastCrawlDate      time.Time
+		FilesInList        int
+		LastExportDate     time.Time
+		LastExportFileName string
 	}
 }
 

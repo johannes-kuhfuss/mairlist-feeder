@@ -43,6 +43,22 @@
                           <td>Crawl runs executed</td>
                           <td>{{ .configdata.CrawlRunNumber }}</td>
                         </tr>
+                        <tr>
+                          <td>Last Crawl Run</td>
+                          <td>{{ .configdata.LastCrawlDate }}</td>
+                        </tr>
+                        <tr>
+                          <td>Number of files in list</td>
+                          <td>{{ .configdata.FilesInList }}</td>
+                        </tr>
+                        <tr>
+                          <td>Last Export Date</td>
+                          <td>{{ .configdata.LastExportDate }}</td>
+                        </tr>
+                        <tr>
+                          <td>Last file exported</td>
+                          <td>{{ .configdata.LastExportFileName }}</td>
+                        </tr>
                     </tbody>
                 </table>
                 <h2>Server</h2>

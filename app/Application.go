@@ -52,6 +52,7 @@ func StartApp() {
 	mapUrls()
 	RegisterForOsSignals()
 	scheduleBgJobs()
+	go startServer()
 	if cfg.Misc.LoadFromDisk {
 		fileRepo.LoadFromDisk(cfg.Misc.FileSaveFile)
 	} else {
@@ -60,8 +61,6 @@ func StartApp() {
 	if cfg.Misc.Test {
 		exportService.Export()
 	}
-
-	go startServer()
 
 	<-appEnd
 	cleanUp()

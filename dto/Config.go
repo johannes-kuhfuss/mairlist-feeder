@@ -24,7 +24,10 @@ type ConfigResp struct {
 	ShortAllowance             string
 	LongAllowance              string
 	CrawlRunNumber             string
+	LastCrawlDate              string
 	FilesInList                string
+	LastExportDate             string
+	LastExportFileName         string
 }
 
 func GetConfig(cfg *config.AppConfig) ConfigResp {
@@ -39,12 +42,16 @@ func GetConfig(cfg *config.AppConfig) ConfigResp {
 		GinMode:                    cfg.Gin.Mode,
 		StartDate:                  cfg.RunTime.StartDate.Local().Format("2006-01-02 15:04:05 -0700"),
 		RootFolder:                 cfg.Crawl.RootFolder,
-		FileExtensions:             strings.Join(cfg.Crawl.Extensions, ","),
+		FileExtensions:             strings.Join(cfg.Crawl.Extensions, ", "),
 		CycleTime:                  strconv.Itoa(cfg.Crawl.CrawlCycleMin),
 		ExportFolder:               cfg.Export.ExportFolder,
 		ShortAllowance:             strconv.FormatFloat(cfg.Export.ShortDeltaAllowance, 'f', 1, 64),
 		LongAllowance:              strconv.FormatFloat(cfg.Export.LongDeltaAllowance, 'f', 1, 64),
 		CrawlRunNumber:             strconv.Itoa(cfg.RunTime.CrawlRunNumber),
+		LastCrawlDate:              cfg.RunTime.LastCrawlDate.Local().Format("2006-01-02 15:04:05 -0700"),
+		FilesInList:                strconv.Itoa(cfg.RunTime.FilesInList),
+		LastExportDate:             cfg.RunTime.LastExportDate.Local().Format("2006-01-02 15:04:05 -0700"),
+		LastExportFileName:         cfg.RunTime.LastExportFileName,
 	}
 	if cfg.Server.Host == "" {
 		resp.ServerHost = "localhost"
