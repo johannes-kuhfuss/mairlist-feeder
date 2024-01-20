@@ -5,89 +5,43 @@
    <div class="container">
         <div class="row">
             <div class="col">
-                <h1>Shelly Status Service - Configuration Data</h1>
-                <h2>Shelly Data</h2>
+                <h1>mAirlist Feeder</h1>
+                <h2>Status</h2>
                 <table class="table table-striped table-sm">
                     <thead>
                         <tr>
-                          <th scope="col" style="width: 25%">Phase</th>
-                          <th scope="col" style="width: 25%">A</th>
-                          <th scope="col" style="width: 25%">B</th>
-                          <th scope="col" style="width: 25%">C</th>
+                          <th scope="col" style="width: 50%">Variable</th>
+                          <th scope="col" style="width: 50%">Value</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>Voltage (V)</td>
-                            <td>{{ .configdata.AVoltage }}</td>
-                            <td>{{ .configdata.BVoltage }}</td>
-                            <td>{{ .configdata.CVoltage }}</td>
+                          <td>Root Folder for crawl</td>
+                          <td>{{ .configdata.RootFolder }}</td>
                         </tr>
                         <tr>
-                            <td>Current (A)</td>
-                            <td>{{ .configdata.ACurrent }}</td>
-                            <td>{{ .configdata.BCurrent }}</td>
-                            <td>{{ .configdata.CCurrent }}</td>
+                          <td>File Extensions to include</td>
+                          <td>{{ .configdata.FileExtensions }}</td>
                         </tr>
                         <tr>
-                            <td>Active Power (W)</td>
-                            <td>{{ .configdata.AActPower }}</td>
-                            <td>{{ .configdata.BActPower }}</td>
-                            <td>{{ .configdata.CActPower }}</td>
+                          <td>Crawl Cycle in minutes</td>
+                          <td>{{ .configdata.CycleTime }}</td>
                         </tr>
                         <tr>
-                            <td>Apparent Power (VA)</td>
-                            <td>{{ .configdata.AAprtPower }}</td>
-                            <td>{{ .configdata.BAprtPower }}</td>
-                            <td>{{ .configdata.CAprtPower }}</td>
+                          <td>Playlist Export Folder</td>
+                          <td>{{ .configdata.ExportFolder }}</td>
                         </tr>
                         <tr>
-                            <td>Power Factor</td>
-                            <td>{{ .configdata.APf }}</td>
-                            <td>{{ .configdata.BPf }}</td>
-                            <td>{{ .configdata.CPf }}</td>
+                          <td>How many minutes short and still accepted?</td>
+                          <td>{{ .configdata.ShortAllowance }}</td>
                         </tr>
                         <tr>
-                            <td>Frequency (Hz)</td>
-                            <td>{{ .configdata.AFreq }}</td>
-                            <td>{{ .configdata.BFreq }}</td>
-                            <td>{{ .configdata.CFreq }}</td>
+                          <td>How many minutes long and still accepted?</td>
+                          <td>{{ .configdata.LongAllowance }}</td>
                         </tr>
                         <tr>
-                            <td>Errors</td>
-                            <td>{{ .configdata.AErrors }}</td>
-                            <td>{{ .configdata.BErrors }}</td>
-                            <td>{{ .configdata.CErrors }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <table class="table table-striped table-sm">
-                    <thead>
-                        <tr>
-                          <th scope="col" style="width: 50%"></th>
-                          <th scope="col" style="width: 50%"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Total Current (A)</td>
-                            <td>{{ .configdata.TotalCurrent }}</td>
-                        </tr>
-                        <tr>
-                            <td>Total Active Power (W)</td>
-                            <td>{{ .configdata.TotalActPower }}</td>
-                        </tr>
-                        <tr>
-                            <td>Total Apparent Power (VA)</td>
-                            <td>{{ .configdata.AActPower }}</td>
-                        </tr>
-                        <tr>
-                            <td>User Calibrated Phase</td>
-                            <td>{{ .configdata.UserCalibratedPhase }}</td>
-                        </tr>
-                        <tr>
-                            <td>Errors</td>
-                            <td>{{ .configdata.Errors }}</td>
+                          <td>Crawl runs executed</td>
+                          <td>{{ .configdata.CrawlRunNumber }}</td>
                         </tr>
                     </tbody>
                 </table>
