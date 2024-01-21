@@ -6,15 +6,18 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/dto"
+	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 )
 
 type StatsUiHandler struct {
-	Cfg *config.AppConfig
+	Cfg  *config.AppConfig
+	Repo *repositories.DefaultFileRepository
 }
 
-func NewStatsUiHandler(cfg *config.AppConfig) StatsUiHandler {
+func NewStatsUiHandler(cfg *config.AppConfig, repo *repositories.DefaultFileRepository) StatsUiHandler {
 	return StatsUiHandler{
-		Cfg: cfg,
+		Cfg:  cfg,
+		Repo: repo,
 	}
 }
 
@@ -26,9 +29,9 @@ func (uh *StatsUiHandler) StatusPage(c *gin.Context) {
 }
 
 func (uh *StatsUiHandler) FileListPage(c *gin.Context) {
-	fileData := dto.GetFiles(uh.Cfg)
+	files := dto.GetFiles(uh.Repo)
 	c.HTML(http.StatusOK, "filelist.page.tmpl", gin.H{
-		"filedata": fileData,
+		"files": files,
 	})
 }
 

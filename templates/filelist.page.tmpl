@@ -23,9 +23,20 @@
                         </tr>
                     </thead>
                     <tbody>
+                        {{ range .files }}
                         <tr>
-                          <td></td>
+                          <td>{{ .Path }}</td>
+                          <td>{{ .Duration }}</td>
+                          <td>{{ .StartTime }}</td>
+                          <td>{{ .EndTime }}</td>
+                          <td>{{ .ModTime }}</td>
+                          <td>{{ .FromCalCMS }}</td>
+                          <td>{{ .InfoExtracted }}</td>
+                          <td>{{ .ScanTime }}</td>
+                          <td>{{ .FolderDate }}</td>
+                          <td>{{ .RuleMatched }}</td>
                         </tr>
+                        {{ end }}
                     </tbody>
                 </table>
             </div>

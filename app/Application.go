@@ -128,8 +128,8 @@ func initServer() {
 }
 
 func wireApp() {
-	statsUiHandler = handlers.NewStatsUiHandler(&cfg)
 	fileRepo = repositories.NewFileRepository(&cfg)
+	statsUiHandler = handlers.NewStatsUiHandler(&cfg, &fileRepo)
 	crawlService = service.NewCrawlService(&cfg, &fileRepo)
 	cleanService = service.NewCleanService(&cfg, &fileRepo)
 	exportService = service.NewExportService(&cfg, &fileRepo)
