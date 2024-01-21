@@ -25,6 +25,13 @@ func (uh *StatsUiHandler) StatusPage(c *gin.Context) {
 	})
 }
 
+func (uh *StatsUiHandler) FileListPage(c *gin.Context) {
+	fileData := dto.GetFiles(uh.Cfg)
+	c.HTML(http.StatusOK, "filelist.page.tmpl", gin.H{
+		"filedata": fileData,
+	})
+}
+
 func (uh *StatsUiHandler) AboutPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "about.page.tmpl", nil)
 }
