@@ -132,6 +132,15 @@ func TestDeleteItem(t *testing.T) {
 	assert.EqualValues(t, 0, sizeAfter)
 }
 
+func TestGetForHourEmpty(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	res := repo.GetForHour("13")
+
+	assert.Nil(t, res)
+}
+
 func TestGetForHourNoResult(t *testing.T) {
 	teardown := setupTest(t)
 	defer teardown()
@@ -248,4 +257,34 @@ func TestDeleteAll(t *testing.T) {
 
 	assert.EqualValues(t, 2, sizeBefore)
 	assert.EqualValues(t, 0, sizeAfter)
+}
+
+func TestNewFilesFalse(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	fi1 := domain.FileInfo{
+		Path:          "A",
+		StartTime:     "11:00",
+		InfoExtracted: true,
+	}
+	repo.Store(fi1)
+	newFiles := repo.NewFiles()
+
+	assert.EqualValues(t, false, newFiles)
+}
+
+func TestNewFilesTrue(t *testing.T) {
+	teardown := setupTest(t)
+	defer teardown()
+
+	fi1 := domain.FileInfo{
+		Path:          "A",
+		StartTime:     "11:00",
+		InfoExtracted: false,
+	}
+	repo.Store(fi1)
+	newFiles := repo.NewFiles()
+
+	assert.EqualValues(t, true, newFiles)
 }

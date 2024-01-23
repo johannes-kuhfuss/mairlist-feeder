@@ -21,6 +21,6 @@ type FileInfo struct {
 type FileList []FileInfo
 
 type SafeFileList struct {
-	sync.Mutex
+	sync.RWMutex
 	Files map[string]FileInfo
 }

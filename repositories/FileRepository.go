@@ -40,11 +40,15 @@ func NewFileRepository(cfg *config.AppConfig) DefaultFileRepository {
 }
 
 func (fr DefaultFileRepository) Exists(filePath string) bool {
+	fileList.RLock()
+	defer fileList.RUnlock()
 	_, ok := fileList.Files[filePath]
 	return ok
 }
 
 func (fr DefaultFileRepository) Size() int {
+	fileList.RLock()
+	defer fileList.RUnlock()
 	return len(fileList.Files)
 }
 
@@ -53,9 +57,9 @@ func (fr DefaultFileRepository) Get(filePath string) *domain.FileInfo {
 	if !fr.Exists(filePath) {
 		return nil
 	}
-	fileList.Lock()
+	fileList.RLock()
+	defer fileList.RUnlock()
 	fi = fileList.Files[filePath]
-	fileList.Unlock()
 	return &fi
 }
 
@@ -64,6 +68,8 @@ func (fr DefaultFileRepository) GetAll() *domain.FileList {
 	if fr.Size() == 0 {
 		return nil
 	}
+	fileList.RLock()
+	defer fileList.RUnlock()
 	for _, file := range fileList.Files {
 		list = append(list, file)
 	}
@@ -76,6 +82,8 @@ func (fr DefaultFileRepository) GetForHour(hour string) *domain.FileList {
 		return nil
 	}
 	folderDate := strings.Replace(helper.GetTodayFolder(fr.Cfg.Misc.Test, fr.Cfg.Misc.TestDate), "/", "-", -1)
+	fileList.RLock()
+	defer fileList.RUnlock()
 	for _, file := range fileList.Files {
 		if (strings.HasPrefix(file.StartTime, hour)) && (file.FolderDate == folderDate) {
 			list = append(list, file)
@@ -90,12 +98,12 @@ func (fr DefaultFileRepository) GetForHour(hour string) *domain.FileList {
 }
 
 func (fr DefaultFileRepository) Store(fi domain.FileInfo) error {
-	fileList.Lock()
 	if fi.Path == "" {
 		return errors.New("cannot add item with empty path to list")
 	}
+	fileList.Lock()
+	defer fileList.Unlock()
 	fileList.Files[fi.Path] = fi
-	fileList.Unlock()
 	return nil
 }
 
@@ -104,13 +112,15 @@ func (fr DefaultFileRepository) Delete(filePath string) error {
 		return errors.New("item does not exist")
 	}
 	fileList.Lock()
+	defer fileList.Unlock()
 	delete(fileList.Files, filePath)
-	fileList.Unlock()
 	return nil
 }
 
 func (fr DefaultFileRepository) SaveToDisk(fileName string) {
 	logger.Info("Saving files data to disk...")
+	fileList.RLock()
+	defer fileList.RUnlock()
 	b, err := json.Marshal(fileList.Files)
 	if err != nil {
 		logger.Error("Error while converting file list to JSON: ", err)
@@ -133,11 +143,15 @@ func (fr DefaultFileRepository) LoadFromDisk(fileName string) {
 	if err != nil {
 		logger.Error("Error while converting files data to json: ", err)
 	}
+	fileList.Lock()
+	defer fileList.Unlock()
 	fileList.Files = fileDta
 	logger.Info(fmt.Sprintf("Done reading files data from disk (%v items).", len(fileList.Files)))
 }
 
 func (fr DefaultFileRepository) DeleteAllData() {
+	fileList.Lock()
+	defer fileList.Unlock()
 	fileList.Files = make(map[string]domain.FileInfo)
 }
 
