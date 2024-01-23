@@ -74,7 +74,7 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string)
 		fi        domain.FileInfo
 		fileCount int = 0
 	)
-	today := helper.GetTodayFolder(s.Cfg.Misc.Test, s.Cfg.Misc.TestDate)
+	today := helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate)
 	err := filepath.Walk(path.Join(rootFolder, today),
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
@@ -96,7 +96,7 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string)
 				fi.InfoExtracted = false
 				fileCount++
 				s.Repo.Store(fi)
-				if s.Cfg.Misc.Test {
+				if s.Cfg.Misc.TestCrawl {
 					logger.Info(fmt.Sprintf("File %v added", path))
 				}
 			}

@@ -26,10 +26,11 @@ type AppConfig struct {
 		TemplatePath string `envconfig:"TEMPLATE_PATH" default:"./templates/"`
 	}
 	Misc struct {
-		Test         bool   `envconfig:"TEST" default:"false"`
+		TestCrawl    bool   `envconfig:"TEST_CRAWL" default:"false"`
 		FileSaveFile string `envconfig:"FILE_SAVE_FILE" default:"files.dta"`
 		TestDate     string `envconfig:"TEST_DATE" default:"2024/01/15"`
 		LoadFromDisk bool   `envconfig:"LOAD_FROM_DISK" default:"false"`
+		TestExport   bool   `envconfig:"TEST_EXPORT" default:"false"`
 	}
 	Crawl struct {
 		RootFolder     string   `envconfig:"ROOT_FOLDER" default:"Z:\\sendungen"`

@@ -81,7 +81,7 @@ func (fr DefaultFileRepository) GetForHour(hour string) *domain.FileList {
 	if fr.Size() == 0 {
 		return nil
 	}
-	folderDate := strings.Replace(helper.GetTodayFolder(fr.Cfg.Misc.Test, fr.Cfg.Misc.TestDate), "/", "-", -1)
+	folderDate := strings.Replace(helper.GetTodayFolder(fr.Cfg.Misc.TestCrawl, fr.Cfg.Misc.TestDate), "/", "-", -1)
 	fileList.RLock()
 	defer fileList.RUnlock()
 	for _, file := range fileList.Files {

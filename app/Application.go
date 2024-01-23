@@ -58,7 +58,7 @@ func StartApp() {
 	} else {
 		crawlService.Crawl()
 	}
-	if cfg.Misc.Test {
+	if cfg.Misc.TestCrawl {
 		exportService.Export()
 	}
 

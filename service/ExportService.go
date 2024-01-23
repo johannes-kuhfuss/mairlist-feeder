@@ -36,7 +36,7 @@ func NewExportService(cfg *config.AppConfig, repo *repositories.DefaultFileRepos
 }
 
 func (s DefaultExportService) Export() {
-	if s.Cfg.Misc.Test {
+	if s.Cfg.Misc.TestExport {
 		for hour := 0; hour < 24; hour++ {
 			s.ExportForHour(fmt.Sprintf("%02d", hour))
 		}
@@ -189,7 +189,7 @@ func (s DefaultExportService) ExportToPlayout(hour string) {
 	size := len(fileExportList.Files)
 	if size > 0 {
 		logger.Info(fmt.Sprintf("Exporting %v elements to mAirList for slot %v:00", size, hour))
-		if s.Cfg.Misc.Test {
+		if s.Cfg.Misc.TestCrawl {
 			exportFileName = "Test_" + hour + ".txt"
 		} else {
 			year := fmt.Sprintf("%d", time.Now().Year())
