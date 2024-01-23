@@ -53,9 +53,9 @@ func (fr DefaultFileRepository) Get(filePath string) *domain.FileInfo {
 	if !fr.Exists(filePath) {
 		return nil
 	}
-	fileList.Mu.Lock()
+	fileList.Lock()
 	fi = fileList.Files[filePath]
-	fileList.Mu.Unlock()
+	fileList.Unlock()
 	return &fi
 }
 
@@ -90,12 +90,12 @@ func (fr DefaultFileRepository) GetForHour(hour string) *domain.FileList {
 }
 
 func (fr DefaultFileRepository) Store(fi domain.FileInfo) error {
-	fileList.Mu.Lock()
+	fileList.Lock()
 	if fi.Path == "" {
 		return errors.New("cannot add item with empty path to list")
 	}
 	fileList.Files[fi.Path] = fi
-	fileList.Mu.Unlock()
+	fileList.Unlock()
 	return nil
 }
 
@@ -103,9 +103,9 @@ func (fr DefaultFileRepository) Delete(filePath string) error {
 	if !fr.Exists(filePath) {
 		return errors.New("item does not exist")
 	}
-	fileList.Mu.Lock()
+	fileList.Lock()
 	delete(fileList.Files, filePath)
-	fileList.Mu.Unlock()
+	fileList.Unlock()
 	return nil
 }
 
