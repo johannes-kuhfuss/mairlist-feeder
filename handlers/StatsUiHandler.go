@@ -35,6 +35,12 @@ func (uh *StatsUiHandler) FileListPage(c *gin.Context) {
 	})
 }
 
+func (uh *StatsUiHandler) ActionPage(c *gin.Context) {
+	c.HTML(http.StatusOK, "actions.page.tmpl", gin.H{
+		"data": nil,
+	})
+}
+
 func (uh *StatsUiHandler) AboutPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "about.page.tmpl", nil)
 }

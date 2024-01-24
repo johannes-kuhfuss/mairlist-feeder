@@ -138,6 +138,7 @@ func wireApp() {
 func mapUrls() {
 	cfg.RunTime.Router.GET("/", statsUiHandler.StatusPage)
 	cfg.RunTime.Router.GET("/filelist", statsUiHandler.FileListPage)
+	cfg.RunTime.Router.GET("/actions", statsUiHandler.ActionPage)
 	cfg.RunTime.Router.GET("/about", statsUiHandler.AboutPage)
 }
 
