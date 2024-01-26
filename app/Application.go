@@ -129,16 +129,17 @@ func initServer() {
 
 func wireApp() {
 	fileRepo = repositories.NewFileRepository(&cfg)
-	statsUiHandler = handlers.NewStatsUiHandler(&cfg, &fileRepo)
 	crawlService = service.NewCrawlService(&cfg, &fileRepo)
 	cleanService = service.NewCleanService(&cfg, &fileRepo)
 	exportService = service.NewExportService(&cfg, &fileRepo)
+	statsUiHandler = handlers.NewStatsUiHandler(&cfg, &fileRepo, &crawlService, &exportService, &cleanService)
 }
 
 func mapUrls() {
 	cfg.RunTime.Router.GET("/", statsUiHandler.StatusPage)
 	cfg.RunTime.Router.GET("/filelist", statsUiHandler.FileListPage)
 	cfg.RunTime.Router.GET("/actions", statsUiHandler.ActionPage)
+	cfg.RunTime.Router.POST("/actions", statsUiHandler.ExecAction)
 	cfg.RunTime.Router.GET("/about", statsUiHandler.AboutPage)
 }
 

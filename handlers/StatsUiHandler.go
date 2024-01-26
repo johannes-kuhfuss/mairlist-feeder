@@ -2,22 +2,33 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/dto"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
+	"github.com/johannes-kuhfuss/mairlist-feeder/service"
+	"github.com/johannes-kuhfuss/services_utils/api_error"
+	"github.com/johannes-kuhfuss/services_utils/logger"
+	"github.com/johannes-kuhfuss/services_utils/misc"
 )
 
 type StatsUiHandler struct {
-	Cfg  *config.AppConfig
-	Repo *repositories.DefaultFileRepository
+	Cfg       *config.AppConfig
+	Repo      *repositories.DefaultFileRepository
+	CrawlSvc  *service.DefaultCrawlService
+	ExportSvc *service.DefaultExportService
+	CleanSvc  *service.DefaultCleanService
 }
 
-func NewStatsUiHandler(cfg *config.AppConfig, repo *repositories.DefaultFileRepository) StatsUiHandler {
+func NewStatsUiHandler(cfg *config.AppConfig, repo *repositories.DefaultFileRepository, crs *service.DefaultCrawlService, exs *service.DefaultExportService, cls *service.DefaultCleanService) StatsUiHandler {
 	return StatsUiHandler{
-		Cfg:  cfg,
-		Repo: repo,
+		Cfg:       cfg,
+		Repo:      repo,
+		CrawlSvc:  crs,
+		ExportSvc: exs,
+		CleanSvc:  cls,
 	}
 }
 
@@ -43,4 +54,56 @@ func (uh *StatsUiHandler) ActionPage(c *gin.Context) {
 
 func (uh *StatsUiHandler) AboutPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "about.page.tmpl", nil)
+}
+
+func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
+	action := c.PostForm("action")
+	hour := c.PostForm("hour")
+	err := validateAction(action)
+	if err != nil {
+		logger.Error("Error: ", err)
+		c.JSON(err.StatusCode(), err)
+		return
+	}
+	err = validateHour(hour)
+	if err != nil {
+		logger.Error("Error: ", err)
+		c.JSON(err.StatusCode(), err)
+		return
+	}
+	switch action {
+	case "crawl":
+		uh.CrawlSvc.Crawl()
+	case "export":
+		if hour == "" {
+			uh.ExportSvc.ExportAllHours()
+		} else {
+			uh.ExportSvc.ExportForHour(hour)
+		}
+	}
+	c.JSON(http.StatusOK, nil)
+}
+
+func validateAction(action string) api_error.ApiErr {
+	actions := []string{"crawl", "export"}
+	exists := misc.SliceContainsString(actions, action)
+	if exists {
+		return nil
+	} else {
+		return api_error.NewBadRequestError("unknown action")
+	}
+}
+
+func validateHour(hour string) api_error.ApiErr {
+	if hour == "" {
+		return nil
+	}
+	h, err := strconv.Atoi(hour)
+	if err != nil {
+		return api_error.NewBadRequestError("could not parse hour")
+	}
+	if (h < 0) || (h > 23) {
+		return api_error.NewBadRequestError("hour must be between 00 and 23")
+	}
+	return nil
 }

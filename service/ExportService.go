@@ -37,12 +37,16 @@ func NewExportService(cfg *config.AppConfig, repo *repositories.DefaultFileRepos
 
 func (s DefaultExportService) Export() {
 	if s.Cfg.Misc.TestExport {
-		for hour := 0; hour < 24; hour++ {
-			s.ExportForHour(fmt.Sprintf("%02d", hour))
-		}
+		s.ExportAllHours()
 	} else {
 		nextHour := getNextHour()
 		s.ExportForHour(nextHour)
+	}
+}
+
+func (s DefaultExportService) ExportAllHours() {
+	for hour := 0; hour < 24; hour++ {
+		s.ExportForHour(fmt.Sprintf("%02d", hour))
 	}
 }
 

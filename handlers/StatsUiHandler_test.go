@@ -20,7 +20,7 @@ var (
 )
 
 func setupUiTest(t *testing.T) func() {
-	uh = NewStatsUiHandler(&cfg, nil)
+	uh = NewStatsUiHandler(&cfg, nil, nil, nil, nil)
 	router = gin.Default()
 	router.LoadHTMLGlob("../templates/*.tmpl")
 	recorder = httptest.NewRecorder()
