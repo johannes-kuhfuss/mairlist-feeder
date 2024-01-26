@@ -80,12 +80,14 @@ func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 		} else {
 			uh.ExportSvc.ExportForHour(hour)
 		}
+	case "clean":
+		uh.CleanSvc.Clean()
 	}
 	c.JSON(http.StatusOK, nil)
 }
 
 func validateAction(action string) api_error.ApiErr {
-	actions := []string{"crawl", "export"}
+	actions := []string{"crawl", "export", "clean"}
 	exists := misc.SliceContainsString(actions, action)
 	if exists {
 		return nil
