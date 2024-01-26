@@ -146,12 +146,13 @@ func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengt
 	return lOk, detail
 }
 
-func (s DefaultExportService) exportToCsv() {
+func (s DefaultExportService) ExportToCsv() {
 	var (
 		startTimeSlot string
 		endTimeSlot   string
 	)
-	logFile, err := os.OpenFile("filescan.csv", os.O_APPEND|os.O_CREATE, 0644)
+	exportPath := path.Join(s.Cfg.Export.ExportFolder, "filescan_export.csv")
+	logFile, err := os.OpenFile(exportPath, os.O_APPEND|os.O_CREATE, 0644)
 	dataWriter := bufio.NewWriter(logFile)
 	if err != nil {
 		logger.Error("Error writing csv file: ", err)
