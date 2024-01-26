@@ -54,6 +54,9 @@ type AppConfig struct {
 		FilesInList        int
 		LastExportDate     time.Time
 		LastExportFileName string
+		CrawlRunning       bool
+		ExportRunning      bool
+		CleanRunning       bool
 	}
 }
 
@@ -76,6 +79,9 @@ func InitConfig(file string, config *AppConfig) api_error.ApiErr {
 func setDefaults(config *AppConfig) {
 	config.RunTime.RunFeeder = false
 	config.RunTime.CrawlRunNumber = 0
+	config.RunTime.CrawlRunning = false
+	config.RunTime.ExportRunning = false
+	config.RunTime.CleanRunning = false
 }
 
 func loadConfig(file string) error {

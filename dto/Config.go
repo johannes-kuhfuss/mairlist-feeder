@@ -28,6 +28,9 @@ type ConfigResp struct {
 	FilesInList                string
 	LastExportDate             string
 	LastExportFileName         string
+	CrawlRunning               string
+	ExportRunning              string
+	CleanRunning               string
 }
 
 func GetConfig(cfg *config.AppConfig) ConfigResp {
@@ -52,6 +55,9 @@ func GetConfig(cfg *config.AppConfig) ConfigResp {
 		FilesInList:                strconv.Itoa(cfg.RunTime.FilesInList),
 		LastExportDate:             cfg.RunTime.LastExportDate.Local().Format("2006-01-02 15:04:05 -0700"),
 		LastExportFileName:         cfg.RunTime.LastExportFileName,
+		CrawlRunning:               strconv.FormatBool(cfg.RunTime.CrawlRunning),
+		ExportRunning:              strconv.FormatBool(cfg.RunTime.ExportRunning),
+		CleanRunning:               strconv.FormatBool(cfg.RunTime.CleanRunning),
 	}
 	if cfg.Server.Host == "" {
 		resp.ServerHost = "localhost"

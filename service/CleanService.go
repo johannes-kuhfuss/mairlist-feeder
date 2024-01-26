@@ -31,29 +31,35 @@ func (s DefaultCleanService) Clean() {
 	var (
 		cleanCounter int = 0
 	)
-	logger.Info("Starting file list clean-up...")
-	const dateLayout = "2006-01-02"
-	today, err := time.Parse(dateLayout, strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1))
-	if err != nil {
-		logger.Error("Could not convert date: ", err)
-	}
-	files := s.Repo.GetAll()
-	if files != nil {
-		for _, file := range *files {
-			fileDate, err := time.Parse(dateLayout, file.FolderDate)
-			if err != nil {
-				logger.Error("Could not convert date: ", err)
-			}
-			if today.Sub(fileDate) >= time.Duration(24*time.Hour) {
-				logger.Info(fmt.Sprintf("Removing entry for expired file %v", file.Path))
-				err := s.Repo.Delete(file.Path)
+	if s.Cfg.RunTime.CleanRunning {
+		logger.Warn("Clean-up already running. Not starting another one.")
+	} else {
+		s.Cfg.RunTime.CleanRunning = true
+		logger.Info("Starting file list clean-up...")
+		const dateLayout = "2006-01-02"
+		today, err := time.Parse(dateLayout, strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1))
+		if err != nil {
+			logger.Error("Could not convert date: ", err)
+		}
+		files := s.Repo.GetAll()
+		if files != nil {
+			for _, file := range *files {
+				fileDate, err := time.Parse(dateLayout, file.FolderDate)
 				if err != nil {
-					logger.Error("Could not remove entry: ", err)
-				} else {
-					cleanCounter++
+					logger.Error("Could not convert date: ", err)
+				}
+				if today.Sub(fileDate) >= time.Duration(24*time.Hour) {
+					logger.Info(fmt.Sprintf("Removing entry for expired file %v", file.Path))
+					err := s.Repo.Delete(file.Path)
+					if err != nil {
+						logger.Error("Could not remove entry: ", err)
+					} else {
+						cleanCounter++
+					}
 				}
 			}
 		}
+		logger.Info(fmt.Sprintf("File list clean-up done. Cleaned %v entries.", cleanCounter))
+		s.Cfg.RunTime.CleanRunning = false
 	}
-	logger.Info(fmt.Sprintf("File list clean-up done. Cleaned %v entries.", cleanCounter))
 }

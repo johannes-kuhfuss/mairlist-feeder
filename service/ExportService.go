@@ -51,30 +51,35 @@ func (s DefaultExportService) ExportAllHours() {
 }
 
 func (s DefaultExportService) ExportForHour(hour string) {
-
-	files := s.Repo.GetForHour(hour)
-	if files != nil {
-		logger.Info(fmt.Sprintf("Starting export for timeslot %v:00 ...", hour))
-		for _, file := range *files {
-			lengthOk, info := checkTime(file, s.Cfg.Export.ShortDeltaAllowance, s.Cfg.Export.LongDeltaAllowance)
-			logger.Info(fmt.Sprintf("File: %v, ModDate: %v, IsOK: %v, Info: %v", file.Path, file.ModTime, lengthOk, info))
-			if lengthOk {
-				preFile, exists := fileExportList.Files[file.StartTime]
-				if exists {
-					if preFile.ModTime.After(file.ModTime) {
-						logger.Info(fmt.Sprintf("Existing file %v is newer than file %v. Not updating.", preFile.Path, file.Path))
-					} else {
-						logger.Info(fmt.Sprintf("Existing file %v is older than file %v. Updating.", preFile.Path, file.Path))
-						fileExportList.Files[file.StartTime] = file
-					}
-				}
-				fileExportList.Files[file.StartTime] = file
-			}
-		}
-		s.ExportToPlayout(hour)
-		logger.Info(fmt.Sprintf("Finished exporting for timeslot %v:00 ...", hour))
+	if s.Cfg.RunTime.ExportRunning {
+		logger.Warn("Export already running. Not starting another one.")
 	} else {
-		logger.Info(fmt.Sprintf("No files to export for timeslot %v:00 ...", hour))
+		s.Cfg.RunTime.ExportRunning = true
+		files := s.Repo.GetForHour(hour)
+		if files != nil {
+			logger.Info(fmt.Sprintf("Starting export for timeslot %v:00 ...", hour))
+			for _, file := range *files {
+				lengthOk, info := checkTime(file, s.Cfg.Export.ShortDeltaAllowance, s.Cfg.Export.LongDeltaAllowance)
+				logger.Info(fmt.Sprintf("File: %v, ModDate: %v, IsOK: %v, Info: %v", file.Path, file.ModTime, lengthOk, info))
+				if lengthOk {
+					preFile, exists := fileExportList.Files[file.StartTime]
+					if exists {
+						if preFile.ModTime.After(file.ModTime) {
+							logger.Info(fmt.Sprintf("Existing file %v is newer than file %v. Not updating.", preFile.Path, file.Path))
+						} else {
+							logger.Info(fmt.Sprintf("Existing file %v is older than file %v. Updating.", preFile.Path, file.Path))
+							fileExportList.Files[file.StartTime] = file
+						}
+					}
+					fileExportList.Files[file.StartTime] = file
+				}
+			}
+			s.ExportToPlayout(hour)
+			logger.Info(fmt.Sprintf("Finished exporting for timeslot %v:00 ...", hour))
+		} else {
+			logger.Info(fmt.Sprintf("No files to export for timeslot %v:00 ...", hour))
+		}
+		s.Cfg.RunTime.ExportRunning = false
 	}
 }
 

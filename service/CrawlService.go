@@ -45,7 +45,13 @@ func (s DefaultCrawlService) Crawl() {
 	} else {
 		s.Cfg.RunTime.RunFeeder = true
 	}
-	s.CrawlRun()
+	if s.Cfg.RunTime.CrawlRunning {
+		logger.Warn("Crawl already running. Not starting another one.")
+	} else {
+		s.Cfg.RunTime.CrawlRunning = true
+		s.CrawlRun()
+		s.Cfg.RunTime.CrawlRunning = false
+	}
 }
 
 func (s DefaultCrawlService) CrawlRun() {

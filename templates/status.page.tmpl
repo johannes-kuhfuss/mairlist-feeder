@@ -59,6 +59,18 @@
                           <td>Last file exported</td>
                           <td>{{ .configdata.LastExportFileName }}</td>
                         </tr>
+                        <tr>
+                          <td>Crawl process running</td>
+                          <td>{{ .configdata.CrawlRunning }}</td>
+                        </tr>
+                        <tr>
+                          <td>Export process running</td>
+                          <td>{{ .configdata.ExportRunning }}</td>
+                        </tr>
+                        <tr>
+                          <td>Clean-up process running</td>
+                          <td>{{ .configdata.CleanRunning }}</td>
+                        </tr>
                     </tbody>
                 </table>
                 <h2>Server</h2>
