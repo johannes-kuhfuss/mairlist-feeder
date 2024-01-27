@@ -24,9 +24,12 @@
                     <input type="submit" id="csvexport" value="CSV Export" onclick="submitForm(this.id)" />
                   </form>
                 </p>
-                <h3>Import</h3>
+                <h3>Files</h3>
                   <form action="" method="POST" onsubmit="return false">
-                      <input type="submit" id="import" value="CSV Import" onclick="submitForm(this.id)" />
+                      <input type="submit" id="importfromdisk" value="Import from disk" onclick="submitForm(this.id)" />
+                  </form>
+                  <form action="" method="POST" onsubmit="return false">
+                      <input type="submit" id="exporttodisk" value="Export to disk" onclick="submitForm(this.id)" />
                   </form>
                 <h3>Clean-up</h3>
                 <p>
