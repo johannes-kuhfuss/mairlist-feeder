@@ -147,7 +147,7 @@ func (s DefaultExportService) ExportToCsv() {
 		startTimeSlot string
 		endTimeSlot   string
 	)
-	size := len(fileExportList.Files)
+	size := s.Repo.Size()
 	if size > 0 {
 		logger.Info(fmt.Sprintf("Exporting %v elements to CSV", size))
 		exportPath := path.Join(s.Cfg.Export.ExportFolder, "filescan_export.csv")

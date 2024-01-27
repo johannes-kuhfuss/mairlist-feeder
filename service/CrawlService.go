@@ -80,28 +80,29 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string)
 	)
 	today := helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate)
 	err := filepath.Walk(path.Join(rootFolder, today),
-		func(path string, info os.FileInfo, err error) error {
+		func(srcPath string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
-			if misc.SliceContainsString(extensions, filepath.Ext(path)) {
-				if s.Repo.Exists(path) {
-					oldFile := s.Repo.Get(path)
+			if misc.SliceContainsString(extensions, filepath.Ext(srcPath)) {
+				if s.Repo.Exists(srcPath) {
+					oldFile := s.Repo.Get(srcPath)
 					if oldFile.ModTime == info.ModTime() {
-						logger.Info(fmt.Sprintf("File %v already exists and is unmodified. Not adding", path))
+						logger.Info(fmt.Sprintf("File %v already exists and is unmodified. Not adding", srcPath))
 						return nil
 					}
 				}
 				fi.ModTime = info.ModTime()
-				fi.Path = path
+				fi.Path = srcPath
 				fi.FromCalCMS = false
 				fi.ScanTime = time.Now()
-				fi.FolderDate = strings.Replace(today, "/", "-", -1)
+				rawFolder := strings.Trim(filepath.Dir(srcPath), rootFolder)[0:10]
+				fi.FolderDate = strings.Replace(rawFolder, "\\", "-", -1)
 				fi.InfoExtracted = false
 				fileCount++
 				s.Repo.Store(fi)
 				if s.Cfg.Misc.TestCrawl {
-					logger.Info(fmt.Sprintf("File %v added", path))
+					logger.Info(fmt.Sprintf("File %v added", srcPath))
 				}
 			}
 			return nil
