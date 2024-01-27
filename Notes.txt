@@ -1,2 +1,1 @@
-Deal with cron jobs started before old one completes
-Check out mAirList API instead of exporting to TPI file
+Check out mAirList API instead of / in addition to exporting to TPI file
