@@ -29,7 +29,7 @@ func NewCleanService(cfg *config.AppConfig, repo *repositories.DefaultFileReposi
 
 func (s DefaultCleanService) Clean() {
 	var (
-		cleanCounter int = 0
+		filesCleaned int = 0
 	)
 	if s.Cfg.RunTime.CleanRunning {
 		logger.Warn("Clean-up already running. Not starting another one.")
@@ -54,12 +54,12 @@ func (s DefaultCleanService) Clean() {
 					if err != nil {
 						logger.Error("Could not remove entry: ", err)
 					} else {
-						cleanCounter++
+						filesCleaned++
 					}
 				}
 			}
 		}
-		logger.Info(fmt.Sprintf("File list clean-up done. Cleaned %v entries.", cleanCounter))
+		logger.Info(fmt.Sprintf("File list clean-up done. Cleaned %v entries.", filesCleaned))
 		s.Cfg.RunTime.CleanRunning = false
 	}
 }

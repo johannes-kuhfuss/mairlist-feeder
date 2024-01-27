@@ -27,10 +27,8 @@ type AppConfig struct {
 	}
 	Misc struct {
 		TestCrawl    bool   `envconfig:"TEST_CRAWL" default:"false"`
-		FileSaveFile string `envconfig:"FILE_SAVE_FILE" default:"files.dta"`
 		TestDate     string `envconfig:"TEST_DATE" default:"2024/01/15"`
-		LoadFromDisk bool   `envconfig:"LOAD_FROM_DISK" default:"false"`
-		TestExport   bool   `envconfig:"TEST_EXPORT" default:"false"`
+		FileSaveFile string `envconfig:"FILE_SAVE_FILE" default:"files.dta"`
 	}
 	Crawl struct {
 		RootFolder     string   `envconfig:"ROOT_FOLDER" default:"Z:\\sendungen"`
@@ -48,7 +46,6 @@ type AppConfig struct {
 		Router             *gin.Engine
 		ListenAddr         string
 		StartDate          time.Time
-		RunFeeder          bool
 		CrawlRunNumber     int
 		LastCrawlDate      time.Time
 		FilesInList        int
@@ -77,7 +74,6 @@ func InitConfig(file string, config *AppConfig) api_error.ApiErr {
 }
 
 func setDefaults(config *AppConfig) {
-	config.RunTime.RunFeeder = false
 	config.RunTime.CrawlRunNumber = 0
 	config.RunTime.CrawlRunning = false
 	config.RunTime.ExportRunning = false

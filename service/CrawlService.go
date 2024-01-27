@@ -41,9 +41,7 @@ func NewCrawlService(cfg *config.AppConfig, repo *repositories.DefaultFileReposi
 func (s DefaultCrawlService) Crawl() {
 	if s.Cfg.Crawl.RootFolder == "" {
 		logger.Warn("No root folder given. Not running")
-		s.Cfg.RunTime.RunFeeder = false
-	} else {
-		s.Cfg.RunTime.RunFeeder = true
+		return
 	}
 	if s.Cfg.RunTime.CrawlRunning {
 		logger.Warn("Crawl already running. Not starting another one.")
