@@ -205,10 +205,7 @@ func (s DefaultExportService) ExportToPlayout(hour string) {
 		if s.Cfg.Misc.TestCrawl {
 			exportFileName = "Test_" + hour + ".txt"
 		} else {
-			year := fmt.Sprintf("%d", time.Now().Year())
-			month := fmt.Sprintf("%02d", time.Now().Month())
-			day := fmt.Sprintf("%02d", time.Now().Day())
-			exportFileName = year + "-" + month + "-" + day + "-" + hour + ".txt"
+			exportFileName = "next.tpi"
 		}
 		s.Cfg.RunTime.LastExportFileName = exportFileName
 		s.Cfg.RunTime.LastExportDate = time.Now()
