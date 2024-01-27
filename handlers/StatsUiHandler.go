@@ -82,6 +82,8 @@ func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 		}
 	case "csvexport":
 		uh.ExportSvc.ExportToCsv()
+	case "import":
+		uh.Repo.LoadFromDisk(uh.Cfg.Misc.FileSaveFile)
 	case "clean":
 		uh.CleanSvc.Clean()
 	}
@@ -89,7 +91,7 @@ func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 }
 
 func validateAction(action string) api_error.ApiErr {
-	actions := []string{"crawl", "export", "clean", "csvexport"}
+	actions := []string{"crawl", "export", "clean", "csvexport", "import"}
 	exists := misc.SliceContainsString(actions, action)
 	if exists {
 		return nil

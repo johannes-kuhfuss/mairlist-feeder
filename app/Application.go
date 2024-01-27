@@ -53,14 +53,7 @@ func StartApp() {
 	RegisterForOsSignals()
 	scheduleBgJobs()
 	go startServer()
-	if cfg.Misc.LoadFromDisk {
-		fileRepo.LoadFromDisk(cfg.Misc.FileSaveFile)
-	} else {
-		crawlService.Crawl()
-	}
-	if cfg.Misc.TestCrawl {
-		exportService.Export()
-	}
+	crawlService.Crawl()
 
 	<-appEnd
 	cleanUp()
