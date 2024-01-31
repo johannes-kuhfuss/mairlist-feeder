@@ -2,10 +2,15 @@ package service
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
+	"io"
 	"math"
+	"net/http"
+	"net/url"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
@@ -25,10 +30,26 @@ type DefaultExportService struct {
 
 var (
 	fileExportList domain.SafeFileList
+	httpTr         http.Transport
+	httpClient     http.Client
 )
+
+func InitHttpClient() {
+	httpTr = http.Transport{
+		DisableKeepAlives:  false,
+		DisableCompression: false,
+		MaxIdleConns:       0,
+		IdleConnTimeout:    0,
+	}
+	httpClient = http.Client{
+		Transport: &httpTr,
+		Timeout:   5 * time.Second,
+	}
+}
 
 func NewExportService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository) DefaultExportService {
 	fileExportList.Files = make(map[string]domain.FileInfo)
+	InitHttpClient()
 	return DefaultExportService{
 		Cfg:  cfg,
 		Repo: repo,
@@ -229,9 +250,39 @@ func (s DefaultExportService) ExportToPlayout(hour string) {
 			}
 			dataWriter.Flush()
 			defer exportFile.Close()
+			if s.Cfg.Export.AppendPlaylist {
+				err := s.AppendPlaylist(exportPath)
+				if err != nil {
+					logger.Error("Error appending playlist", err)
+				}
+			}
 		}
 	} else {
 		logger.Info(fmt.Sprintf("No elements to export for slot %v:00.", hour))
 	}
+}
 
+func (s DefaultExportService) AppendPlaylist(fileName string) error {
+	mairListUrl, err := url.Parse(s.Cfg.Export.MairListUrl)
+	if err != nil {
+		return err
+	}
+	mairListUrl.Path = path.Join(mairListUrl.Path, "/execute")
+	cmd := url.Values{}
+	cmd.Set("command", fmt.Sprintf("PLAYLIST 1 APPEND %v", fileName))
+	req, _ := http.NewRequest("POST", mairListUrl.String(), strings.NewReader(cmd.Encode()))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.SetBasicAuth(s.Cfg.Export.MairListUser, s.Cfg.Export.MairListPassword)
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode == 404 {
+		err := errors.New("url not found")
+		return err
+	}
+	defer resp.Body.Close()
+	b, _ := io.ReadAll(resp.Body)
+	logger.Info(fmt.Sprintf("Response: %v", string(b)))
+	return nil
 }
