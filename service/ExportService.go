@@ -203,9 +203,12 @@ func (s DefaultExportService) ExportToPlayout(hour string) {
 	if size > 0 {
 		logger.Info(fmt.Sprintf("Exporting %v elements to mAirList for slot %v:00", size, hour))
 		if s.Cfg.Misc.TestCrawl {
-			exportFileName = "Test_" + hour + ".txt"
+			exportFileName = "Test_" + hour + ".tpi"
 		} else {
-			exportFileName = "next.tpi"
+			year := fmt.Sprintf("%d", time.Now().Year())
+			month := fmt.Sprintf("%02d", time.Now().Month())
+			day := fmt.Sprintf("%02d", time.Now().Day())
+			exportFileName = year + "-" + month + "-" + day + "-" + hour + ".tpi"
 		}
 		s.Cfg.RunTime.LastExportFileName = exportFileName
 		s.Cfg.RunTime.LastExportDate = time.Now()
