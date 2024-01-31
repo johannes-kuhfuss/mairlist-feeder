@@ -91,7 +91,13 @@ func (s DefaultExportService) ExportForHour(hour string) {
 					fileExportList.Files[file.StartTime] = file
 				}
 			}
-			s.ExportToPlayout(hour)
+			exportPath, err := s.ExportToPlayout(hour)
+			if s.Cfg.Export.AppendPlaylist && err == nil {
+				err := s.AppendPlaylist(exportPath)
+				if err != nil {
+					logger.Error("Error appending playlist", err)
+				}
+			}
 			logger.Info(fmt.Sprintf("Finished exporting for timeslot %v:00 ...", hour))
 		} else {
 			logger.Info(fmt.Sprintf("No files to export for timeslot %v:00 ...", hour))
@@ -206,7 +212,7 @@ func (s DefaultExportService) ExportToCsv() {
 	}
 }
 
-func (s DefaultExportService) ExportToPlayout(hour string) {
+func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string, err error) {
 	// write export list ot mAirlist-compatible file
 	// Documentation: https://wiki.mairlist.com/reference:text_playlist_import_format_specification
 	// Tab separated
@@ -238,6 +244,7 @@ func (s DefaultExportService) ExportToPlayout(hour string) {
 		dataWriter := bufio.NewWriter(exportFile)
 		if err != nil {
 			logger.Error("Error when creating playlist file for mAirlist: ", err)
+			return "", err
 		} else {
 			for time, file := range fileExportList.Files {
 				expLine := fmt.Sprintf("%v\tH\tF\t%v\n", time, file.Path)
@@ -250,19 +257,19 @@ func (s DefaultExportService) ExportToPlayout(hour string) {
 			}
 			dataWriter.Flush()
 			defer exportFile.Close()
-			if s.Cfg.Export.AppendPlaylist {
-				err := s.AppendPlaylist(exportPath)
-				if err != nil {
-					logger.Error("Error appending playlist", err)
-				}
-			}
+			return exportPath, nil
 		}
 	} else {
 		logger.Info(fmt.Sprintf("No elements to export for slot %v:00.", hour))
+		return "", nil
 	}
 }
 
 func (s DefaultExportService) AppendPlaylist(fileName string) error {
+	// POST to http://<server>:9300/execute
+	// Basic Auth
+	// Body is Form URL encoded
+	// command = PLAYLIST 1 APPEND <filename>
 	mairListUrl, err := url.Parse(s.Cfg.Export.MairListUrl)
 	if err != nil {
 		return err
@@ -283,6 +290,8 @@ func (s DefaultExportService) AppendPlaylist(fileName string) error {
 	}
 	defer resp.Body.Close()
 	b, _ := io.ReadAll(resp.Body)
-	logger.Info(fmt.Sprintf("Response: %v", string(b)))
-	return nil
+	if resp.StatusCode == 200 && string(b) == "\"ok\"" {
+		return nil
+	}
+	return errors.New(string(b))
 }
