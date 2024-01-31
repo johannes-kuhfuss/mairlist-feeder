@@ -1,1 +1,2 @@
-Check out mAirList API instead of / in addition to exporting to TPI file
+Add list of jingle elements to playlist from DB
+Pick one at random
