@@ -35,6 +35,7 @@ var (
 	crawlService   service.DefaultCrawlService
 	cleanService   service.DefaultCleanService
 	exportService  service.DefaultExportService
+	calCmsService  service.CalCmsService
 	bgJobs         *cron.Cron
 )
 
@@ -53,6 +54,7 @@ func StartApp() {
 	RegisterForOsSignals()
 	scheduleBgJobs()
 	go startServer()
+	calCmsService.Poll()
 	crawlService.Crawl()
 
 	<-appEnd
@@ -125,6 +127,7 @@ func wireApp() {
 	crawlService = service.NewCrawlService(&cfg, &fileRepo)
 	cleanService = service.NewCleanService(&cfg, &fileRepo)
 	exportService = service.NewExportService(&cfg, &fileRepo)
+	calCmsService = service.NewCalCmsService(&cfg, &fileRepo)
 	statsUiHandler = handlers.NewStatsUiHandler(&cfg, &fileRepo, &crawlService, &exportService, &cleanService)
 }
 
@@ -144,9 +147,12 @@ func RegisterForOsSignals() {
 func scheduleBgJobs() {
 	logger.Info("Scheduling jobs...")
 	crawlCycle := "@every " + strconv.Itoa(cfg.Crawl.CrawlCycleMin) + "m"
+	calCmscycle := "@every " + strconv.Itoa(cfg.CalCms.PollCycleMin) + "m"
 	bgJobs = cron.New()
 	// Crawl every x minutes
 	bgJobs.AddFunc(crawlCycle, crawlService.Crawl)
+	// Query calCms every x minutes
+	bgJobs.AddFunc(calCmscycle, calCmsService.Poll)
 	// Clean 02:03 local time
 	bgJobs.AddFunc("0 3 2 * * *", cleanService.Clean)
 	// Export every hour, 10 minutes to the hour

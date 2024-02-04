@@ -57,12 +57,12 @@ func NewCalCmsService(cfg *config.AppConfig, repo *repositories.DefaultFileRepos
 	}
 }
 
-func (s DefaultCalCmsService) Poll() error {
+func (s DefaultCalCmsService) Poll() {
 	if s.Cfg.CalCms.QueryCalCms {
 		calUrl, err := url.Parse(s.Cfg.CalCms.CmsUrl)
 		if err != nil {
 			logger.Error("Cannot parse CalCms Url", err)
-			return err
+			return
 		}
 		query := url.Values{}
 		query.Add("date", time.Now().Format("2006-01-02"))
@@ -71,30 +71,30 @@ func (s DefaultCalCmsService) Poll() error {
 		req, err := http.NewRequest("GET", calUrl.String(), nil)
 		if err != nil {
 			logger.Error("Cannot build CalCms http request", err)
-			return err
+			return
 		}
 		resp, err := httpCalClient.Do(req)
 		if err != nil {
 			logger.Error("Cannot execute CalCms http request", err)
-			return err
+			return
 		}
 		defer resp.Body.Close()
 		bData, err := io.ReadAll(resp.Body)
 		if err != nil {
 			logger.Error("Cannot read response data from CalCms http request", err)
-			return err
+			return
 		}
 		calCmsPgm.Lock()
 		err = json.Unmarshal(bData, &calCmsPgm.data)
 		calCmsPgm.Unlock()
 		if err != nil {
 			logger.Error("Cannot convert CalCms response data to Json", err)
-			return err
+			return
 		}
-		return nil
+		return
 	} else {
 		logger.Warn("CalCms query not enabled in configuration. Not querying.")
-		return nil
+		return
 	}
 }
 
