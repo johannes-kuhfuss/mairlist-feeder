@@ -31,26 +31,26 @@ type DefaultExportService struct {
 
 var (
 	fileExportList domain.SafeFileList
-	httpTr         http.Transport
-	httpClient     http.Client
+	httpExTr       http.Transport
+	httpExClient   http.Client
 )
 
-func InitHttpClient() {
-	httpTr = http.Transport{
+func InitHttpExClient() {
+	httpExTr = http.Transport{
 		DisableKeepAlives:  false,
 		DisableCompression: false,
 		MaxIdleConns:       0,
 		IdleConnTimeout:    0,
 	}
-	httpClient = http.Client{
-		Transport: &httpTr,
+	httpExClient = http.Client{
+		Transport: &httpExTr,
 		Timeout:   5 * time.Second,
 	}
 }
 
 func NewExportService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository) DefaultExportService {
 	fileExportList.Files = make(map[string]domain.FileInfo)
-	InitHttpClient()
+	InitHttpExClient()
 	return DefaultExportService{
 		Cfg:  cfg,
 		Repo: repo,
@@ -309,7 +309,7 @@ func (s DefaultExportService) AppendPlaylist(fileName string) error {
 	if err != nil {
 		return err
 	}
-	resp, err := httpClient.Do(req)
+	resp, err := httpExClient.Do(req)
 	if err != nil {
 		return err
 	}

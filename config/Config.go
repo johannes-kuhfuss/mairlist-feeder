@@ -48,6 +48,11 @@ type AppConfig struct {
 		PrependJingle       bool     `envconfig:"PREPEND_JINGLE" default:"false"`
 		JingleIds           []string `envconfig:"JINGLE_IDS"`
 	}
+	CalCms struct {
+		QueryCalCms bool   `envconfig:"QUERY_CALCMS" default:"false"`
+		CmsUrl      string `envconfig:"CALCMS_URL" default:"https://programm.coloradio.org/agenda/events.cgi"`
+		Template    string `envconfig:"CALCMS_TEMPLATE" default:"event.json-p"`
+	}
 	RunTime struct {
 		Router             *gin.Engine
 		ListenAddr         string
