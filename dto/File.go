@@ -18,6 +18,7 @@ type FileResp struct {
 	ScanTime      string
 	FolderDate    string
 	RuleMatched   string
+	EventId       string
 }
 
 func GetFiles(repo *repositories.DefaultFileRepository) []FileResp {
@@ -38,6 +39,7 @@ func GetFiles(repo *repositories.DefaultFileRepository) []FileResp {
 				ScanTime:      file.ScanTime.Format("2006-01-02 15:04:05 -0700"),
 				FolderDate:    file.FolderDate,
 				RuleMatched:   file.RuleMatched,
+				EventId:       strconv.Itoa(file.EventId),
 			}
 			if dta.StartTime == "" {
 				dta.StartTime = "N/A"

@@ -19,6 +19,7 @@
                           <th scope="col">Scan Time</th>
                           <th scope="col">Folder Date</th>
                           <th scope="col">Rule Matched</th>
+                          <th scope="col">EventId</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -33,6 +34,7 @@
                           <td>{{ .ScanTime }}</td>
                           <td>{{ .FolderDate }}</td>
                           <td>{{ .RuleMatched }}</td>
+                          <td>{{ .EventId }}</td>
                         </tr>
                         {{ end }}
                     </tbody>
