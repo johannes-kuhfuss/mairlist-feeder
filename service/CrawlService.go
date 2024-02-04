@@ -99,6 +99,7 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string)
 				rawFolder := strings.Trim(filepath.Dir(srcPath), rootFolder)[0:10]
 				fi.FolderDate = strings.Replace(rawFolder, "\\", "-", -1)
 				fi.InfoExtracted = false
+				fi.EventId = s.parseEventId(srcPath)
 				fileCount++
 				s.Repo.Store(fi)
 				if s.Cfg.Misc.TestCrawl {
@@ -112,6 +113,21 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string)
 	} else {
 		return fileCount, err
 	}
+}
+
+func (s DefaultCrawlService) parseEventId(srcPath string) int {
+	fileName := filepath.Base(srcPath)
+	idExp := regexp.MustCompile(`-id\d+-`)
+	if idExp.MatchString(fileName) {
+		idRawStr := idExp.FindString(fileName)
+		l := len(idRawStr)
+		idRaw := idRawStr[3 : l-1]
+		id, err := strconv.Atoi(idRaw)
+		if err == nil {
+			return id
+		}
+	}
+	return 0
 }
 
 func (s DefaultCrawlService) extractFileInfo() (int, error) {

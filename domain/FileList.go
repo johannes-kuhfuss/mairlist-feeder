@@ -16,6 +16,7 @@ type FileInfo struct {
 	ScanTime      time.Time
 	FolderDate    string
 	RuleMatched   string
+	EventId       int
 }
 
 type FileList []FileInfo
