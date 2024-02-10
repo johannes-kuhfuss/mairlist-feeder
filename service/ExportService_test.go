@@ -30,7 +30,7 @@ func setupTest(t *testing.T) func() {
 func Test_buildHttpRequest_EmptyUrl_ReturnsError(t *testing.T) {
 	tearDown := setupTest(t)
 	defer tearDown()
-	cfgA.Export.MairListUrl = ""
+	cfg.Export.MairListUrl = ""
 
 	req, err := exportService.buildHttpRequest("test")
 
@@ -42,9 +42,9 @@ func Test_buildHttpRequest_EmptyUrl_ReturnsError(t *testing.T) {
 func Test_buildHttpRequest_WithUrl_ReturnsRequest(t *testing.T) {
 	tearDown := setupTest(t)
 	defer tearDown()
-	cfgA.Export.MairListUrl = "http://localhost:9300/"
-	cfgA.Export.MairListUser = "test"
-	cfgA.Export.MairListPassword = "test"
+	cfg.Export.MairListUrl = "http://localhost:9300/"
+	cfg.Export.MairListUser = "test"
+	cfg.Export.MairListPassword = "test"
 
 	req, err := exportService.buildHttpRequest("test")
 

@@ -14,7 +14,7 @@ var (
 
 func setupTestCrawl(t *testing.T) func() {
 	config.InitConfig(config.EnvFile, &cfgCrawl)
-	crawlSvc = NewCrawlService(&cfgCrawl, nil)
+	crawlSvc = NewCrawlService(&cfgCrawl, nil, nil)
 	return func() {
 	}
 }

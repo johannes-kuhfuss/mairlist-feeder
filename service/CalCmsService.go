@@ -19,7 +19,7 @@ import (
 )
 
 type CalCmsService interface {
-	Poll()
+	Query()
 }
 
 type DefaultCalCmsService struct {
@@ -57,7 +57,7 @@ func NewCalCmsService(cfg *config.AppConfig, repo *repositories.DefaultFileRepos
 	}
 }
 
-func (s DefaultCalCmsService) Poll() {
+func (s DefaultCalCmsService) Query() {
 	if s.Cfg.CalCms.QueryCalCms {
 		calUrl, err := url.Parse(s.Cfg.CalCms.CmsUrl)
 		if err != nil {
@@ -91,11 +91,21 @@ func (s DefaultCalCmsService) Poll() {
 			logger.Error("Cannot convert CalCms response data to Json", err)
 			return
 		}
+		s.EnrichFileInformation()
 		return
 	} else {
 		logger.Warn("CalCms query not enabled in configuration. Not querying.")
 		return
 	}
+}
+
+func (s DefaultCalCmsService) EnrichFileInformation() {
+	// Get all entries from file list
+	// for every entry that has an Id
+	// extract information entry from calcms
+	// compare start time, error if different
+	// check fromcalcms = true, warn if not set
+	// add end time
 }
 
 func (s DefaultCalCmsService) GetCalCmsDataForHour(hour string) ([]dto.CalCmsEntry, error) {
@@ -124,15 +134,22 @@ func (s DefaultCalCmsService) convertToEntry(event domain.CalCmsEvent) (dto.CalC
 	entry.Title = event.FullTitle
 	entry.StartTime, err1 = time.Parse("15:04", event.StartTimeName)
 	if err1 != nil {
-		logger.Info(fmt.Sprintf("Could not parse %v into time", event.StartTimeName))
+		logger.Error(fmt.Sprintf("Could not parse %v into time", event.StartTimeName), err1)
+		return entry, err1
 	}
 	entry.EndTime, err2 = time.Parse("15:04", event.EndTimeName)
 	if err2 != nil {
-		logger.Info(fmt.Sprintf("Could not parse %v into time", event.StartTimeName))
+		logger.Error(fmt.Sprintf("Could not parse %v into time", event.EndTimeName), err2)
+		return entry, err2
 	}
 	if (err1 == nil) && (err2 == nil) {
 		entry.Duration = entry.EndTime.Sub(entry.StartTime)
 	}
-	entry.EventId, _ = strconv.Atoi(event.EventID)
+	id, err := strconv.Atoi(event.EventID)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Could not parse %v into time", event.EndTimeName), err)
+		return entry, err
+	}
+	entry.EventId = id
 	return entry, nil
 }

@@ -52,7 +52,6 @@ type AppConfig struct {
 		QueryCalCms  bool   `envconfig:"QUERY_CALCMS" default:"false"`
 		CmsUrl       string `envconfig:"CALCMS_URL" default:"https://programm.coloradio.org/agenda/events.cgi"`
 		Template     string `envconfig:"CALCMS_TEMPLATE" default:"event.json-p"`
-		PollCycleMin int    `envconfig:"CALCMS_POLL_CYCLE_MIN" default:"10"`
 	}
 	RunTime struct {
 		Router             *gin.Engine

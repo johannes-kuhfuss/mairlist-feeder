@@ -27,14 +27,16 @@ type CrawlService interface {
 }
 
 type DefaultCrawlService struct {
-	Cfg  *config.AppConfig
-	Repo *repositories.DefaultFileRepository
+	Cfg    *config.AppConfig
+	Repo   *repositories.DefaultFileRepository
+	CalSvc CalCmsService
 }
 
-func NewCrawlService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository) DefaultCrawlService {
+func NewCrawlService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository, calSvc CalCmsService) DefaultCrawlService {
 	return DefaultCrawlService{
-		Cfg:  cfg,
-		Repo: repo,
+		Cfg:    cfg,
+		Repo:   repo,
+		CalSvc: calSvc,
 	}
 }
 
@@ -48,6 +50,9 @@ func (s DefaultCrawlService) Crawl() {
 	} else {
 		s.Cfg.RunTime.CrawlRunning = true
 		s.CrawlRun()
+		if s.Cfg.CalCms.QueryCalCms {
+			s.CalSvc.Query()
+		}
 		s.Cfg.RunTime.CrawlRunning = false
 	}
 }
