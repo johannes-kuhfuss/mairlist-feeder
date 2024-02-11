@@ -17,6 +17,7 @@ type FileInfo struct {
 	FolderDate    string
 	RuleMatched   string
 	EventId       int
+	CalCmsTitle   string
 }
 
 type FileList []FileInfo

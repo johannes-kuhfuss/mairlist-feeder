@@ -85,4 +85,139 @@ func Test_convertToEntry_NoError_ReturnsEntry(t *testing.T) {
 	assert.EqualValues(t, 12345, res.EventId)
 }
 
+func Test_GetCalCmsDataForId_Empty_ReturnsEmptyList(t *testing.T) {
+	teardown := setupTestA(t)
+	defer teardown()
+	res, err := calCmsService.GetCalCmsDataForId(1)
+	assert.Nil(t, err)
+	assert.EqualValues(t, 0, len(res))
+}
 
+func Test_GetCalCmsDataForId_WrongData_ReturnsError(t *testing.T) {
+	var events []domain.CalCmsEvent
+	teardown := setupTestA(t)
+	defer teardown()
+
+	event := domain.CalCmsEvent{
+		FullTitle:     "Test",
+		StartTimeName: "11:00",
+		EndTimeName:   "CC:DD",
+		EventID:       "1",
+	}
+	events = append(events, event)
+	data := domain.CalCmsPgmData{
+		Events: events,
+	}
+	calCmsService.insertData(data)
+
+	res, err := calCmsService.GetCalCmsDataForId(1)
+	assert.NotNil(t, err)
+	assert.EqualValues(t, 0, len(res))
+	assert.EqualValues(t, "parsing time \"CC:DD\" as \"15:04\": cannot parse \"CC:DD\" as \"15\"", err.Error())
+}
+
+func Test_GetCalCmsDataForId_WrongId_ReturnsEmpty(t *testing.T) {
+	var events []domain.CalCmsEvent
+	teardown := setupTestA(t)
+	defer teardown()
+
+	event := domain.CalCmsEvent{
+		FullTitle:     "Test",
+		StartTimeName: "11:00",
+		EndTimeName:   "12:00",
+		EventID:       "2",
+	}
+	events = append(events, event)
+	data := domain.CalCmsPgmData{
+		Events: events,
+	}
+	calCmsService.insertData(data)
+
+	res, err := calCmsService.GetCalCmsDataForId(1)
+	assert.Nil(t, err)
+	assert.EqualValues(t, 0, len(res))
+}
+
+func Test_GetCalCmsDataForId_OneElement_ReturnsData(t *testing.T) {
+	var events []domain.CalCmsEvent
+	teardown := setupTestA(t)
+	defer teardown()
+
+	event := domain.CalCmsEvent{
+		FullTitle:     "Test",
+		StartTimeName: "11:00",
+		EndTimeName:   "12:00",
+		EventID:       "1",
+	}
+	events = append(events, event)
+	data := domain.CalCmsPgmData{
+		Events: events,
+	}
+	calCmsService.insertData(data)
+
+	res, err := calCmsService.GetCalCmsDataForId(1)
+	assert.Nil(t, err)
+	assert.EqualValues(t, 1, len(res))
+	assert.EqualValues(t, time.Duration(1*time.Hour), res[0].Duration)
+}
+
+func Test_GetCalCmsDataForId_TwoElements_ReturnsOne(t *testing.T) {
+	var events []domain.CalCmsEvent
+	teardown := setupTestA(t)
+	defer teardown()
+
+	event1 := domain.CalCmsEvent{
+		FullTitle:     "Test1",
+		StartTimeName: "11:00",
+		EndTimeName:   "12:00",
+		EventID:       "1",
+	}
+	event2 := domain.CalCmsEvent{
+		FullTitle:     "Test2",
+		StartTimeName: "13:00",
+		EndTimeName:   "15:00",
+		EventID:       "2",
+	}
+	events = append(events, event1)
+	events = append(events, event2)
+	data := domain.CalCmsPgmData{
+		Events: events,
+	}
+	calCmsService.insertData(data)
+
+	res, err := calCmsService.GetCalCmsDataForId(1)
+	assert.Nil(t, err)
+	assert.EqualValues(t, 1, len(res))
+	assert.EqualValues(t, time.Duration(1*time.Hour), res[0].Duration)
+}
+
+func Test_GetCalCmsDataForHour_Empty_ReturnsEmptyList(t *testing.T) {
+	teardown := setupTestA(t)
+	defer teardown()
+	res, err := calCmsService.GetCalCmsDataForHour("12:00")
+	assert.Nil(t, err)
+	assert.EqualValues(t, 0, len(res))
+}
+
+func Test_GetCalCmsDataForHour_OneElement_ReturnsData(t *testing.T) {
+	var events []domain.CalCmsEvent
+	teardown := setupTestA(t)
+	defer teardown()
+
+	event := domain.CalCmsEvent{
+		FullTitle:     "Test",
+		StartTimeName: "11:00",
+		EndTimeName:   "12:00",
+		EventID:       "1",
+	}
+	events = append(events, event)
+	data := domain.CalCmsPgmData{
+		Events: events,
+	}
+	calCmsService.insertData(data)
+
+	res, err := calCmsService.GetCalCmsDataForHour("11")
+	assert.Nil(t, err)
+	assert.EqualValues(t, 1, len(res))
+	assert.EqualValues(t, time.Duration(1*time.Hour), res[0].Duration)
+}
