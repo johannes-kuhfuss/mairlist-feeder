@@ -20,6 +20,8 @@
                           <th scope="col">Folder Date</th>
                           <th scope="col">Rule Matched</th>
                           <th scope="col">EventId</th>
+                          <th scope="col">CalCMS enriched</th>
+                          <th scope="col">CalCMS Title</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -35,6 +37,8 @@
                           <td>{{ .FolderDate }}</td>
                           <td>{{ .RuleMatched }}</td>
                           <td>{{ .EventId }}</td>
+                          <td>{{ .CalCmsInfo }}</td>
+                          <td>{{ .CalCmsTitle }}</td>
                         </tr>
                         {{ end }}
                     </tbody>

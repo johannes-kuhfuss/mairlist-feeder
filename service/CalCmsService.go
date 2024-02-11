@@ -126,6 +126,7 @@ func (s DefaultCalCmsService) EnrichFileInformation() {
 				}
 				newFile.EndTime = info.EndTime.Format("15:04")
 				newFile.CalCmsTitle = info.Title
+				newFile.CalCmsInfoExtracted = true
 				err = s.Repo.Store(newFile)
 				if err != nil {
 					logger.Error("Error updating information in file repository", err)

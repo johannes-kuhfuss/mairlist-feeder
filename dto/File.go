@@ -19,6 +19,8 @@ type FileResp struct {
 	FolderDate    string
 	RuleMatched   string
 	EventId       string
+	CalCmsInfo    string
+	CalCmsTitle   string
 }
 
 func GetFiles(repo *repositories.DefaultFileRepository) []FileResp {
@@ -40,6 +42,8 @@ func GetFiles(repo *repositories.DefaultFileRepository) []FileResp {
 				FolderDate:    file.FolderDate,
 				RuleMatched:   file.RuleMatched,
 				EventId:       strconv.Itoa(file.EventId),
+				CalCmsInfo:    strconv.FormatBool(file.CalCmsInfoExtracted),
+				CalCmsTitle:   file.CalCmsTitle,
 			}
 			if dta.StartTime == "" {
 				dta.StartTime = "N/A"
