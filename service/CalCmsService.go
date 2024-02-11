@@ -30,7 +30,7 @@ type DefaultCalCmsService struct {
 var (
 	httpCalTr     http.Transport
 	httpCalClient http.Client
-	calCmsPgm     struct {
+	CalCmsPgm     struct {
 		sync.RWMutex
 		data domain.CalCmsPgmData
 	}
@@ -58,9 +58,9 @@ func NewCalCmsService(cfg *config.AppConfig, repo *repositories.DefaultFileRepos
 }
 
 func (s DefaultCalCmsService) insertData(data domain.CalCmsPgmData) {
-	calCmsPgm.Lock()
-	calCmsPgm.data = data
-	calCmsPgm.Unlock()
+	CalCmsPgm.Lock()
+	CalCmsPgm.data = data
+	CalCmsPgm.Unlock()
 }
 
 func (s DefaultCalCmsService) Query() {
@@ -90,9 +90,9 @@ func (s DefaultCalCmsService) Query() {
 			logger.Error("Cannot read response data from CalCms http request", err)
 			return
 		}
-		calCmsPgm.Lock()
-		err = json.Unmarshal(bData, &calCmsPgm.data)
-		calCmsPgm.Unlock()
+		CalCmsPgm.Lock()
+		err = json.Unmarshal(bData, &CalCmsPgm.data)
+		CalCmsPgm.Unlock()
 		if err != nil {
 			logger.Error("Cannot convert CalCms response data to Json", err)
 			return
@@ -109,6 +109,7 @@ func (s DefaultCalCmsService) EnrichFileInformation() {
 	var (
 		newFile domain.FileInfo
 	)
+	logger.Info("Starting to add information from calCMS...")
 	files := s.Repo.GetAll()
 	if len(*files) > 0 {
 		for _, file := range *files {
@@ -124,6 +125,10 @@ func (s DefaultCalCmsService) EnrichFileInformation() {
 				}
 				if len(info) != 1 {
 					logger.Warn(fmt.Sprintf("Ambiguous information from calCMS. Found %v entries. Not adding information.", len(info)))
+					continue
+				}
+				if info[0].Live == 1 {
+					logger.Warn(fmt.Sprintf("%v, Id: %v is designated as live. Not adding information.", info[0].Title, info[0].EventId))
 					continue
 				}
 				if file.StartTime != info[0].StartTime.Format("15:04") {
@@ -144,14 +149,14 @@ func (s DefaultCalCmsService) EnrichFileInformation() {
 			}
 		}
 	}
-
+	logger.Info("Done adding information from calCMS.")
 }
 
 func (s DefaultCalCmsService) GetCalCmsDataForHour(hour string) ([]dto.CalCmsEntry, error) {
 	var entries []dto.CalCmsEntry
-	calCmsPgm.RLock()
-	events := calCmsPgm.data.Events
-	calCmsPgm.RUnlock()
+	CalCmsPgm.RLock()
+	events := CalCmsPgm.data.Events
+	CalCmsPgm.RUnlock()
 	if len(events) > 0 {
 		for _, event := range events {
 			if (event.Live == 0) && (strings.HasPrefix(event.StartTimeName, hour)) {
@@ -167,12 +172,12 @@ func (s DefaultCalCmsService) GetCalCmsDataForHour(hour string) ([]dto.CalCmsEnt
 
 func (s DefaultCalCmsService) GetCalCmsDataForId(id int) ([]dto.CalCmsEntry, error) {
 	var entries []dto.CalCmsEntry
-	calCmsPgm.RLock()
-	events := calCmsPgm.data.Events
-	calCmsPgm.RUnlock()
+	CalCmsPgm.RLock()
+	events := CalCmsPgm.data.Events
+	CalCmsPgm.RUnlock()
 	if len(events) > 0 {
 		for _, event := range events {
-			if (event.Live == 0) && (event.EventID == strconv.Itoa(id)) {
+			if event.EventID == strconv.Itoa(id) {
 				entry, err := s.convertToEntry(event)
 				if err == nil {
 					entries = append(entries, entry)
@@ -210,5 +215,6 @@ func (s DefaultCalCmsService) convertToEntry(event domain.CalCmsEvent) (dto.CalC
 		return entry, err
 	}
 	entry.EventId = id
+	entry.Live = event.Live
 	return entry, nil
 }
