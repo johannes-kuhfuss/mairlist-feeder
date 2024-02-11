@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -114,34 +115,17 @@ func (s DefaultCalCmsService) EnrichFileInformation() {
 	if len(*files) > 0 {
 		for _, file := range *files {
 			if file.EventId != 0 {
-				info, err := s.GetCalCmsDataForId(file.EventId)
+				info, err := s.checkCalCmsData(file)
 				if err != nil {
-					logger.Error("Error retrieving calCMS info: ", err)
 					continue
 				}
-				if len(info) == 0 {
-					logger.Warn(fmt.Sprintf("No information from calCMS for Id %v", file.EventId))
-					continue
-				}
-				if len(info) != 1 {
-					logger.Warn(fmt.Sprintf("Ambiguous information from calCMS. Found %v entries. Not adding information.", len(info)))
-					continue
-				}
-				if info[0].Live == 1 {
-					logger.Warn(fmt.Sprintf("%v, Id: %v is designated as live. Not adding information.", info[0].Title, info[0].EventId))
-					continue
-				}
-				if file.StartTime != info[0].StartTime.Format("15:04") {
-					logger.Warn(fmt.Sprintf("Start times differ. File: %v, calCMS: %v. Not adding information.", file.StartTime, info[0].StartTime.Format("15:04")))
-					continue
-				}
+				newFile = file
 				if !file.FromCalCMS {
 					logger.Warn("File not designated as \"From CalCMS\". This should not happen.")
 					newFile.FromCalCMS = true
 				}
-				newFile = file
-				newFile.EndTime = info[0].EndTime.Format("15:04")
-				newFile.CalCmsTitle = info[0].Title
+				newFile.EndTime = info.EndTime.Format("15:04")
+				newFile.CalCmsTitle = info.Title
 				err = s.Repo.Store(newFile)
 				if err != nil {
 					logger.Error("Error updating information in file repository", err)
@@ -150,6 +134,31 @@ func (s DefaultCalCmsService) EnrichFileInformation() {
 		}
 	}
 	logger.Info("Done adding information from calCMS.")
+}
+
+func (s DefaultCalCmsService) checkCalCmsData(file domain.FileInfo) (*dto.CalCmsEntry, error) {
+	info, err := s.GetCalCmsDataForId(file.EventId)
+	if err != nil {
+		logger.Error("Error retrieving calCMS info: ", err)
+		return nil, err
+	}
+	if len(info) == 0 {
+		logger.Warn(fmt.Sprintf("No information from calCMS for Id %v", file.EventId))
+		return nil, errors.New("no such id in calCMS")
+	}
+	if len(info) != 1 {
+		logger.Warn(fmt.Sprintf("Ambiguous information from calCMS. Found %v entries. Not adding information.", len(info)))
+		return nil, errors.New("multiple matches in calCMS")
+	}
+	if info[0].Live == 1 {
+		logger.Warn(fmt.Sprintf("%v, Id: %v is designated as live. Not adding information.", info[0].Title, info[0].EventId))
+		return nil, errors.New("event is live in calCMS")
+	}
+	if file.StartTime != info[0].StartTime.Format("15:04") {
+		logger.Warn(fmt.Sprintf("Start times differ. File: %v, calCMS: %v. Not adding information.", file.StartTime, info[0].StartTime.Format("15:04")))
+		return nil, errors.New("start time difference between file and calCMS")
+	}
+	return &info[0], nil
 }
 
 func (s DefaultCalCmsService) GetCalCmsDataForHour(hour string) ([]dto.CalCmsEntry, error) {

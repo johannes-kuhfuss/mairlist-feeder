@@ -221,3 +221,235 @@ func Test_GetCalCmsDataForHour_OneElement_ReturnsData(t *testing.T) {
 	assert.EqualValues(t, 1, len(res))
 	assert.EqualValues(t, time.Duration(1*time.Hour), res[0].Duration)
 }
+
+func Test_checkCalCmsData_WrongData_ReturnsError(t *testing.T) {
+	var events []domain.CalCmsEvent
+	teardown := setupTestA(t)
+	defer teardown()
+
+	event := domain.CalCmsEvent{
+		FullTitle:     "Test",
+		StartTimeName: "11:00",
+		EndTimeName:   "CC:DD",
+		EventID:       "1",
+	}
+	events = append(events, event)
+	data := domain.CalCmsPgmData{
+		Events: events,
+	}
+	calCmsService.insertData(data)
+	fi := domain.FileInfo{
+		Path:          "",
+		ModTime:       time.Time{},
+		Duration:      0,
+		StartTime:     "",
+		EndTime:       "",
+		FromCalCMS:    false,
+		InfoExtracted: false,
+		ScanTime:      time.Time{},
+		FolderDate:    "",
+		RuleMatched:   "",
+		EventId:       1,
+		CalCmsTitle:   "",
+	}
+
+	_, err := calCmsService.checkCalCmsData(fi)
+
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "parsing time \"CC:DD\" as \"15:04\": cannot parse \"CC:DD\" as \"15\"", err.Error())
+}
+
+func Test_checkCalCmsData_NoMatchingData_ReturnsError(t *testing.T) {
+	var events []domain.CalCmsEvent
+	teardown := setupTestA(t)
+	defer teardown()
+
+	event := domain.CalCmsEvent{
+		FullTitle:     "Test",
+		StartTimeName: "11:00",
+		EndTimeName:   "12:00",
+		EventID:       "1",
+	}
+	events = append(events, event)
+	data := domain.CalCmsPgmData{
+		Events: events,
+	}
+	calCmsService.insertData(data)
+	fi := domain.FileInfo{
+		Path:          "",
+		ModTime:       time.Time{},
+		Duration:      0,
+		StartTime:     "",
+		EndTime:       "",
+		FromCalCMS:    false,
+		InfoExtracted: false,
+		ScanTime:      time.Time{},
+		FolderDate:    "",
+		RuleMatched:   "",
+		EventId:       0,
+		CalCmsTitle:   "",
+	}
+
+	_, err := calCmsService.checkCalCmsData(fi)
+
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "no such id in calCMS", err.Error())
+}
+
+func Test_checkCalCmsData_DoubleMatch_ReturnsError(t *testing.T) {
+	var events []domain.CalCmsEvent
+	teardown := setupTestA(t)
+	defer teardown()
+
+	event1 := domain.CalCmsEvent{
+		FullTitle:     "Test",
+		StartTimeName: "11:00",
+		EndTimeName:   "12:00",
+		EventID:       "1",
+	}
+	event2 := domain.CalCmsEvent{
+		FullTitle:     "Test",
+		StartTimeName: "12:00",
+		EndTimeName:   "13:00",
+		EventID:       "1",
+	}
+	events = append(events, event1)
+	events = append(events, event2)
+	data := domain.CalCmsPgmData{
+		Events: events,
+	}
+	calCmsService.insertData(data)
+	fi := domain.FileInfo{
+		Path:          "",
+		ModTime:       time.Time{},
+		Duration:      0,
+		StartTime:     "",
+		EndTime:       "",
+		FromCalCMS:    false,
+		InfoExtracted: false,
+		ScanTime:      time.Time{},
+		FolderDate:    "",
+		RuleMatched:   "",
+		EventId:       1,
+		CalCmsTitle:   "",
+	}
+
+	_, err := calCmsService.checkCalCmsData(fi)
+
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "multiple matches in calCMS", err.Error())
+}
+
+func Test_checkCalCmsData_IsLive_ReturnsError(t *testing.T) {
+	var events []domain.CalCmsEvent
+	teardown := setupTestA(t)
+	defer teardown()
+
+	event := domain.CalCmsEvent{
+		FullTitle:     "Test",
+		StartTimeName: "11:00",
+		EndTimeName:   "12:00",
+		EventID:       "1",
+		Live:          1,
+	}
+	events = append(events, event)
+	data := domain.CalCmsPgmData{
+		Events: events,
+	}
+	calCmsService.insertData(data)
+	fi := domain.FileInfo{
+		Path:          "",
+		ModTime:       time.Time{},
+		Duration:      0,
+		StartTime:     "",
+		EndTime:       "",
+		FromCalCMS:    false,
+		InfoExtracted: false,
+		ScanTime:      time.Time{},
+		FolderDate:    "",
+		RuleMatched:   "",
+		EventId:       1,
+		CalCmsTitle:   "",
+	}
+
+	_, err := calCmsService.checkCalCmsData(fi)
+
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "event is live in calCMS", err.Error())
+}
+
+func Test_checkCalCmsData_StartTimeDiff_ReturnsError(t *testing.T) {
+	var events []domain.CalCmsEvent
+	teardown := setupTestA(t)
+	defer teardown()
+
+	event := domain.CalCmsEvent{
+		FullTitle:     "Test",
+		StartTimeName: "11:00",
+		EndTimeName:   "12:00",
+		EventID:       "1",
+	}
+	events = append(events, event)
+	data := domain.CalCmsPgmData{
+		Events: events,
+	}
+	calCmsService.insertData(data)
+	fi := domain.FileInfo{
+		Path:          "",
+		ModTime:       time.Time{},
+		Duration:      0,
+		StartTime:     "13:00",
+		EndTime:       "",
+		FromCalCMS:    false,
+		InfoExtracted: false,
+		ScanTime:      time.Time{},
+		FolderDate:    "",
+		RuleMatched:   "",
+		EventId:       1,
+		CalCmsTitle:   "",
+	}
+
+	_, err := calCmsService.checkCalCmsData(fi)
+
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "start time difference between file and calCMS", err.Error())
+}
+
+func Test_checkCalCmsData_DataOk_ReturnsData(t *testing.T) {
+	var events []domain.CalCmsEvent
+	teardown := setupTestA(t)
+	defer teardown()
+
+	event := domain.CalCmsEvent{
+		FullTitle:     "Test",
+		StartTimeName: "11:00",
+		EndTimeName:   "12:00",
+		EventID:       "1",
+	}
+	events = append(events, event)
+	data := domain.CalCmsPgmData{
+		Events: events,
+	}
+	calCmsService.insertData(data)
+	fi := domain.FileInfo{
+		Path:          "",
+		ModTime:       time.Time{},
+		Duration:      0,
+		StartTime:     "11:00",
+		EndTime:       "",
+		FromCalCMS:    false,
+		InfoExtracted: false,
+		ScanTime:      time.Time{},
+		FolderDate:    "",
+		RuleMatched:   "",
+		EventId:       1,
+		CalCmsTitle:   "",
+	}
+
+	res, err := calCmsService.checkCalCmsData(fi)
+
+	assert.Nil(t, err)
+	assert.EqualValues(t, event.FullTitle, res.Title)
+	assert.EqualValues(t, event.StartTimeName, res.StartTime.Format("15:04"))
+	assert.EqualValues(t, event.EndTimeName, res.EndTime.Format("15:04"))
+}
