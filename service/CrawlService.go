@@ -173,7 +173,7 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 						timeData = folder1Exp.FindString(folderName)
 						newInfo.FromCalCMS = true
 						newInfo.StartTime = timeData[1:3] + ":" + timeData[4:6]
-						newInfo.RuleMatched = "HH-MM folder name rule (calcms)"
+						newInfo.RuleMatched = "folder HH-MM (calCMS)"
 					}
 				// Condition: start time and end time is encoded in folder name: "/HHMM-HHMM"
 				case folder2Exp.MatchString(folderName):
@@ -183,7 +183,7 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 						newInfo.FromCalCMS = true
 						newInfo.StartTime = timeData[1:3] + ":" + timeData[3:5]
 						newInfo.EndTime = timeData[6:8] + ":" + timeData[8:10]
-						newInfo.RuleMatched = "HHMM-HHMM folder name rule"
+						newInfo.RuleMatched = "folder HHMM-HHMM"
 					}
 				// Condition: start time (hour) and end time (hour) is encoded in folder name: "HH bis HH"
 				case folder3Exp.MatchString(folderName):
@@ -193,7 +193,7 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 						newInfo.FromCalCMS = true
 						newInfo.StartTime = timeData[1:3] + ":00"
 						newInfo.EndTime = timeData[6:8] + ":00"
-						newInfo.RuleMatched = "HH bis HH folder name rule"
+						newInfo.RuleMatched = "folder HH bis HH"
 					}
 				// Condition: start time and end time is encoded in file name in the form "HHMM-HHMM_"
 				case file1Exp.MatchString(fileName):
@@ -202,7 +202,7 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 						timeData = strings.Replace(timeData, " ", "", -1)
 						newInfo.StartTime = timeData[0:2] + ":" + timeData[2:4]
 						newInfo.EndTime = timeData[5:7] + ":" + timeData[7:9]
-						newInfo.RuleMatched = "HHMM-HHMM file name rule"
+						newInfo.RuleMatched = "file HHMM-HHMM"
 					}
 				// Condition: start time (hour) and end time (hour) is encoded in file name in the form "HH-HH_Uhr"
 				case file2Exp.MatchString(fileName):
@@ -211,14 +211,14 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 						timeData = strings.Replace(timeData, " ", "", -1)
 						newInfo.StartTime = timeData[0:2] + ":00"
 						newInfo.EndTime = timeData[3:5] + ":00"
-						newInfo.RuleMatched = "HH-HH Uhr file name rule"
+						newInfo.RuleMatched = "file HH-HH Uhr"
 					}
 				// Condition: only start time is encoded in the file name in the form of "HHMM_" (beware of date matching!)
 				case file3Exp.MatchString(fileName):
 					{
 						timeData = file3Exp.FindString(fileName)
 						newInfo.StartTime = timeData[0:2] + ":" + timeData[2:4]
-						newInfo.RuleMatched = "HHMM_ file name rule"
+						newInfo.RuleMatched = "file HHMM_"
 					}
 				default:
 					{

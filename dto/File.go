@@ -32,13 +32,13 @@ func GetFiles(repo *repositories.DefaultFileRepository) []FileResp {
 		for _, file := range *files {
 			dta := FileResp{
 				Path:          file.Path,
-				ModTime:       file.ModTime.Format("2006-01-02 15:04:05 -0700"),
+				ModTime:       file.ModTime.Format("2006-01-02 15:04:05"),
 				Duration:      strconv.FormatFloat(math.Round(file.Duration/60), 'f', 1, 64),
 				StartTime:     file.StartTime,
 				EndTime:       file.EndTime,
 				FromCalCMS:    strconv.FormatBool(file.FromCalCMS),
 				InfoExtracted: strconv.FormatBool(file.InfoExtracted),
-				ScanTime:      file.ScanTime.Format("2006-01-02 15:04:05 -0700"),
+				ScanTime:      file.ScanTime.Format("2006-01-02 15:04:05"),
 				FolderDate:    file.FolderDate,
 				RuleMatched:   file.RuleMatched,
 				EventId:       strconv.Itoa(file.EventId),
