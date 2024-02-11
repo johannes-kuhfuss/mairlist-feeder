@@ -78,7 +78,7 @@ func (s DefaultExportService) ExportForHour(hour string) {
 			logger.Info(fmt.Sprintf("Starting export for timeslot %v:00 ...", hour))
 			s.checkTimeAndLenghth(files)
 			exportPath, err := s.ExportToPlayout(hour)
-			if s.Cfg.Export.AppendPlaylist && err == nil {
+			if s.Cfg.Export.AppendPlaylist && exportPath != "" && err == nil {
 				err := s.AppendPlaylist(exportPath)
 				if err != nil {
 					logger.Error("Error appending playlist", err)
