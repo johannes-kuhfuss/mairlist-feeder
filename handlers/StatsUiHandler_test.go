@@ -67,3 +67,63 @@ func Test_SwitchPage_Returns_Switch(t *testing.T) {
 	assert.EqualValues(t, http.StatusOK, recorder.Code)
 	assert.Nil(t, parseErr)
 }
+
+func Test_validateHour_HourEmpty_returnsNoError(t *testing.T) {
+	teardown := setupUiTest(t)
+	defer teardown()
+	err := validateHour("")
+	assert.Nil(t, err)
+}
+
+func Test_validateHour_InvalidHour_returnsError(t *testing.T) {
+	teardown := setupUiTest(t)
+	defer teardown()
+	err := validateHour("A")
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "could not parse hour", err.Message())
+	assert.EqualValues(t, 400, err.StatusCode())
+}
+
+func Test_validateHour_HourTooSmall_returnsError(t *testing.T) {
+	teardown := setupUiTest(t)
+	defer teardown()
+	err := validateHour("-1")
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "hour must be between 00 and 23", err.Message())
+	assert.EqualValues(t, 400, err.StatusCode())
+}
+
+func Test_validateHour_HourTooLarge_returnsError(t *testing.T) {
+	teardown := setupUiTest(t)
+	defer teardown()
+	err := validateHour("50")
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "hour must be between 00 and 23", err.Message())
+	assert.EqualValues(t, 400, err.StatusCode())
+}
+
+func Test_validateHour_ValidHour_returnsNoError(t *testing.T) {
+	teardown := setupUiTest(t)
+	defer teardown()
+	err := validateHour("2")
+	assert.Nil(t, err)
+}
+
+func Test_validateAction_UnkownAction_ReturnsError(t *testing.T) {
+	teardown := setupUiTest(t)
+	defer teardown()
+	err := validateAction("unknown")
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "unknown action", err.Message())
+	assert.EqualValues(t, 400, err.StatusCode())
+}
+
+func Test_validateAction_CorrectAction_ReturnsNoError(t *testing.T) {
+	teardown := setupUiTest(t)
+	defer teardown()
+	actions := []string{"crawl", "export", "clean", "csvexport", "importfromdisk", "exporttodisk"}
+	for _, action := range actions {
+		err := validateAction(action)
+		assert.Nil(t, err)
+	}
+}
