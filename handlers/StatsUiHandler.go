@@ -35,6 +35,7 @@ func NewStatsUiHandler(cfg *config.AppConfig, repo *repositories.DefaultFileRepo
 func (uh *StatsUiHandler) StatusPage(c *gin.Context) {
 	configData := dto.GetConfig(uh.Cfg)
 	c.HTML(http.StatusOK, "status.page.tmpl", gin.H{
+		"title":      "Status",
 		"configdata": configData,
 	})
 }
@@ -42,18 +43,23 @@ func (uh *StatsUiHandler) StatusPage(c *gin.Context) {
 func (uh *StatsUiHandler) FileListPage(c *gin.Context) {
 	files := dto.GetFiles(uh.Repo)
 	c.HTML(http.StatusOK, "filelist.page.tmpl", gin.H{
+		"title": "File List",
 		"files": files,
 	})
 }
 
 func (uh *StatsUiHandler) ActionPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "actions.page.tmpl", gin.H{
-		"data": nil,
+		"title": "Actions",
+		"data":  nil,
 	})
 }
 
 func (uh *StatsUiHandler) AboutPage(c *gin.Context) {
-	c.HTML(http.StatusOK, "about.page.tmpl", nil)
+	c.HTML(http.StatusOK, "about.page.tmpl", gin.H{
+		"title": "About",
+		"data":  nil,
+	})
 }
 
 func (uh *StatsUiHandler) ExecAction(c *gin.Context) {

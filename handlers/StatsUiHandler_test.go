@@ -4,15 +4,17 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
+	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/html"
 )
 
 var (
+	repo     repositories.DefaultFileRepository
 	uh       StatsUiHandler
 	cfg      config.AppConfig
 	router   *gin.Engine
@@ -20,7 +22,8 @@ var (
 )
 
 func setupUiTest(t *testing.T) func() {
-	uh = NewStatsUiHandler(&cfg, nil, nil, nil, nil)
+	repo = repositories.NewFileRepository(&cfg)
+	uh = NewStatsUiHandler(&cfg, &repo, nil, nil, nil)
 	router = gin.Default()
 	router.LoadHTMLGlob("../templates/*.tmpl")
 	recorder = httptest.NewRecorder()
@@ -33,39 +36,68 @@ func Test_StatusPage_Returns_Status(t *testing.T) {
 	teardown := setupUiTest(t)
 	defer teardown()
 	router.GET("/", uh.StatusPage)
-	request, _ := http.NewRequest(http.MethodGet, "/", nil)
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
 
 	router.ServeHTTP(recorder, request)
+	res := recorder.Result()
+	defer res.Body.Close()
+	data, err := io.ReadAll(res.Body)
+	containsTitle := strings.Contains(string(data), "<title>Status</title>")
 
-	_, parseErr := html.Parse(io.Reader(recorder.Body))
-	assert.EqualValues(t, http.StatusOK, recorder.Code)
-	assert.Nil(t, parseErr)
+	assert.EqualValues(t, http.StatusOK, res.StatusCode)
+	assert.Nil(t, err)
+	assert.True(t, containsTitle)
 }
 
 func Test_AboutPage_Returns_About(t *testing.T) {
 	teardown := setupUiTest(t)
 	defer teardown()
 	router.GET("/about", uh.AboutPage)
-	request, _ := http.NewRequest(http.MethodGet, "/about", nil)
+	request := httptest.NewRequest(http.MethodGet, "/about", nil)
 
 	router.ServeHTTP(recorder, request)
+	res := recorder.Result()
+	defer res.Body.Close()
+	data, err := io.ReadAll(res.Body)
+	containsTitle := strings.Contains(string(data), "<title>About</title>")
 
-	_, parseErr := html.Parse(io.Reader(recorder.Body))
-	assert.EqualValues(t, http.StatusOK, recorder.Code)
-	assert.Nil(t, parseErr)
+	assert.EqualValues(t, http.StatusOK, res.StatusCode)
+	assert.Nil(t, err)
+	assert.True(t, containsTitle)
 }
 
-func Test_SwitchPage_Returns_Switch(t *testing.T) {
+func Test_FileListPage_Returns_FileListPage(t *testing.T) {
 	teardown := setupUiTest(t)
 	defer teardown()
-	router.GET("/switch", uh.AboutPage)
-	request, _ := http.NewRequest(http.MethodGet, "/switch", nil)
+	router.GET("/filelist", uh.FileListPage)
+	request := httptest.NewRequest(http.MethodGet, "/filelist", nil)
 
 	router.ServeHTTP(recorder, request)
+	res := recorder.Result()
+	defer res.Body.Close()
+	data, err := io.ReadAll(res.Body)
+	containsTitle := strings.Contains(string(data), "<title>File List</title>")
 
-	_, parseErr := html.Parse(io.Reader(recorder.Body))
-	assert.EqualValues(t, http.StatusOK, recorder.Code)
-	assert.Nil(t, parseErr)
+	assert.EqualValues(t, http.StatusOK, res.StatusCode)
+	assert.Nil(t, err)
+	assert.True(t, containsTitle)
+}
+
+func Test_ActionPage_Returns_Action(t *testing.T) {
+	teardown := setupUiTest(t)
+	defer teardown()
+	router.GET("/actions", uh.ActionPage)
+	request := httptest.NewRequest(http.MethodGet, "/actions", nil)
+
+	router.ServeHTTP(recorder, request)
+	res := recorder.Result()
+	defer res.Body.Close()
+	data, err := io.ReadAll(res.Body)
+	containsTitle := strings.Contains(string(data), "<title>Actions</title>")
+
+	assert.EqualValues(t, http.StatusOK, res.StatusCode)
+	assert.Nil(t, err)
+	assert.True(t, containsTitle)
 }
 
 func Test_validateHour_HourEmpty_returnsNoError(t *testing.T) {

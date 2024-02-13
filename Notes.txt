@@ -1,2 +1,1 @@
-Add list of jingle elements to playlist from DB
-Pick one at random
+Sort filelist by start time
