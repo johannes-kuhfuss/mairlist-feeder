@@ -9,8 +9,8 @@ type FileInfo struct {
 	Path                string
 	ModTime             time.Time
 	Duration            float64
-	StartTime           string
-	EndTime             string
+	StartTime           time.Time
+	EndTime             time.Time
 	FromCalCMS          bool
 	InfoExtracted       bool
 	ScanTime            time.Time

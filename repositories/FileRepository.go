@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
@@ -85,7 +86,8 @@ func (fr DefaultFileRepository) GetForHour(hour string) *domain.FileList {
 	fileList.RLock()
 	defer fileList.RUnlock()
 	for _, file := range fileList.Files {
-		if (strings.HasPrefix(file.StartTime, hour)) && (file.FolderDate == folderDate) {
+		hi, _ := strconv.Atoi(hour)
+		if (file.StartTime.Hour() == hi) && (file.FolderDate == folderDate) {
 			list = append(list, file)
 		}
 	}

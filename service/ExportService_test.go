@@ -9,6 +9,7 @@ import (
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
+	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/stretchr/testify/assert"
 )
@@ -111,8 +112,8 @@ func Test_checkTime_noEndTime(t *testing.T) {
 func Test_checkTime_withEndTime(t *testing.T) {
 	fi := domain.FileInfo{
 		Duration:  3600,
-		StartTime: "14:00",
-		EndTime:   "15:00",
+		StartTime: helper.TimeFromHourAndMinute(14, 0),
+		EndTime:   helper.TimeFromHourAndMinute(15, 0),
 	}
 	ok, detail := checkTime(fi, 1.0, 1.0)
 

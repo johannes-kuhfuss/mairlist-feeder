@@ -72,7 +72,13 @@ func (s DefaultCalCmsService) Query() {
 			return
 		}
 		query := url.Values{}
-		query.Add("date", time.Now().Format("2006-01-02"))
+		if s.Cfg.Misc.TestCrawl {
+			date := strings.ReplaceAll(s.Cfg.Misc.TestDate, "/", "-")
+			query.Add("date", date)
+		} else {
+			query.Add("date", time.Now().Format("2006-01-02"))
+		}
+
 		query.Add("template", s.Cfg.CalCms.Template)
 		calUrl.RawQuery = query.Encode()
 		req, err := http.NewRequest("GET", calUrl.String(), nil)
@@ -112,7 +118,7 @@ func (s DefaultCalCmsService) EnrichFileInformation() {
 	)
 	logger.Info("Starting to add information from calCMS...")
 	files := s.Repo.GetAll()
-	if len(*files) > 0 {
+	if files != nil {
 		for _, file := range *files {
 			if file.EventId != 0 {
 				info, err := s.checkCalCmsData(file)
@@ -124,7 +130,7 @@ func (s DefaultCalCmsService) EnrichFileInformation() {
 					logger.Warn("File not designated as \"From CalCMS\". This should not happen.")
 					newFile.FromCalCMS = true
 				}
-				newFile.EndTime = info.EndTime.Format("15:04")
+				newFile.EndTime = info.EndTime
 				newFile.CalCmsTitle = info.Title
 				newFile.CalCmsInfoExtracted = true
 				err = s.Repo.Store(newFile)
@@ -155,8 +161,8 @@ func (s DefaultCalCmsService) checkCalCmsData(file domain.FileInfo) (*dto.CalCms
 		logger.Warn(fmt.Sprintf("%v, Id: %v is designated as live. Not adding information.", info[0].Title, info[0].EventId))
 		return nil, errors.New("event is live in calCMS")
 	}
-	if file.StartTime != info[0].StartTime.Format("15:04") {
-		logger.Warn(fmt.Sprintf("Start times differ. File: %v, calCMS: %v. Not adding information.", file.StartTime, info[0].StartTime.Format("15:04")))
+	if !file.StartTime.Equal(info[0].StartTime) {
+		logger.Warn(fmt.Sprintf("Start times differ. File: %v, calCMS: %v. Not adding information.", file.StartTime, info[0].StartTime))
 		return nil, errors.New("start time difference between file and calCMS")
 	}
 	return &info[0], nil
@@ -206,12 +212,14 @@ func (s DefaultCalCmsService) convertToEntry(event domain.CalCmsEvent) (dto.CalC
 		err1, err2 error
 	)
 	entry.Title = event.FullTitle
-	entry.StartTime, err1 = time.Parse("15:04", event.StartTimeName)
+	entry.StartTime, err1 = time.ParseInLocation("15:04", event.StartTimeName, time.Local)
+	entry.StartTime = entry.StartTime.AddDate(1, 0, 0)
 	if err1 != nil {
 		logger.Error(fmt.Sprintf("Could not parse %v into time", event.StartTimeName), err1)
 		return entry, err1
 	}
-	entry.EndTime, err2 = time.Parse("15:04", event.EndTimeName)
+	entry.EndTime, err2 = time.ParseInLocation("15:04", event.EndTimeName, time.Local)
+	entry.EndTime = entry.EndTime.AddDate(1, 0, 0)
 	if err2 != nil {
 		logger.Error(fmt.Sprintf("Could not parse %v into time", event.EndTimeName), err2)
 		return entry, err2

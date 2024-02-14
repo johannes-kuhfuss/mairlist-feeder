@@ -6,6 +6,7 @@ import (
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
+	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/stretchr/testify/assert"
 )
@@ -35,8 +36,8 @@ func Test_GetFiles_TwoFiles_ReturnsFileData(t *testing.T) {
 		Path:                "A",
 		ModTime:             time.Time{},
 		Duration:            3600,
-		StartTime:           "11:00",
-		EndTime:             "",
+		StartTime:           helper.TimeFromHourAndMinute(11, 0),
+		EndTime:             time.Time{},
 		FromCalCMS:          false,
 		InfoExtracted:       false,
 		ScanTime:            time.Time{},
@@ -50,8 +51,8 @@ func Test_GetFiles_TwoFiles_ReturnsFileData(t *testing.T) {
 		Path:                "B",
 		ModTime:             time.Time{},
 		Duration:            3600,
-		StartTime:           "",
-		EndTime:             "13:00",
+		StartTime:           time.Time{},
+		EndTime:             helper.TimeFromHourAndMinute(13, 0),
 		FromCalCMS:          false,
 		InfoExtracted:       false,
 		ScanTime:            time.Time{},

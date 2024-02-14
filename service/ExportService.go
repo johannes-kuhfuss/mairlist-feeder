@@ -97,16 +97,16 @@ func (s DefaultExportService) checkTimeAndLenghth(files *domain.FileList) {
 		lengthOk, info := checkTime(file, s.Cfg.Export.ShortDeltaAllowance, s.Cfg.Export.LongDeltaAllowance)
 		logger.Info(fmt.Sprintf("File: %v, ModDate: %v, IsOK: %v, Info: %v", file.Path, file.ModTime, lengthOk, info))
 		if lengthOk {
-			preFile, exists := fileExportList.Files[file.StartTime]
+			preFile, exists := fileExportList.Files[createIndexFromTime(file.StartTime)]
 			if exists {
 				if preFile.ModTime.After(file.ModTime) {
 					logger.Info(fmt.Sprintf("Existing file %v is newer than file %v. Not updating.", preFile.Path, file.Path))
 				} else {
 					logger.Info(fmt.Sprintf("Existing file %v is older than file %v. Updating.", preFile.Path, file.Path))
-					fileExportList.Files[file.StartTime] = file
+					fileExportList.Files[createIndexFromTime(file.StartTime)] = file
 				}
 			}
-			fileExportList.Files[file.StartTime] = file
+			fileExportList.Files[createIndexFromTime(file.StartTime)] = file
 		}
 	}
 }
@@ -117,6 +117,10 @@ func getNextHour() string {
 		nextHour = 0
 	}
 	return fmt.Sprintf("%02d", nextHour)
+}
+
+func createIndexFromTime(t1 time.Time) string {
+	return t1.Format("15:04")
 }
 
 func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengthOk bool, info string) {
@@ -154,10 +158,8 @@ func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengt
 		lengthSlot = "N/A"
 		slotDelta = 0.0
 	}
-	if fi.EndTime != "" {
-		start, _ := time.Parse("15:04", fi.StartTime)
-		end, _ := time.Parse("15:04", fi.EndTime)
-		plannedDur = end.Sub(start).Minutes()
+	if !fi.EndTime.IsZero() {
+		plannedDur = fi.EndTime.Sub(fi.StartTime).Minutes()
 		durDelta = roundedDurationMin - plannedDur
 		plannedAvail = true
 	} else {
@@ -192,15 +194,15 @@ func (s DefaultExportService) ExportToCsv() {
 			if files != nil {
 				_, _ = dataWriter.WriteString("Index;StartTime;EndTime;Path;RuleMatched;Length\n")
 				for idx, file := range *files {
-					if file.StartTime == "" {
+					if file.StartTime.IsZero() {
 						startTimeSlot = "N/A"
 					} else {
-						startTimeSlot = file.StartTime
+						startTimeSlot = file.StartTime.Format("15:04")
 					}
-					if file.EndTime == "" {
+					if file.EndTime.IsZero() {
 						endTimeSlot = "N/A"
 					} else {
-						endTimeSlot = file.EndTime
+						endTimeSlot = file.EndTime.Format("15:04")
 					}
 					infoString := fmt.Sprintf("%04d;%v;%v;%v;%v;%v\n", idx, startTimeSlot, endTimeSlot, file.Path, file.RuleMatched, math.Round(file.Duration))
 					_, _ = dataWriter.WriteString(infoString)
@@ -245,13 +247,13 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 					line = fmt.Sprintf("\tN\tF\t%v\n", file.Path)
 					err := s.writeLine(dataWriter, line)
 					if err == nil {
-						delete(fileExportList.Files, file.StartTime)
+						delete(fileExportList.Files, createIndexFromTime(file.StartTime))
 					}
 				} else {
 					line := fmt.Sprintf("%v\tH\tF\t%v\n", time, file.Path)
 					err := s.writeLine(dataWriter, line)
 					if err == nil {
-						delete(fileExportList.Files, file.StartTime)
+						delete(fileExportList.Files, createIndexFromTime(file.StartTime))
 					}
 				}
 			}

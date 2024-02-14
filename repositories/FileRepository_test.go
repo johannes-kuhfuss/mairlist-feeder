@@ -82,7 +82,7 @@ func TestAddAndGetAll(t *testing.T) {
 
 	fi1 := domain.FileInfo{
 		Path:     "A",
-		Duration: 1.0,
+		Duration: 2.0,
 	}
 	fi2 := domain.FileInfo{
 		Path:     "B",
@@ -99,8 +99,8 @@ func TestAddAndGetAll(t *testing.T) {
 	assert.NotNil(t, size)
 	assert.EqualValues(t, 2, size)
 	assert.EqualValues(t, 2, len(*res))
-	assert.EqualValues(t, "A", el1.Path)
-	assert.EqualValues(t, "B", el2.Path)
+	assert.EqualValues(t, 2.0, el1.Duration)
+	assert.EqualValues(t, 2.0, el2.Duration)
 }
 
 func TestDeleteEmpty(t *testing.T) {
@@ -147,7 +147,7 @@ func TestGetForHourNoResult(t *testing.T) {
 
 	fi := domain.FileInfo{
 		Path:       "A",
-		StartTime:  "12:00",
+		StartTime:  helper.TimeFromHourAndMinute(12, 0),
 		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
 	}
 	repo.Store(fi)
@@ -163,7 +163,7 @@ func TestGetForHourOneResult(t *testing.T) {
 
 	fi := domain.FileInfo{
 		Path:       "A",
-		StartTime:  "12:00",
+		StartTime:  helper.TimeFromHourAndMinute(12, 0),
 		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
 	}
 	repo.Store(fi)
@@ -174,7 +174,7 @@ func TestGetForHourOneResult(t *testing.T) {
 	assert.NotNil(t, *res)
 	assert.EqualValues(t, 1, len(*res))
 	assert.EqualValues(t, "A", el.Path)
-	assert.EqualValues(t, "12:00", el.StartTime)
+	assert.EqualValues(t, helper.TimeFromHourAndMinute(12, 0), el.StartTime)
 }
 
 func TestGetForHourTwoResults(t *testing.T) {
@@ -183,17 +183,17 @@ func TestGetForHourTwoResults(t *testing.T) {
 
 	fi1 := domain.FileInfo{
 		Path:       "A",
-		StartTime:  "11:00",
+		StartTime:  helper.TimeFromHourAndMinute(11, 0),
 		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
 	}
 	fi2 := domain.FileInfo{
 		Path:       "B",
-		StartTime:  "12:00",
+		StartTime:  helper.TimeFromHourAndMinute(12, 0),
 		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
 	}
 	fi3 := domain.FileInfo{
 		Path:       "C",
-		StartTime:  "12:30",
+		StartTime:  helper.TimeFromHourAndMinute(12, 30),
 		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
 	}
 	repo.Store(fi1)
@@ -212,15 +212,15 @@ func TestSaveToDiskAndLoad(t *testing.T) {
 
 	fi1 := domain.FileInfo{
 		Path:      "A",
-		StartTime: "11:00",
+		StartTime: helper.TimeFromHourAndMinute(11, 0),
 	}
 	fi2 := domain.FileInfo{
 		Path:      "B",
-		StartTime: "12:00",
+		StartTime: helper.TimeFromHourAndMinute(12, 0),
 	}
 	fi3 := domain.FileInfo{
 		Path:      "C",
-		StartTime: "12:30",
+		StartTime: helper.TimeFromHourAndMinute(12, 30),
 	}
 	repo.Store(fi1)
 	repo.Store(fi2)
@@ -243,11 +243,11 @@ func TestDeleteAll(t *testing.T) {
 
 	fi1 := domain.FileInfo{
 		Path:      "A",
-		StartTime: "11:00",
+		StartTime: helper.TimeFromHourAndMinute(11, 0),
 	}
 	fi2 := domain.FileInfo{
 		Path:      "B",
-		StartTime: "12:00",
+		StartTime: helper.TimeFromHourAndMinute(12, 0),
 	}
 	repo.Store(fi1)
 	repo.Store(fi2)
@@ -265,7 +265,7 @@ func TestNewFilesFalse(t *testing.T) {
 
 	fi1 := domain.FileInfo{
 		Path:          "A",
-		StartTime:     "11:00",
+		StartTime:     helper.TimeFromHourAndMinute(11, 0),
 		InfoExtracted: true,
 	}
 	repo.Store(fi1)
@@ -280,7 +280,7 @@ func TestNewFilesTrue(t *testing.T) {
 
 	fi1 := domain.FileInfo{
 		Path:          "A",
-		StartTime:     "11:00",
+		StartTime:     helper.TimeFromHourAndMinute(11, 0),
 		InfoExtracted: false,
 	}
 	repo.Store(fi1)

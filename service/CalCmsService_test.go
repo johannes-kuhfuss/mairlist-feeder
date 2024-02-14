@@ -6,6 +6,7 @@ import (
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
+	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/stretchr/testify/assert"
 )
@@ -77,8 +78,10 @@ func Test_convertToEntry_NoError_ReturnsEntry(t *testing.T) {
 	}
 	res, err := calCmsService.convertToEntry(ev)
 	assert.Nil(t, err)
-	t1, _ := time.Parse("15:04", "11:00")
-	t2, _ := time.Parse("15:04", "12:00")
+	t1, _ := time.ParseInLocation("15:04", "11:00", time.Local)
+	t2, _ := time.ParseInLocation("15:04", "12:00", time.Local)
+	t1 = t1.AddDate(1, 0, 0)
+	t2 = t2.AddDate(1, 0, 0)
 	assert.EqualValues(t, t1, res.StartTime)
 	assert.EqualValues(t, t2, res.EndTime)
 	assert.EqualValues(t, "Test", res.Title)
@@ -242,8 +245,8 @@ func Test_checkCalCmsData_WrongData_ReturnsError(t *testing.T) {
 		Path:          "",
 		ModTime:       time.Time{},
 		Duration:      0,
-		StartTime:     "",
-		EndTime:       "",
+		StartTime:     time.Time{},
+		EndTime:       time.Time{},
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
@@ -279,8 +282,8 @@ func Test_checkCalCmsData_NoMatchingData_ReturnsError(t *testing.T) {
 		Path:          "",
 		ModTime:       time.Time{},
 		Duration:      0,
-		StartTime:     "",
-		EndTime:       "",
+		StartTime:     time.Time{},
+		EndTime:       time.Time{},
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
@@ -323,8 +326,8 @@ func Test_checkCalCmsData_DoubleMatch_ReturnsError(t *testing.T) {
 		Path:          "",
 		ModTime:       time.Time{},
 		Duration:      0,
-		StartTime:     "",
-		EndTime:       "",
+		StartTime:     time.Time{},
+		EndTime:       time.Time{},
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
@@ -361,8 +364,8 @@ func Test_checkCalCmsData_IsLive_ReturnsError(t *testing.T) {
 		Path:          "",
 		ModTime:       time.Time{},
 		Duration:      0,
-		StartTime:     "",
-		EndTime:       "",
+		StartTime:     time.Time{},
+		EndTime:       time.Time{},
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
@@ -398,8 +401,8 @@ func Test_checkCalCmsData_StartTimeDiff_ReturnsError(t *testing.T) {
 		Path:          "",
 		ModTime:       time.Time{},
 		Duration:      0,
-		StartTime:     "13:00",
-		EndTime:       "",
+		StartTime:     helper.TimeFromHourAndMinute(13, 0),
+		EndTime:       time.Time{},
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
@@ -435,8 +438,8 @@ func Test_checkCalCmsData_DataOk_ReturnsData(t *testing.T) {
 		Path:          "",
 		ModTime:       time.Time{},
 		Duration:      0,
-		StartTime:     "11:00",
-		EndTime:       "",
+		StartTime:     helper.TimeFromHourAndMinute(11, 0),
+		EndTime:       time.Time{},
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
