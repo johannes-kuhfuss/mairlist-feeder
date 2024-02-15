@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -158,4 +159,56 @@ func Test_validateAction_CorrectAction_ReturnsNoError(t *testing.T) {
 		err := validateAction(action)
 		assert.Nil(t, err)
 	}
+}
+
+func Test_ActionExec_NoData_ReturnsError(t *testing.T) {
+	teardown := setupUiTest(t)
+	defer teardown()
+	router.POST("/actions", uh.ExecAction)
+	request := httptest.NewRequest(http.MethodPost, "/actions", nil)
+
+	router.ServeHTTP(recorder, request)
+	res := recorder.Result()
+	defer res.Body.Close()
+	data, _ := io.ReadAll(res.Body)
+
+	assert.EqualValues(t, http.StatusBadRequest, res.StatusCode)
+	assert.EqualValues(t, "{\"message\":\"unknown action\",\"statuscode\":400,\"causes\":null}", string(data))
+}
+
+func Test_ActionExec_WrongAction_ReturnsError(t *testing.T) {
+	teardown := setupUiTest(t)
+	defer teardown()
+	router.POST("/actions", uh.ExecAction)
+	form := url.Values{}
+	form.Add("action", "unknown")
+	request := httptest.NewRequest(http.MethodPost, "/actions", strings.NewReader(form.Encode()))
+	request.Header.Set("Content-type", "application/x-www-form-urlencoded")
+
+	router.ServeHTTP(recorder, request)
+	res := recorder.Result()
+	defer res.Body.Close()
+	data, _ := io.ReadAll(res.Body)
+
+	assert.EqualValues(t, http.StatusBadRequest, res.StatusCode)
+	assert.EqualValues(t, "{\"message\":\"unknown action\",\"statuscode\":400,\"causes\":null}", string(data))
+}
+
+func Test_ActionExec_InvalidHour_ReturnsError(t *testing.T) {
+	teardown := setupUiTest(t)
+	defer teardown()
+	router.POST("/actions", uh.ExecAction)
+	form := url.Values{}
+	form.Add("action", "crawl")
+	form.Add("hour", "44")
+	request := httptest.NewRequest(http.MethodPost, "/actions", strings.NewReader(form.Encode()))
+	request.Header.Set("Content-type", "application/x-www-form-urlencoded")
+
+	router.ServeHTTP(recorder, request)
+	res := recorder.Result()
+	defer res.Body.Close()
+	data, _ := io.ReadAll(res.Body)
+
+	assert.EqualValues(t, http.StatusBadRequest, res.StatusCode)
+	assert.EqualValues(t, "{\"message\":\"hour must be between 00 and 23\",\"statuscode\":400,\"causes\":null}", string(data))
 }
