@@ -224,9 +224,7 @@ func (s DefaultCalCmsService) convertToEntry(event domain.CalCmsEvent) (dto.CalC
 		logger.Error(fmt.Sprintf("Could not parse %v into time", event.EndTimeName), err2)
 		return entry, err2
 	}
-	if (err1 == nil) && (err2 == nil) {
-		entry.Duration = entry.EndTime.Sub(entry.StartTime)
-	}
+	entry.Duration = entry.EndTime.Sub(entry.StartTime)
 	entry.EventId = event.EventID
 	entry.Live = event.Live
 	return entry, nil
