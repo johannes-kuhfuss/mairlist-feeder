@@ -32,7 +32,7 @@ func Test_convertToEntry_TimeError1_ReturnsError(t *testing.T) {
 		FullTitle:     "Test",
 		StartTimeName: "AA:BB",
 		EndTimeName:   "CC:DD",
-		EventID:       "ABCDE",
+		EventID:       1,
 	}
 	_, err := calCmsService.convertToEntry(ev)
 	assert.NotNil(t, err)
@@ -46,7 +46,7 @@ func Test_convertToEntry_TimeError2_ReturnsError(t *testing.T) {
 		FullTitle:     "Test",
 		StartTimeName: "11:00",
 		EndTimeName:   "CC:DD",
-		EventID:       "ABCDE",
+		EventID:       1,
 	}
 	_, err := calCmsService.convertToEntry(ev)
 	assert.NotNil(t, err)
@@ -60,7 +60,7 @@ func Test_convertToEntry_IdError_ReturnsError(t *testing.T) {
 		FullTitle:     "Test",
 		StartTimeName: "11:00",
 		EndTimeName:   "12:00",
-		EventID:       "ABCDE",
+		EventID:       1,
 	}
 	_, err := calCmsService.convertToEntry(ev)
 	assert.NotNil(t, err)
@@ -74,7 +74,7 @@ func Test_convertToEntry_NoError_ReturnsEntry(t *testing.T) {
 		FullTitle:     "Test",
 		StartTimeName: "11:00",
 		EndTimeName:   "12:00",
-		EventID:       "12345",
+		EventID:       12345,
 	}
 	res, err := calCmsService.convertToEntry(ev)
 	assert.Nil(t, err)
@@ -105,7 +105,7 @@ func Test_GetCalCmsDataForId_WrongData_ReturnsError(t *testing.T) {
 		FullTitle:     "Test",
 		StartTimeName: "11:00",
 		EndTimeName:   "CC:DD",
-		EventID:       "1",
+		EventID:       1,
 	}
 	events = append(events, event)
 	data := domain.CalCmsPgmData{
@@ -128,7 +128,7 @@ func Test_GetCalCmsDataForId_WrongId_ReturnsEmpty(t *testing.T) {
 		FullTitle:     "Test",
 		StartTimeName: "11:00",
 		EndTimeName:   "12:00",
-		EventID:       "2",
+		EventID:       2,
 	}
 	events = append(events, event)
 	data := domain.CalCmsPgmData{
@@ -150,7 +150,7 @@ func Test_GetCalCmsDataForId_OneElement_ReturnsData(t *testing.T) {
 		FullTitle:     "Test",
 		StartTimeName: "11:00",
 		EndTimeName:   "12:00",
-		EventID:       "1",
+		EventID:       1,
 	}
 	events = append(events, event)
 	data := domain.CalCmsPgmData{
@@ -173,13 +173,13 @@ func Test_GetCalCmsDataForId_TwoElements_ReturnsOne(t *testing.T) {
 		FullTitle:     "Test1",
 		StartTimeName: "11:00",
 		EndTimeName:   "12:00",
-		EventID:       "1",
+		EventID:       1,
 	}
 	event2 := domain.CalCmsEvent{
 		FullTitle:     "Test2",
 		StartTimeName: "13:00",
 		EndTimeName:   "15:00",
-		EventID:       "2",
+		EventID:       2,
 	}
 	events = append(events, event1)
 	events = append(events, event2)
@@ -211,7 +211,7 @@ func Test_GetCalCmsDataForHour_OneElement_ReturnsData(t *testing.T) {
 		FullTitle:     "Test",
 		StartTimeName: "11:00",
 		EndTimeName:   "12:00",
-		EventID:       "1",
+		EventID:       1,
 	}
 	events = append(events, event)
 	data := domain.CalCmsPgmData{
@@ -234,7 +234,7 @@ func Test_checkCalCmsData_WrongData_ReturnsError(t *testing.T) {
 		FullTitle:     "Test",
 		StartTimeName: "11:00",
 		EndTimeName:   "CC:DD",
-		EventID:       "1",
+		EventID:       1,
 	}
 	events = append(events, event)
 	data := domain.CalCmsPgmData{
@@ -271,7 +271,7 @@ func Test_checkCalCmsData_NoMatchingData_ReturnsError(t *testing.T) {
 		FullTitle:     "Test",
 		StartTimeName: "11:00",
 		EndTimeName:   "12:00",
-		EventID:       "1",
+		EventID:       1,
 	}
 	events = append(events, event)
 	data := domain.CalCmsPgmData{
@@ -308,13 +308,13 @@ func Test_checkCalCmsData_DoubleMatch_ReturnsError(t *testing.T) {
 		FullTitle:     "Test",
 		StartTimeName: "11:00",
 		EndTimeName:   "12:00",
-		EventID:       "1",
+		EventID:       1,
 	}
 	event2 := domain.CalCmsEvent{
 		FullTitle:     "Test",
 		StartTimeName: "12:00",
 		EndTimeName:   "13:00",
-		EventID:       "1",
+		EventID:       1,
 	}
 	events = append(events, event1)
 	events = append(events, event2)
@@ -352,7 +352,7 @@ func Test_checkCalCmsData_IsLive_ReturnsError(t *testing.T) {
 		FullTitle:     "Test",
 		StartTimeName: "11:00",
 		EndTimeName:   "12:00",
-		EventID:       "1",
+		EventID:       1,
 		Live:          1,
 	}
 	events = append(events, event)
@@ -390,7 +390,7 @@ func Test_checkCalCmsData_StartTimeDiff_ReturnsError(t *testing.T) {
 		FullTitle:     "Test",
 		StartTimeName: "11:00",
 		EndTimeName:   "12:00",
-		EventID:       "1",
+		EventID:       1,
 	}
 	events = append(events, event)
 	data := domain.CalCmsPgmData{
@@ -427,7 +427,7 @@ func Test_checkCalCmsData_DataOk_ReturnsData(t *testing.T) {
 		FullTitle:     "Test",
 		StartTimeName: "11:00",
 		EndTimeName:   "12:00",
-		EventID:       "1",
+		EventID:       1,
 	}
 	events = append(events, event)
 	data := domain.CalCmsPgmData{

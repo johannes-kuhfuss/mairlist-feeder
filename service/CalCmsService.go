@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -65,6 +64,7 @@ func (s DefaultCalCmsService) insertData(data domain.CalCmsPgmData) {
 }
 
 func (s DefaultCalCmsService) Query() {
+	//URL: https://programm.coloradio.org/agenda/events.cgi?date=2024-04-09&template=event.json-p
 	if s.Cfg.CalCms.QueryCalCms {
 		calUrl, err := url.Parse(s.Cfg.CalCms.CmsUrl)
 		if err != nil {
@@ -193,7 +193,7 @@ func (s DefaultCalCmsService) GetCalCmsDataForId(id int) ([]dto.CalCmsEntry, err
 	CalCmsPgm.RUnlock()
 	if len(events) > 0 {
 		for _, event := range events {
-			if event.EventID == strconv.Itoa(id) {
+			if event.EventID == id {
 				entry, err := s.convertToEntry(event)
 				if err == nil {
 					entries = append(entries, entry)
@@ -227,12 +227,7 @@ func (s DefaultCalCmsService) convertToEntry(event domain.CalCmsEvent) (dto.CalC
 	if (err1 == nil) && (err2 == nil) {
 		entry.Duration = entry.EndTime.Sub(entry.StartTime)
 	}
-	id, err := strconv.Atoi(event.EventID)
-	if err != nil {
-		logger.Error(fmt.Sprintf("Could not parse %v into time", event.EndTimeName), err)
-		return entry, err
-	}
-	entry.EventId = id
+	entry.EventId = event.EventID
 	entry.Live = event.Live
 	return entry, nil
 }
