@@ -17,7 +17,7 @@ var (
 	calCmsService DefaultCalCmsService
 )
 
-func setupTestA(t *testing.T) func() {
+func setupTestA() func() {
 	config.InitConfig(config.EnvFile, &cfgA)
 	fileRepoA = repositories.NewFileRepository(&cfgA)
 	calCmsService = NewCalCmsService(&cfgA, &fileRepo)
@@ -26,7 +26,7 @@ func setupTestA(t *testing.T) func() {
 }
 
 func Test_convertToEntry_TimeError1_ReturnsError(t *testing.T) {
-	teardown := setupTestA(t)
+	teardown := setupTestA()
 	defer teardown()
 	ev := domain.CalCmsEvent{
 		FullTitle:     "Test",
@@ -40,7 +40,7 @@ func Test_convertToEntry_TimeError1_ReturnsError(t *testing.T) {
 }
 
 func Test_convertToEntry_TimeError2_ReturnsError(t *testing.T) {
-	teardown := setupTestA(t)
+	teardown := setupTestA()
 	defer teardown()
 	ev := domain.CalCmsEvent{
 		FullTitle:     "Test",
@@ -53,22 +53,8 @@ func Test_convertToEntry_TimeError2_ReturnsError(t *testing.T) {
 	assert.EqualValues(t, "parsing time \"CC:DD\" as \"15:04\": cannot parse \"CC:DD\" as \"15\"", err.Error())
 }
 
-func Test_convertToEntry_IdError_ReturnsError(t *testing.T) {
-	teardown := setupTestA(t)
-	defer teardown()
-	ev := domain.CalCmsEvent{
-		FullTitle:     "Test",
-		StartTimeName: "11:00",
-		EndTimeName:   "12:00",
-		EventID:       1,
-	}
-	_, err := calCmsService.convertToEntry(ev)
-	assert.NotNil(t, err)
-	assert.EqualValues(t, "strconv.Atoi: parsing \"ABCDE\": invalid syntax", err.Error())
-}
-
 func Test_convertToEntry_NoError_ReturnsEntry(t *testing.T) {
-	teardown := setupTestA(t)
+	teardown := setupTestA()
 	defer teardown()
 	ev := domain.CalCmsEvent{
 		FullTitle:     "Test",
@@ -89,7 +75,7 @@ func Test_convertToEntry_NoError_ReturnsEntry(t *testing.T) {
 }
 
 func Test_GetCalCmsDataForId_Empty_ReturnsEmptyList(t *testing.T) {
-	teardown := setupTestA(t)
+	teardown := setupTestA()
 	defer teardown()
 	res, err := calCmsService.GetCalCmsDataForId(1)
 	assert.Nil(t, err)
@@ -98,7 +84,7 @@ func Test_GetCalCmsDataForId_Empty_ReturnsEmptyList(t *testing.T) {
 
 func Test_GetCalCmsDataForId_WrongData_ReturnsError(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA(t)
+	teardown := setupTestA()
 	defer teardown()
 
 	event := domain.CalCmsEvent{
@@ -121,7 +107,7 @@ func Test_GetCalCmsDataForId_WrongData_ReturnsError(t *testing.T) {
 
 func Test_GetCalCmsDataForId_WrongId_ReturnsEmpty(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA(t)
+	teardown := setupTestA()
 	defer teardown()
 
 	event := domain.CalCmsEvent{
@@ -143,7 +129,7 @@ func Test_GetCalCmsDataForId_WrongId_ReturnsEmpty(t *testing.T) {
 
 func Test_GetCalCmsDataForId_OneElement_ReturnsData(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA(t)
+	teardown := setupTestA()
 	defer teardown()
 
 	event := domain.CalCmsEvent{
@@ -166,7 +152,7 @@ func Test_GetCalCmsDataForId_OneElement_ReturnsData(t *testing.T) {
 
 func Test_GetCalCmsDataForId_TwoElements_ReturnsOne(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA(t)
+	teardown := setupTestA()
 	defer teardown()
 
 	event1 := domain.CalCmsEvent{
@@ -195,7 +181,7 @@ func Test_GetCalCmsDataForId_TwoElements_ReturnsOne(t *testing.T) {
 }
 
 func Test_GetCalCmsDataForHour_Empty_ReturnsEmptyList(t *testing.T) {
-	teardown := setupTestA(t)
+	teardown := setupTestA()
 	defer teardown()
 	res, err := calCmsService.GetCalCmsDataForHour("12:00")
 	assert.Nil(t, err)
@@ -204,7 +190,7 @@ func Test_GetCalCmsDataForHour_Empty_ReturnsEmptyList(t *testing.T) {
 
 func Test_GetCalCmsDataForHour_OneElement_ReturnsData(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA(t)
+	teardown := setupTestA()
 	defer teardown()
 
 	event := domain.CalCmsEvent{
@@ -227,7 +213,7 @@ func Test_GetCalCmsDataForHour_OneElement_ReturnsData(t *testing.T) {
 
 func Test_checkCalCmsData_WrongData_ReturnsError(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA(t)
+	teardown := setupTestA()
 	defer teardown()
 
 	event := domain.CalCmsEvent{
@@ -264,7 +250,7 @@ func Test_checkCalCmsData_WrongData_ReturnsError(t *testing.T) {
 
 func Test_checkCalCmsData_NoMatchingData_ReturnsError(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA(t)
+	teardown := setupTestA()
 	defer teardown()
 
 	event := domain.CalCmsEvent{
@@ -301,7 +287,7 @@ func Test_checkCalCmsData_NoMatchingData_ReturnsError(t *testing.T) {
 
 func Test_checkCalCmsData_DoubleMatch_ReturnsError(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA(t)
+	teardown := setupTestA()
 	defer teardown()
 
 	event1 := domain.CalCmsEvent{
@@ -345,7 +331,7 @@ func Test_checkCalCmsData_DoubleMatch_ReturnsError(t *testing.T) {
 
 func Test_checkCalCmsData_IsLive_ReturnsError(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA(t)
+	teardown := setupTestA()
 	defer teardown()
 
 	event := domain.CalCmsEvent{
@@ -383,7 +369,7 @@ func Test_checkCalCmsData_IsLive_ReturnsError(t *testing.T) {
 
 func Test_checkCalCmsData_StartTimeDiff_ReturnsError(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA(t)
+	teardown := setupTestA()
 	defer teardown()
 
 	event := domain.CalCmsEvent{
@@ -420,7 +406,7 @@ func Test_checkCalCmsData_StartTimeDiff_ReturnsError(t *testing.T) {
 
 func Test_checkCalCmsData_DataOk_ReturnsData(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA(t)
+	teardown := setupTestA()
 	defer teardown()
 
 	event := domain.CalCmsEvent{

@@ -20,7 +20,7 @@ var (
 	exportService DefaultExportService
 )
 
-func setupTest(t *testing.T) func() {
+func setupTest() func() {
 	config.InitConfig(config.EnvFile, &cfg)
 	fileRepo = repositories.NewFileRepository(&cfg)
 	exportService = NewExportService(&cfg, &fileRepo)
@@ -29,7 +29,7 @@ func setupTest(t *testing.T) func() {
 }
 
 func Test_buildHttpRequest_EmptyUrl_ReturnsError(t *testing.T) {
-	tearDown := setupTest(t)
+	tearDown := setupTest()
 	defer tearDown()
 	cfg.Export.MairListUrl = ""
 
@@ -41,7 +41,7 @@ func Test_buildHttpRequest_EmptyUrl_ReturnsError(t *testing.T) {
 }
 
 func Test_buildHttpRequest_WithUrl_ReturnsRequest(t *testing.T) {
-	tearDown := setupTest(t)
+	tearDown := setupTest()
 	defer tearDown()
 	cfg.Export.MairListUrl = "http://localhost:9300/"
 	cfg.Export.MairListUser = "test"

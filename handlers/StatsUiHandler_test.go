@@ -22,7 +22,7 @@ var (
 	recorder *httptest.ResponseRecorder
 )
 
-func setupUiTest(t *testing.T) func() {
+func setupUiTest() func() {
 	repo = repositories.NewFileRepository(&cfg)
 	uh = NewStatsUiHandler(&cfg, &repo, nil, nil, nil)
 	router = gin.Default()
@@ -34,7 +34,7 @@ func setupUiTest(t *testing.T) func() {
 }
 
 func Test_StatusPage_Returns_Status(t *testing.T) {
-	teardown := setupUiTest(t)
+	teardown := setupUiTest()
 	defer teardown()
 	router.GET("/", uh.StatusPage)
 	request := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -51,7 +51,7 @@ func Test_StatusPage_Returns_Status(t *testing.T) {
 }
 
 func Test_AboutPage_Returns_About(t *testing.T) {
-	teardown := setupUiTest(t)
+	teardown := setupUiTest()
 	defer teardown()
 	router.GET("/about", uh.AboutPage)
 	request := httptest.NewRequest(http.MethodGet, "/about", nil)
@@ -68,7 +68,7 @@ func Test_AboutPage_Returns_About(t *testing.T) {
 }
 
 func Test_FileListPage_Returns_FileListPage(t *testing.T) {
-	teardown := setupUiTest(t)
+	teardown := setupUiTest()
 	defer teardown()
 	router.GET("/filelist", uh.FileListPage)
 	request := httptest.NewRequest(http.MethodGet, "/filelist", nil)
@@ -85,7 +85,7 @@ func Test_FileListPage_Returns_FileListPage(t *testing.T) {
 }
 
 func Test_ActionPage_Returns_Action(t *testing.T) {
-	teardown := setupUiTest(t)
+	teardown := setupUiTest()
 	defer teardown()
 	router.GET("/actions", uh.ActionPage)
 	request := httptest.NewRequest(http.MethodGet, "/actions", nil)
@@ -102,14 +102,14 @@ func Test_ActionPage_Returns_Action(t *testing.T) {
 }
 
 func Test_validateHour_HourEmpty_returnsNoError(t *testing.T) {
-	teardown := setupUiTest(t)
+	teardown := setupUiTest()
 	defer teardown()
 	err := validateHour("")
 	assert.Nil(t, err)
 }
 
 func Test_validateHour_InvalidHour_returnsError(t *testing.T) {
-	teardown := setupUiTest(t)
+	teardown := setupUiTest()
 	defer teardown()
 	err := validateHour("A")
 	assert.NotNil(t, err)
@@ -118,7 +118,7 @@ func Test_validateHour_InvalidHour_returnsError(t *testing.T) {
 }
 
 func Test_validateHour_HourTooSmall_returnsError(t *testing.T) {
-	teardown := setupUiTest(t)
+	teardown := setupUiTest()
 	defer teardown()
 	err := validateHour("-1")
 	assert.NotNil(t, err)
@@ -127,7 +127,7 @@ func Test_validateHour_HourTooSmall_returnsError(t *testing.T) {
 }
 
 func Test_validateHour_HourTooLarge_returnsError(t *testing.T) {
-	teardown := setupUiTest(t)
+	teardown := setupUiTest()
 	defer teardown()
 	err := validateHour("50")
 	assert.NotNil(t, err)
@@ -136,14 +136,14 @@ func Test_validateHour_HourTooLarge_returnsError(t *testing.T) {
 }
 
 func Test_validateHour_ValidHour_returnsNoError(t *testing.T) {
-	teardown := setupUiTest(t)
+	teardown := setupUiTest()
 	defer teardown()
 	err := validateHour("2")
 	assert.Nil(t, err)
 }
 
 func Test_validateAction_UnkownAction_ReturnsError(t *testing.T) {
-	teardown := setupUiTest(t)
+	teardown := setupUiTest()
 	defer teardown()
 	err := validateAction("unknown")
 	assert.NotNil(t, err)
@@ -152,7 +152,7 @@ func Test_validateAction_UnkownAction_ReturnsError(t *testing.T) {
 }
 
 func Test_validateAction_CorrectAction_ReturnsNoError(t *testing.T) {
-	teardown := setupUiTest(t)
+	teardown := setupUiTest()
 	defer teardown()
 	actions := []string{"crawl", "export", "clean", "csvexport", "importfromdisk", "exporttodisk"}
 	for _, action := range actions {
@@ -162,7 +162,7 @@ func Test_validateAction_CorrectAction_ReturnsNoError(t *testing.T) {
 }
 
 func Test_ActionExec_NoData_ReturnsError(t *testing.T) {
-	teardown := setupUiTest(t)
+	teardown := setupUiTest()
 	defer teardown()
 	router.POST("/actions", uh.ExecAction)
 	request := httptest.NewRequest(http.MethodPost, "/actions", nil)
@@ -177,7 +177,7 @@ func Test_ActionExec_NoData_ReturnsError(t *testing.T) {
 }
 
 func Test_ActionExec_WrongAction_ReturnsError(t *testing.T) {
-	teardown := setupUiTest(t)
+	teardown := setupUiTest()
 	defer teardown()
 	router.POST("/actions", uh.ExecAction)
 	form := url.Values{}
@@ -195,7 +195,7 @@ func Test_ActionExec_WrongAction_ReturnsError(t *testing.T) {
 }
 
 func Test_ActionExec_InvalidHour_ReturnsError(t *testing.T) {
-	teardown := setupUiTest(t)
+	teardown := setupUiTest()
 	defer teardown()
 	router.POST("/actions", uh.ExecAction)
 	form := url.Values{}

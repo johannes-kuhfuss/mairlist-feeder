@@ -16,21 +16,21 @@ var (
 	repo DefaultFileRepository
 )
 
-func setupTest(t *testing.T) func() {
+func setupTest() func() {
 	repo = NewFileRepository(&cfg)
 	return func() {
 	}
 }
 
 func TestEmptyListIsEmpty(t *testing.T) {
-	teardown := setupTest(t)
+	teardown := setupTest()
 	defer teardown()
 
 	assert.EqualValues(t, 0, repo.Size())
 }
 
 func TestGetOnEmptyList(t *testing.T) {
-	teardown := setupTest(t)
+	teardown := setupTest()
 	defer teardown()
 
 	res := repo.Get("B")
@@ -39,7 +39,7 @@ func TestGetOnEmptyList(t *testing.T) {
 }
 
 func TestGetAllOnEmptyList(t *testing.T) {
-	teardown := setupTest(t)
+	teardown := setupTest()
 	defer teardown()
 
 	res := repo.GetAll()
@@ -48,7 +48,7 @@ func TestGetAllOnEmptyList(t *testing.T) {
 }
 
 func TestAddItemWithEmptyPath(t *testing.T) {
-	teardown := setupTest(t)
+	teardown := setupTest()
 	defer teardown()
 
 	fi := domain.FileInfo{}
@@ -59,7 +59,7 @@ func TestAddItemWithEmptyPath(t *testing.T) {
 }
 
 func TestAddAndGet(t *testing.T) {
-	teardown := setupTest(t)
+	teardown := setupTest()
 	defer teardown()
 
 	fi := domain.FileInfo{
@@ -77,7 +77,7 @@ func TestAddAndGet(t *testing.T) {
 }
 
 func TestAddAndGetAll(t *testing.T) {
-	teardown := setupTest(t)
+	teardown := setupTest()
 	defer teardown()
 
 	fi1 := domain.FileInfo{
@@ -104,7 +104,7 @@ func TestAddAndGetAll(t *testing.T) {
 }
 
 func TestDeleteEmpty(t *testing.T) {
-	teardown := setupTest(t)
+	teardown := setupTest()
 	defer teardown()
 
 	err := repo.Delete("A")
@@ -114,7 +114,7 @@ func TestDeleteEmpty(t *testing.T) {
 }
 
 func TestDeleteItem(t *testing.T) {
-	teardown := setupTest(t)
+	teardown := setupTest()
 	defer teardown()
 
 	fi := domain.FileInfo{
@@ -133,7 +133,7 @@ func TestDeleteItem(t *testing.T) {
 }
 
 func TestGetForHourEmpty(t *testing.T) {
-	teardown := setupTest(t)
+	teardown := setupTest()
 	defer teardown()
 
 	res := repo.GetForHour("13")
@@ -142,7 +142,7 @@ func TestGetForHourEmpty(t *testing.T) {
 }
 
 func TestGetForHourNoResult(t *testing.T) {
-	teardown := setupTest(t)
+	teardown := setupTest()
 	defer teardown()
 
 	fi := domain.FileInfo{
@@ -158,7 +158,7 @@ func TestGetForHourNoResult(t *testing.T) {
 }
 
 func TestGetForHourOneResult(t *testing.T) {
-	teardown := setupTest(t)
+	teardown := setupTest()
 	defer teardown()
 
 	fi := domain.FileInfo{
@@ -178,7 +178,7 @@ func TestGetForHourOneResult(t *testing.T) {
 }
 
 func TestGetForHourTwoResults(t *testing.T) {
-	teardown := setupTest(t)
+	teardown := setupTest()
 	defer teardown()
 
 	fi1 := domain.FileInfo{
@@ -207,7 +207,7 @@ func TestGetForHourTwoResults(t *testing.T) {
 }
 
 func TestSaveToDiskAndLoad(t *testing.T) {
-	teardown := setupTest(t)
+	teardown := setupTest()
 	defer teardown()
 
 	fi1 := domain.FileInfo{
@@ -238,7 +238,7 @@ func TestSaveToDiskAndLoad(t *testing.T) {
 }
 
 func TestDeleteAll(t *testing.T) {
-	teardown := setupTest(t)
+	teardown := setupTest()
 	defer teardown()
 
 	fi1 := domain.FileInfo{
@@ -260,7 +260,7 @@ func TestDeleteAll(t *testing.T) {
 }
 
 func TestNewFilesFalse(t *testing.T) {
-	teardown := setupTest(t)
+	teardown := setupTest()
 	defer teardown()
 
 	fi1 := domain.FileInfo{
@@ -275,7 +275,7 @@ func TestNewFilesFalse(t *testing.T) {
 }
 
 func TestNewFilesTrue(t *testing.T) {
-	teardown := setupTest(t)
+	teardown := setupTest()
 	defer teardown()
 
 	fi1 := domain.FileInfo{

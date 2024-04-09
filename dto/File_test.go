@@ -16,21 +16,21 @@ var (
 	cfg  config.AppConfig
 )
 
-func setupTest(t *testing.T) func() {
+func setupTest() func() {
 	repo = repositories.NewFileRepository(&cfg)
 	return func() {
 	}
 }
 
 func Test_GetFiles_NoFiles_ReturnsEmpty(t *testing.T) {
-	teardown := setupTest(t)
+	teardown := setupTest()
 	defer teardown()
 	res := GetFiles(&repo)
 	assert.EqualValues(t, 0, len(res))
 }
 
 func Test_GetFiles_TwoFiles_ReturnsFileData(t *testing.T) {
-	teardown := setupTest(t)
+	teardown := setupTest()
 	defer teardown()
 	fi1 := domain.FileInfo{
 		Path:                "A",
