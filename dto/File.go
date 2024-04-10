@@ -2,7 +2,9 @@ package dto
 
 import (
 	"math"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
@@ -55,6 +57,13 @@ func GetFiles(repo *repositories.DefaultFileRepository) []FileResp {
 			fileDta = append(fileDta, dta)
 		}
 	}
+	sort.SliceStable(fileDta, func(i, j int) bool {
+		if strings.Compare(fileDta[i].StartTime, fileDta[j].StartTime) > 0 {
+			return false
+		} else {
+			return true
+		}
+	})
 	return fileDta
 }
 
