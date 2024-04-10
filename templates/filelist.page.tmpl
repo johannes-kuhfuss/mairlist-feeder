@@ -15,13 +15,12 @@
                           <th scope="col">Start Time</th>
                           <th scope="col">End Time</th>
                           <th scope="col">Modification Time</th>
-                          <th scope="col">From CalCMS</th>
                           <th scope="col">Scan Time</th>
                           <th scope="col">Folder Date</th>
                           <th scope="col">Rule Matched</th>
                           <th scope="col">EventId</th>
-                          <th scope="col">CalCMS enriched</th>
-                          <th scope="col">CalCMS Title</th>
+                          <th scope="col">CalCMS (from, enriched, title)</th>
+                          <th scope="col">Technical Metadata (Bitrate, Format)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -32,13 +31,12 @@
                           <td>{{ .StartTime }}</td>
                           <td>{{ .EndTime }}</td>
                           <td>{{ .ModTime }}</td>
-                          <td>{{ .FromCalCMS }}</td>
                           <td>{{ .ScanTime }}</td>
                           <td>{{ .FolderDate }}</td>
                           <td>{{ .RuleMatched }}</td>
                           <td>{{ .EventId }}</td>
                           <td>{{ .CalCmsInfo }}</td>
-                          <td>{{ .CalCmsTitle }}</td>
+                          <td>{{ .TechMd }}</td>
                         </tr>
                         {{ end }}
                     </tbody>

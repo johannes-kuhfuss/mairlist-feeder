@@ -4,6 +4,7 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 )
 
@@ -13,14 +14,13 @@ type FileResp struct {
 	Duration      string
 	StartTime     string
 	EndTime       string
-	FromCalCMS    string
 	InfoExtracted string
 	ScanTime      string
 	FolderDate    string
 	RuleMatched   string
 	EventId       string
 	CalCmsInfo    string
-	CalCmsTitle   string
+	TechMd        string
 }
 
 func GetFiles(repo *repositories.DefaultFileRepository) []FileResp {
@@ -34,14 +34,13 @@ func GetFiles(repo *repositories.DefaultFileRepository) []FileResp {
 				Path:          file.Path,
 				ModTime:       file.ModTime.Format("2006-01-02 15:04:05"),
 				Duration:      strconv.FormatFloat(math.Round(file.Duration/60), 'f', 1, 64),
-				FromCalCMS:    strconv.FormatBool(file.FromCalCMS),
 				InfoExtracted: strconv.FormatBool(file.InfoExtracted),
 				ScanTime:      file.ScanTime.Format("2006-01-02 15:04:05"),
 				FolderDate:    file.FolderDate,
 				RuleMatched:   file.RuleMatched,
 				EventId:       strconv.Itoa(file.EventId),
-				CalCmsInfo:    strconv.FormatBool(file.CalCmsInfoExtracted),
-				CalCmsTitle:   file.CalCmsTitle,
+				CalCmsInfo:    buildCalCmsInfo(file),
+				TechMd:        buildTechMd(file),
 			}
 			if file.StartTime.IsZero() {
 				dta.StartTime = "N/A"
@@ -57,4 +56,29 @@ func GetFiles(repo *repositories.DefaultFileRepository) []FileResp {
 		}
 	}
 	return fileDta
+}
+
+func buildCalCmsInfo(file domain.FileInfo) string {
+	var info string
+	if file.FromCalCMS {
+		info = "Yes, "
+	} else {
+		info = "No, "
+	}
+	if file.CalCmsInfoExtracted {
+		info = info + "Yes, "
+	} else {
+		info = info + "No, "
+	}
+	if file.CalCmsTitle != "" {
+		info = info + file.CalCmsTitle
+	} else {
+		info = info + "None"
+	}
+	return info
+}
+
+func buildTechMd(file domain.FileInfo) string {
+	info := strconv.FormatInt(file.BitRate, 10) + ", " + file.FormatName
+	return info
 }

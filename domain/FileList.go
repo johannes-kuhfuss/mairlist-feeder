@@ -19,6 +19,8 @@ type FileInfo struct {
 	EventId             int
 	CalCmsTitle         string
 	CalCmsInfoExtracted bool
+	BitRate             int64
+	FormatName          string
 }
 
 type FileList []FileInfo

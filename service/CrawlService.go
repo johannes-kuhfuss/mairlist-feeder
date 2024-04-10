@@ -16,6 +16,7 @@ import (
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
+	"github.com/johannes-kuhfuss/mairlist-feeder/dto"
 	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/johannes-kuhfuss/services_utils/logger"
@@ -159,11 +160,13 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 				var timeData string
 				var newInfo domain.FileInfo = file
 
-				len, err := analyzeLength(file.Path, s.Cfg.Crawl.FfProbeTimeOut, s.Cfg.Crawl.FfprobePath)
+				techMd, err := analyzeTechMd(file.Path, s.Cfg.Crawl.FfProbeTimeOut, s.Cfg.Crawl.FfprobePath)
 				if err != nil {
 					logger.Error("Could not analyze file length: ", err)
 				}
-				newInfo.Duration = len
+				newInfo.Duration = techMd.DurationSec
+				newInfo.BitRate = techMd.BitRate
+				newInfo.FormatName = techMd.FormatName
 				folderName := filepath.Dir(file.Path)
 				fileName := filepath.Base(file.Path)
 				switch {
@@ -236,7 +239,7 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 				} else {
 					startTimeDisplay = newInfo.StartTime.Format("15:04")
 				}
-				roundedDurationMin := math.Round(len / 60)
+				roundedDurationMin := math.Round(techMd.DurationSec / 60)
 				logger.Info(fmt.Sprintf("Time Slot: % v, File: %v - Length (min): %v", startTimeDisplay, file.Path, roundedDurationMin))
 			}
 		}
@@ -259,7 +262,7 @@ func convertTime(t1str string, t2str string) (time.Time, error) {
 	return time, nil
 }
 
-func analyzeLength(path string, timeout int, ffprobe string) (len float64, err error) {
+func analyzeTechMd(path string, timeout int, ffprobe string) (techMetadata *dto.TechnicalMetadata, err error) {
 	ctx := context.Background()
 	timeoutDuration := time.Duration(timeout) * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeoutDuration)
@@ -269,26 +272,31 @@ func analyzeLength(path string, timeout int, ffprobe string) (len float64, err e
 	if err != nil {
 		cancel()
 		logger.Error("Could not execute ffprobe: ", err)
-		return 0, err
+		return nil, err
 	}
 	cancel()
-	durationSec, err := parseDuration(outJson)
+	techMd, err := parseTechMd(outJson)
 	if err != nil {
 		logger.Error("Could not parse duration: ", err)
-		return 0, err
+		return nil, err
 	}
-	return durationSec, nil
+	return techMd, nil
 }
 
-func parseDuration(ffprobedata []byte) (durationSec float64, err error) {
+func parseTechMd(ffprobedata []byte) (techMetadata *dto.TechnicalMetadata, err error) {
 	var result domain.FfprobeResult
+	var techMd dto.TechnicalMetadata
 	err = json.Unmarshal(ffprobedata, &result)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	durFloat, err := strconv.ParseFloat(result.Format.Duration, 64)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return durFloat, nil
+	bitRateRaw, _ := strconv.ParseFloat(result.Format.BitRate, 64)
+	techMd.DurationSec = durFloat
+	techMd.BitRate = int64(math.Round(bitRateRaw / float64(1024)))
+	techMd.FormatName = result.Format.FormatLongName
+	return &techMd, nil
 }
