@@ -130,6 +130,10 @@ func (s DefaultCalCmsService) EnrichFileInformation() {
 					logger.Warn("File not designated as \"From CalCMS\". This should not happen.")
 					newFile.FromCalCMS = true
 				}
+				if !file.StartTime.Equal(info.StartTime) {
+					logger.Warn(fmt.Sprintf("Start times differ. File: %v, calCMS: %v. Updating to value from calCMS.", file.StartTime, info.StartTime))
+					newFile.StartTime = info.StartTime
+				}
 				newFile.EndTime = info.EndTime
 				newFile.CalCmsTitle = info.Title
 				newFile.CalCmsInfoExtracted = true
@@ -160,10 +164,6 @@ func (s DefaultCalCmsService) checkCalCmsData(file domain.FileInfo) (*dto.CalCms
 	if info[0].Live == 1 {
 		logger.Warn(fmt.Sprintf("%v, Id: %v is designated as live. Not adding information.", info[0].Title, info[0].EventId))
 		return nil, errors.New("event is live in calCMS")
-	}
-	if !file.StartTime.Equal(info[0].StartTime) {
-		logger.Warn(fmt.Sprintf("Start times differ. File: %v, calCMS: %v. Not adding information.", file.StartTime, info[0].StartTime))
-		return nil, errors.New("start time difference between file and calCMS")
 	}
 	return &info[0], nil
 }

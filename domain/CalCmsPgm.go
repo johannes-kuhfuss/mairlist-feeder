@@ -161,7 +161,7 @@ type CalCmsEvent struct {
 	RecurrenceCount      string `json:"recurrence_count"`
 	RecurrenceCountAlpha string `json:"recurrence_count_alpha"`
 	Reference            any    `json:"reference"`
-	Rerun                string `json:"rerun"`
+	Rerun                any    `json:"rerun"`
 	SeriesIconURL        string `json:"series_icon_url,omitempty"`
 	SeriesImage          string `json:"series_image"`
 	SeriesImageLabel     any    `json:"series_image_label"`
