@@ -263,7 +263,6 @@ func convertTime(t1str string, t2str string, folderDate string) (time.Time, erro
 		logger.Error("converting folder date error", err)
 		return time.Time{}, err
 	}
-	//time := helper.TimeFromHourAndMinute(t1, t2)
 	time := helper.TimeFromHourAndMinuteAndDate(t1, t2, fd)
 	return time, nil
 }

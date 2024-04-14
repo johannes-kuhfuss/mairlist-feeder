@@ -28,3 +28,10 @@ func Test_TimeFromHourAndMinute_CorrectTime_ReturnsTime(t *testing.T) {
 	t2 := time.Date(1, 1, 1, 22, 22, 0, 0, time.Local)
 	assert.EqualValues(t, t2, t1)
 }
+
+func Test_TimeFromHourAndMinuteAndDate_CorrectTime_ReturnsTime(t *testing.T) {
+	d := time.Date(2024, 2, 1, 0, 0, 0, 0, time.Local)
+	t1 := TimeFromHourAndMinuteAndDate(22, 22, d)
+	t2 := time.Date(2024, 2, 1, 22, 22, 0, 0, time.Local)
+	assert.EqualValues(t, t2, t1)
+}

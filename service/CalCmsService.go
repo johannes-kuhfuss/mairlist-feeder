@@ -212,19 +212,11 @@ func (s DefaultCalCmsService) convertToEntry(event domain.CalCmsEvent) (dto.CalC
 		err1, err2 error
 	)
 	entry.Title = event.FullTitle
-	/*
-		entry.StartTime, err1 = time.ParseInLocation("15:04", event.StartTimeName, time.Local)
-		entry.StartTime = entry.StartTime.AddDate(1, 0, 0)
-	*/
 	entry.StartTime, err1 = time.ParseInLocation("2006-01-02T15:04:05", event.StartDatetime, time.Local)
 	if err1 != nil {
 		logger.Error(fmt.Sprintf("Could not parse %v into time", event.StartDatetime), err1)
 		return entry, err1
 	}
-	/*
-		entry.EndTime, err2 = time.ParseInLocation("15:04", event.EndTimeName, time.Local)
-		entry.EndTime = entry.EndTime.AddDate(1, 0, 0)
-	*/
 	entry.EndTime, err2 = time.ParseInLocation("2006-01-02T15:04:05", event.EndDatetime, time.Local)
 	if err2 != nil {
 		logger.Error(fmt.Sprintf("Could not parse %v into time", event.EndDatetime), err2)
