@@ -22,3 +22,8 @@ func TimeFromHourAndMinute(hour int, minute int) time.Time {
 	t := time.Date(1, 1, 1, hour, minute, 0, 0, time.Local)
 	return t
 }
+
+func TimeFromHourAndMinuteAndDate(hour int, minute int, fd time.Time) time.Time {
+	t := time.Date(fd.Year(), fd.Month(), fd.Day(), hour, minute, 0, 0, time.Local)
+	return t
+}

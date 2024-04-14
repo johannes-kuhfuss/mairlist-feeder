@@ -175,7 +175,7 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 					{
 						timeData = folder1Exp.FindString(folderName)
 						newInfo.FromCalCMS = true
-						newInfo.StartTime, _ = convertTime(timeData[1:3], timeData[4:6])
+						newInfo.StartTime, _ = convertTime(timeData[1:3], timeData[4:6], file.FolderDate)
 						newInfo.RuleMatched = "folder HH-MM (calCMS)"
 					}
 				// Condition: start time and end time is encoded in folder name: "/HHMM-HHMM"
@@ -184,8 +184,8 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 						timeData = folder2Exp.FindString(folderName)
 						timeData = strings.Replace(timeData, " ", "", -1)
 						newInfo.FromCalCMS = true
-						newInfo.StartTime, _ = convertTime(timeData[1:3], timeData[3:5])
-						newInfo.EndTime, _ = convertTime(timeData[6:8], timeData[8:10])
+						newInfo.StartTime, _ = convertTime(timeData[1:3], timeData[3:5], file.FolderDate)
+						newInfo.EndTime, _ = convertTime(timeData[6:8], timeData[8:10], file.FolderDate)
 						newInfo.RuleMatched = "folder HHMM-HHMM"
 					}
 				// Condition: start time (hour) and end time (hour) is encoded in folder name: "HH bis HH"
@@ -194,8 +194,8 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 						timeData = folder3Exp.FindString(folderName)
 						timeData = strings.Replace(timeData, " ", "", -1)
 						newInfo.FromCalCMS = true
-						newInfo.StartTime, _ = convertTime(timeData[1:3], "0")
-						newInfo.EndTime, _ = convertTime(timeData[6:8], "0")
+						newInfo.StartTime, _ = convertTime(timeData[1:3], "0", file.FolderDate)
+						newInfo.EndTime, _ = convertTime(timeData[6:8], "0", file.FolderDate)
 						newInfo.RuleMatched = "folder HH bis HH"
 					}
 				// Condition: start time and end time is encoded in file name in the form "HHMM-HHMM_"
@@ -203,8 +203,8 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 					{
 						timeData = file1Exp.FindString(fileName)
 						timeData = strings.Replace(timeData, " ", "", -1)
-						newInfo.StartTime, _ = convertTime(timeData[0:2], timeData[2:4])
-						newInfo.EndTime, _ = convertTime(timeData[5:7], timeData[7:9])
+						newInfo.StartTime, _ = convertTime(timeData[0:2], timeData[2:4], file.FolderDate)
+						newInfo.EndTime, _ = convertTime(timeData[5:7], timeData[7:9], file.FolderDate)
 						newInfo.RuleMatched = "file HHMM-HHMM"
 					}
 				// Condition: start time (hour) and end time (hour) is encoded in file name in the form "HH-HH_Uhr"
@@ -212,15 +212,15 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 					{
 						timeData = file2Exp.FindString(fileName)
 						timeData = strings.Replace(timeData, " ", "", -1)
-						newInfo.StartTime, _ = convertTime(timeData[0:2], "0")
-						newInfo.EndTime, _ = convertTime(timeData[3:5], "0")
+						newInfo.StartTime, _ = convertTime(timeData[0:2], "0", file.FolderDate)
+						newInfo.EndTime, _ = convertTime(timeData[3:5], "0", file.FolderDate)
 						newInfo.RuleMatched = "file HH-HH Uhr"
 					}
 				// Condition: only start time is encoded in the file name in the form of "HHMM_" (beware of date matching!)
 				case file3Exp.MatchString(fileName):
 					{
 						timeData = file3Exp.FindString(fileName)
-						newInfo.StartTime, _ = convertTime(timeData[0:2], timeData[2:4])
+						newInfo.StartTime, _ = convertTime(timeData[0:2], timeData[2:4], file.FolderDate)
 						newInfo.RuleMatched = "file HHMM_"
 					}
 				default:
@@ -247,18 +247,24 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 	return extractCount, nil
 }
 
-func convertTime(t1str string, t2str string) (time.Time, error) {
+func convertTime(t1str string, t2str string, folderDate string) (time.Time, error) {
 	t1, err := strconv.Atoi(t1str)
 	if err != nil {
-		logger.Error("converting error", err)
+		logger.Error("converting start time error", err)
 		return time.Time{}, err
 	}
 	t2, err := strconv.Atoi(t2str)
 	if err != nil {
-		logger.Error("converting error", err)
+		logger.Error("converting end time error", err)
 		return time.Time{}, err
 	}
-	time := helper.TimeFromHourAndMinute(t1, t2)
+	fd, err := time.Parse("2006-01-02", folderDate)
+	if err != nil {
+		logger.Error("converting folder date error", err)
+		return time.Time{}, err
+	}
+	//time := helper.TimeFromHourAndMinute(t1, t2)
+	time := helper.TimeFromHourAndMinuteAndDate(t1, t2, fd)
 	return time, nil
 }
 

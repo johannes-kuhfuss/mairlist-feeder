@@ -1,1 +1,2 @@
 During crawl of calCMS folder, check for conflicting (start) time information: 2024-04-10_22-05-02-id34968-jenz-0540-0700MorgenmagazinJenzSteinerimGesprchmitKerstinZimmermann.mp3
+Time display comparison doesn't work if time is 01:00; due to empty date it's considered time.IsZero
