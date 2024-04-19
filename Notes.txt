@@ -1,2 +1,1 @@
-During crawl of calCMS folder, check for conflicting (start) time information: 2024-04-10_22-05-02-id34968-jenz-0540-0700MorgenmagazinJenzSteinerimGesprchmitKerstinZimmermann.mp3
-When constructing datetime with folderdate, cover case where end date is next day 
+For export: modify to export next hour across days (e.g. export for 00:00 / midnight running at day x must export for day x+1)
