@@ -2,11 +2,9 @@ package service
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
-	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/johannes-kuhfuss/services_utils/logger"
 )
@@ -37,10 +35,7 @@ func (s DefaultCleanService) Clean() {
 		s.Cfg.RunTime.CleanRunning = true
 		logger.Info("Starting file list clean-up...")
 		const dateLayout = "2006-01-02"
-		today, err := time.Parse(dateLayout, strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1))
-		if err != nil {
-			logger.Error("Could not convert date: ", err)
-		}
+		cleanDate := time.Now().AddDate(0, 0, -1)
 		files := s.Repo.GetAll()
 		if files != nil {
 			for _, file := range *files {
@@ -48,7 +43,7 @@ func (s DefaultCleanService) Clean() {
 				if err != nil {
 					logger.Error("Could not convert date: ", err)
 				}
-				if today.Sub(fileDate) >= time.Duration(24*time.Hour) {
+				if cleanDate.Sub(fileDate) >= time.Duration(24*time.Hour) {
 					logger.Info(fmt.Sprintf("Removing entry for expired file %v", file.Path))
 					err := s.Repo.Delete(file.Path)
 					if err != nil {
