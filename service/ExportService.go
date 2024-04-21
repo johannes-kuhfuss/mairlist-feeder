@@ -106,8 +106,9 @@ func (s DefaultExportService) checkTimeAndLenghth(files *domain.FileList) {
 					logger.Info(fmt.Sprintf("Existing file %v is older than file %v. Updating.", preFile.Path, file.Path))
 					fileExportList.Files[createIndexFromTime(file.StartTime)] = file
 				}
+			} else {
+				fileExportList.Files[createIndexFromTime(file.StartTime)] = file
 			}
-			fileExportList.Files[createIndexFromTime(file.StartTime)] = file
 		}
 	}
 }
