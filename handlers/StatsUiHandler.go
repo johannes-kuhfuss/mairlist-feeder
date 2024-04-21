@@ -41,7 +41,7 @@ func (uh *StatsUiHandler) StatusPage(c *gin.Context) {
 }
 
 func (uh *StatsUiHandler) FileListPage(c *gin.Context) {
-	files := dto.GetFiles(uh.Repo)
+	files := dto.GetFiles(uh.Repo, uh.Cfg.CalCms.CmsUrl)
 	c.HTML(http.StatusOK, "filelist.page.tmpl", gin.H{
 		"title": "File List",
 		"files": files,

@@ -34,7 +34,11 @@
                           <td>{{ .ModTime }}</td>
                           <td>{{ .ScanTime }}</td>
                           <td>{{ .RuleMatched }}</td>
-                          <td>{{ .EventId }}</td>
+                          {{ if .EventLinkAvail }}
+                            <td><a href="{{ .EventIdLink }}" target="_blank" rel="noopener noreferrer">{{ .EventId }}</a></td>
+                          {{ else }}
+                            <td>"N/A"</td>
+                          {{ end }}
                           <td>{{ .CalCmsInfo }}</td>
                           <td>{{ .TechMd }}</td>
                         </tr>

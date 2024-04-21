@@ -25,7 +25,7 @@ func setupTest() func() {
 func Test_GetFiles_NoFiles_ReturnsEmpty(t *testing.T) {
 	teardown := setupTest()
 	defer teardown()
-	res := GetFiles(&repo)
+	res := GetFiles(&repo, "")
 	assert.EqualValues(t, 0, len(res))
 }
 
@@ -65,7 +65,7 @@ func Test_GetFiles_TwoFiles_ReturnsFileData(t *testing.T) {
 	repo.Store(fi1)
 	repo.Store(fi2)
 
-	res := GetFiles(&repo)
+	res := GetFiles(&repo, "")
 
 	assert.EqualValues(t, 2, len(res))
 	assert.EqualValues(t, "2023-12-31", res[0].FolderDate)

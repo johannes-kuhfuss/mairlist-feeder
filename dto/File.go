@@ -11,21 +11,23 @@ import (
 )
 
 type FileResp struct {
-	Path          string
-	ModTime       string
-	Duration      string
-	StartTime     string
-	EndTime       string
-	InfoExtracted string
-	ScanTime      string
-	FolderDate    string
-	RuleMatched   string
-	EventId       string
-	CalCmsInfo    string
-	TechMd        string
+	Path           string
+	ModTime        string
+	Duration       string
+	StartTime      string
+	EndTime        string
+	InfoExtracted  string
+	ScanTime       string
+	FolderDate     string
+	RuleMatched    string
+	EventId        string
+	EventIdLink    string
+	EventLinkAvail bool
+	CalCmsInfo     string
+	TechMd         string
 }
 
-func GetFiles(repo *repositories.DefaultFileRepository) []FileResp {
+func GetFiles(repo *repositories.DefaultFileRepository, CmsUrl string) []FileResp {
 	var (
 		fileDta []FileResp
 	)
@@ -41,6 +43,7 @@ func GetFiles(repo *repositories.DefaultFileRepository) []FileResp {
 				FolderDate:    file.FolderDate,
 				RuleMatched:   file.RuleMatched,
 				EventId:       strconv.Itoa(file.EventId),
+				EventIdLink:   buildEventIdLink(CmsUrl, file.EventId),
 				CalCmsInfo:    buildCalCmsInfo(file),
 				TechMd:        buildTechMd(file),
 			}
@@ -53,6 +56,11 @@ func GetFiles(repo *repositories.DefaultFileRepository) []FileResp {
 				dta.EndTime = "N/A"
 			} else {
 				dta.EndTime = file.EndTime.Format("15:04")
+			}
+			if file.EventId == 0 {
+				dta.EventLinkAvail = false
+			} else {
+				dta.EventLinkAvail = true
 			}
 			fileDta = append(fileDta, dta)
 		}
@@ -80,7 +88,7 @@ func buildCalCmsInfo(file domain.FileInfo) string {
 		info = info + "No, "
 	}
 	if file.CalCmsTitle != "" {
-		info = info + file.CalCmsTitle
+		info = info + "\"" + file.CalCmsTitle + "\""
 	} else {
 		info = info + "None"
 	}
@@ -90,4 +98,11 @@ func buildCalCmsInfo(file domain.FileInfo) string {
 func buildTechMd(file domain.FileInfo) string {
 	info := strconv.FormatInt(file.BitRate, 10) + ", " + file.FormatName
 	return info
+}
+
+func buildEventIdLink(CmsUrl string, eventId int) string {
+	// https://programm.coloradio.org/agenda/events.cgi?event_id=xxxxx
+	idStr := strconv.Itoa(eventId)
+	link := CmsUrl + "?event_id=" + idStr
+	return link
 }
