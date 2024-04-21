@@ -11,12 +11,12 @@
                     <thead>
                         <tr>
                           <th scope="col">Path</th>
-                          <th scope="col">Duration (min)</th>
+                          <th scope="col">Folder Date</th>
                           <th scope="col">Start Time</th>
                           <th scope="col">End Time</th>
+                          <th scope="col">Duration (min)</th>
                           <th scope="col">Modification Time</th>
                           <th scope="col">Scan Time</th>
-                          <th scope="col">Folder Date</th>
                           <th scope="col">Rule Matched</th>
                           <th scope="col">EventId</th>
                           <th scope="col">CalCMS (from, enriched, title)</th>
@@ -27,12 +27,12 @@
                         {{ range .files }}
                         <tr>
                           <td>{{ .Path }}</td>
-                          <td>{{ .Duration }}</td>
+                          <td>{{ .FolderDate }}</td>
                           <td>{{ .StartTime }}</td>
                           <td>{{ .EndTime }}</td>
+                          <td>{{ .Duration }}</td>
                           <td>{{ .ModTime }}</td>
                           <td>{{ .ScanTime }}</td>
-                          <td>{{ .FolderDate }}</td>
                           <td>{{ .RuleMatched }}</td>
                           <td>{{ .EventId }}</td>
                           <td>{{ .CalCmsInfo }}</td>

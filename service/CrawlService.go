@@ -136,7 +136,8 @@ func (s DefaultCrawlService) parseEventId(srcPath string) int {
 	return 0
 }
 
-func (s DefaultCrawlService) extractFileInfo() (int, error) {
+/*
+func (s DefaultCrawlService) extractFileInfoOld() (int, error) {
 	var (
 		startTimeDisplay string
 		extractCount     int = 0
@@ -222,6 +223,74 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 						timeData = file3Exp.FindString(fileName)
 						newInfo.StartTime, _ = convertTime(timeData[0:2], timeData[2:4], file.FolderDate)
 						newInfo.RuleMatched = "file HHMM_"
+					}
+				default:
+					{
+						newInfo.RuleMatched = "None"
+					}
+				}
+				newInfo.InfoExtracted = true
+				extractCount++
+				err = s.Repo.Store(newInfo)
+				if err != nil {
+					logger.Error("Error while storing data: ", err)
+				}
+				if newInfo.StartTime.IsZero() {
+					startTimeDisplay = "N/A"
+				} else {
+					startTimeDisplay = newInfo.StartTime.Format("15:04")
+				}
+				roundedDurationMin := math.Round(techMd.DurationSec / 60)
+				logger.Info(fmt.Sprintf("Time Slot: % v, File: %v - Length (min): %v", startTimeDisplay, file.Path, roundedDurationMin))
+			}
+		}
+	}
+	return extractCount, nil
+}
+*/
+
+func (s DefaultCrawlService) extractFileInfo() (int, error) {
+	var (
+		startTimeDisplay string
+		extractCount     int = 0
+	)
+	// /HH-MM
+	folder1Exp := regexp.MustCompile(`[\\/]+([01][0-9]|2[0-3])-(0[0-9]|[1-5][0-9])`)
+	// HHMM-HHMM
+	file1Exp := regexp.MustCompile(`^([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])\s?-\s?([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])[_ -]`)
+	files := s.Repo.GetAll()
+	if files != nil {
+		for _, file := range *files {
+			if !file.InfoExtracted {
+				var timeData string
+				var newInfo domain.FileInfo = file
+
+				techMd, err := analyzeTechMd(file.Path, s.Cfg.Crawl.FfProbeTimeOut, s.Cfg.Crawl.FfprobePath)
+				if err != nil {
+					logger.Error("Could not analyze file length: ", err)
+				}
+				newInfo.Duration = techMd.DurationSec
+				newInfo.BitRate = techMd.BitRate
+				newInfo.FormatName = techMd.FormatName
+				folderName := filepath.Dir(file.Path)
+				fileName := filepath.Base(file.Path)
+				switch {
+				// Condition: only start time is encoded in folder name: "/HH-MM" (calCMS)
+				case folder1Exp.MatchString(folderName):
+					{
+						timeData = folder1Exp.FindString(folderName)
+						newInfo.FromCalCMS = true
+						newInfo.StartTime, _ = convertTime(timeData[1:3], timeData[4:6], file.FolderDate)
+						newInfo.RuleMatched = "folder HH-MM (calCMS)"
+					}
+				// Condition: start time and end time is encoded in file name in the form "HHMM-HHMM_"
+				case file1Exp.MatchString(fileName):
+					{
+						timeData = file1Exp.FindString(fileName)
+						timeData = strings.Replace(timeData, " ", "", -1)
+						newInfo.StartTime, _ = convertTime(timeData[0:2], timeData[2:4], file.FolderDate)
+						newInfo.EndTime, _ = convertTime(timeData[5:7], timeData[7:9], file.FolderDate)
+						newInfo.RuleMatched = "file HHMM-HHMM"
 					}
 				default:
 					{

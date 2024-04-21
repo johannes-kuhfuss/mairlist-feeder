@@ -16,6 +16,7 @@ import (
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
+	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/johannes-kuhfuss/services_utils/logger"
 )
@@ -273,10 +274,8 @@ func (s DefaultExportService) setExportPath(hour string) string {
 	if s.Cfg.Misc.TestCrawl {
 		exportFileName = "Test_" + hour + ".tpi"
 	} else {
-		year := fmt.Sprintf("%d", time.Now().Year())
-		month := fmt.Sprintf("%02d", time.Now().Month())
-		day := fmt.Sprintf("%02d", time.Now().Day())
-		exportFileName = year + "-" + month + "-" + day + "-" + hour + ".tpi"
+		exportDate := helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate)
+		exportFileName = strings.ReplaceAll(exportDate, "/", "-") + "-" + hour + ".tpi"
 	}
 	s.Cfg.RunTime.LastExportFileName = exportFileName
 	s.Cfg.RunTime.LastExportDate = time.Now()
