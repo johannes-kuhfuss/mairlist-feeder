@@ -87,7 +87,7 @@ func (fr DefaultFileRepository) GetForHour(hour string) *domain.FileList {
 	defer fileList.RUnlock()
 	for _, file := range fileList.Files {
 		hi, _ := strconv.Atoi(hour)
-		if (file.StartTime.Hour() == hi) && (file.FolderDate == folderDate) {
+		if (!file.StartTime.IsZero()) && (file.StartTime.Hour() == hi) && (file.FolderDate == folderDate) {
 			list = append(list, file)
 		}
 	}
