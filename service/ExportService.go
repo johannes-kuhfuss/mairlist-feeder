@@ -243,11 +243,9 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 		} else {
 			s.writeStartComment(dataWriter)
 			for time, file := range fileExportList.Files {
-				if s.Cfg.Export.MairListOldFormat {
-					time = time + ":00"
-				}
+				listTime := time + ":00"
 				if s.Cfg.Export.PrependJingle {
-					line := fmt.Sprintf("%v\tH\tI\t%v\n", time, s.Cfg.Export.JingleIds[rand.Intn(len(s.Cfg.Export.JingleIds))])
+					line := fmt.Sprintf("%v\tH\tI\t%v\n", listTime, s.Cfg.Export.JingleIds[rand.Intn(len(s.Cfg.Export.JingleIds))])
 					s.writeLine(dataWriter, line)
 					line = fmt.Sprintf("\tN\tF\t%v\n", file.Path)
 					err := s.writeLine(dataWriter, line)
@@ -255,7 +253,7 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 						delete(fileExportList.Files, createIndexFromTime(file.StartTime))
 					}
 				} else {
-					line := fmt.Sprintf("%v\tH\tF\t%v\n", time, file.Path)
+					line := fmt.Sprintf("%v\tH\tF\t%v\n", listTime, file.Path)
 					err := s.writeLine(dataWriter, line)
 					if err == nil {
 						delete(fileExportList.Files, createIndexFromTime(file.StartTime))

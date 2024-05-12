@@ -44,7 +44,6 @@ type AppConfig struct {
 		MairListUrl            string   `envconfig:"MAIRLIST_URL" default:"http://localhost:9300/"`
 		MairListUser           string   `envconfig:"MAIRLIST_USER" default:"dbtest"`
 		MairListPassword       string   `envconfig:"MAIRLIST_PASS" default:"dbtest"`
-		MairListOldFormat      bool     `envconfig:"MAIRLIST_OLDFMT" default:"false"`
 		AppendPlaylist         bool     `envconfig:"APPEND_PLAYLIST" default:"false"`
 		PrependJingle          bool     `envconfig:"PREPEND_JINGLE" default:"false"`
 		JingleIds              []string `envconfig:"JINGLE_IDS"`
