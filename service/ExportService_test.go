@@ -102,7 +102,7 @@ func Test_checkTime_noEndTime(t *testing.T) {
 		fi := domain.FileInfo{
 			Duration: length,
 		}
-		ok, detail := checkTime(fi, 1.0, 1.0)
+		ok, _, detail := checkTime(fi, 1.0, 1.0)
 		detailData := strings.Split(detail, ",")
 		assert.EqualValues(t, data.ok, ok)
 		assert.EqualValues(t, data.slot, strings.TrimSpace(detailData[1]))
@@ -115,8 +115,27 @@ func Test_checkTime_withEndTime(t *testing.T) {
 		StartTime: helper.TimeFromHourAndMinute(14, 0),
 		EndTime:   helper.TimeFromHourAndMinute(15, 0),
 	}
-	ok, detail := checkTime(fi, 1.0, 1.0)
+	ok, _, detail := checkTime(fi, 1.0, 1.0)
 
 	assert.EqualValues(t, ok, true)
 	assert.EqualValues(t, "Rounded actual duration: 60 min, Slot: 60min, Delta to slot: 0, planned duration: 60, delta to planned duration: 0", detail)
+}
+
+func Test_setStartTime_A(t *testing.T) {
+	var st time.Time
+
+	st = setStartTime(st, "14:00")
+	tt, _ := time.Parse("15:04", "14:00")
+
+	assert.EqualValues(t, st, tt)
+}
+
+func Test_setStartTime_B(t *testing.T) {
+	var st time.Time
+
+	st = setStartTime(st, "14:00")
+	st = setStartTime(st, "14:30")
+	tt, _ := time.Parse("15:04", "14:00")
+
+	assert.EqualValues(t, st, tt)
 }

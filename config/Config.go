@@ -48,6 +48,7 @@ type AppConfig struct {
 		PrependJingle          bool     `envconfig:"PREPEND_JINGLE" default:"false"`
 		JingleIds              []string `envconfig:"JINGLE_IDS"`
 		TerminateAfterDuration bool     `envconfig:"TERM_AFTER_DUR" default:"true"`
+		SilenceId              string   `envconfig:"SILENCE_ID" default:"0"`
 	}
 	CalCms struct {
 		QueryCalCms bool   `envconfig:"QUERY_CALCMS" default:"false"`

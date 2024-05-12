@@ -21,6 +21,7 @@ type FileInfo struct {
 	CalCmsInfoExtracted bool
 	BitRate             int64
 	FormatName          string
+	SlotLength          float64
 }
 
 type FileList []FileInfo
