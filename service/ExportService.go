@@ -243,6 +243,9 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 		} else {
 			s.writeStartComment(dataWriter)
 			for time, file := range fileExportList.Files {
+				if s.Cfg.Export.MairListOldFormat {
+					time = time + ":00"
+				}
 				if s.Cfg.Export.PrependJingle {
 					line := fmt.Sprintf("%v\tH\tI\t%v\n", time, s.Cfg.Export.JingleIds[rand.Intn(len(s.Cfg.Export.JingleIds))])
 					s.writeLine(dataWriter, line)
