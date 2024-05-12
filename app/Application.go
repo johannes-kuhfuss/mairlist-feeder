@@ -59,7 +59,7 @@ func StartApp() {
 	<-appEnd
 	cleanUp()
 
-	if srvErr := server.Shutdown(ctx); err != nil {
+	if srvErr := server.Shutdown(ctx); srvErr != nil {
 		logger.Error("Graceful shutdown failed", srvErr)
 	} else {
 		logger.Info("Graceful shutdown finished")

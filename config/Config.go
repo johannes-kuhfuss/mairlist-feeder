@@ -49,9 +49,9 @@ type AppConfig struct {
 		JingleIds           []string `envconfig:"JINGLE_IDS"`
 	}
 	CalCms struct {
-		QueryCalCms  bool   `envconfig:"QUERY_CALCMS" default:"false"`
-		CmsUrl       string `envconfig:"CALCMS_URL" default:"https://programm.coloradio.org/agenda/events.cgi"`
-		Template     string `envconfig:"CALCMS_TEMPLATE" default:"event.json-p"`
+		QueryCalCms bool   `envconfig:"QUERY_CALCMS" default:"false"`
+		CmsUrl      string `envconfig:"CALCMS_URL" default:"https://programm.coloradio.org/agenda/events.cgi"`
+		Template    string `envconfig:"CALCMS_TEMPLATE" default:"event.json-p"`
 	}
 	RunTime struct {
 		Router             *gin.Engine
@@ -74,10 +74,13 @@ var (
 
 func InitConfig(file string, config *AppConfig) api_error.ApiErr {
 	logger.Info(fmt.Sprintf("Initalizing configuration from file %v", file))
-	loadConfig(file)
-	err := envconfig.Process("", config)
+	err := loadConfig(file)
 	if err != nil {
-		return api_error.NewInternalServerError("Could not initalize configuration. Check your environment variables", err)
+		logger.Error("Error while loading config file: ", err)
+	}
+	err = envconfig.Process("", config)
+	if err != nil {
+		return api_error.NewInternalServerError("Could not initalize configuration: ", err)
 	}
 	setDefaults(config)
 	logger.Info("Done initalizing configuration")
@@ -94,7 +97,6 @@ func setDefaults(config *AppConfig) {
 func loadConfig(file string) error {
 	err := godotenv.Load(file)
 	if err != nil {
-		logger.Info("Could not open env file. Using Environment variable and defaults")
 		return err
 	}
 	return nil
