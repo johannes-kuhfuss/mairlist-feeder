@@ -121,7 +121,7 @@ func Test_checkTime_withEndTime(t *testing.T) {
 	assert.EqualValues(t, "Rounded actual duration: 60 min, Slot: 60min, Delta to slot: 0, planned duration: 60, delta to planned duration: 0", detail)
 }
 
-func Test_setStartTime_A(t *testing.T) {
+func Test_setStartTime_OneTimeValue(t *testing.T) {
 	var st time.Time
 
 	st = setStartTime(st, "14:00")
@@ -130,11 +130,21 @@ func Test_setStartTime_A(t *testing.T) {
 	assert.EqualValues(t, st, tt)
 }
 
-func Test_setStartTime_B(t *testing.T) {
+func Test_setStartTime_TwoTimeValues_ReturnsEarlier1(t *testing.T) {
 	var st time.Time
 
 	st = setStartTime(st, "14:00")
 	st = setStartTime(st, "14:30")
+	tt, _ := time.Parse("15:04", "14:00")
+
+	assert.EqualValues(t, st, tt)
+}
+
+func Test_setStartTime_TwoTimeValues_ReturnsEarlier2(t *testing.T) {
+	var st time.Time
+
+	st = setStartTime(st, "14:30")
+	st = setStartTime(st, "14:00")
 	tt, _ := time.Parse("15:04", "14:00")
 
 	assert.EqualValues(t, st, tt)

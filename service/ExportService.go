@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -134,6 +135,7 @@ func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengt
 		durDelta     float64
 		plannedAvail bool
 		detail       string
+		lenStr       string
 	)
 	roundedDurationMin := math.Round(fi.Duration / 60)
 	is30Min := (roundedDurationMin >= 30.0-shortDelta) && (roundedDurationMin <= 30.0+longDelta)
@@ -169,12 +171,19 @@ func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengt
 		plannedAvail = false
 	}
 	lOk := is30Min || is45Min || is60Min || is90Min || is120Min
-	if plannedAvail {
-		detail = fmt.Sprintf("Rounded actual duration: %v min, Slot: %.1f, Delta to slot: %v, planned duration: %v, delta to planned duration: %v",
-			roundedDurationMin, lengthSlot, slotDelta, plannedDur, durDelta)
+	if lengthSlot > 0.0 {
+		lenStr = strconv.Itoa(int(math.Round(lengthSlot))) + "min"
+
 	} else {
-		detail = fmt.Sprintf("Rounded actual duration: %v min, Slot: %.1f, Delta to slot: %v, no planned duration data available",
-			roundedDurationMin, lengthSlot, slotDelta)
+		lenStr = "N/A"
+	}
+
+	if plannedAvail {
+		detail = fmt.Sprintf("Rounded actual duration: %v min, Slot: %v, Delta to slot: %v, planned duration: %v, delta to planned duration: %v",
+			roundedDurationMin, lenStr, slotDelta, plannedDur, durDelta)
+	} else {
+		detail = fmt.Sprintf("Rounded actual duration: %v min, Slot: %v, Delta to slot: %v, no planned duration data available",
+			roundedDurationMin, lenStr, slotDelta)
 	}
 	return lOk, lengthSlot, detail
 }
