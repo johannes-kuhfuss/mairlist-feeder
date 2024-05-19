@@ -254,10 +254,12 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 		startTimeDisplay string
 		extractCount     int = 0
 	)
-	// /HH-MM
+	// /HH-MM (calCMS)
 	folder1Exp := regexp.MustCompile(`[\\/]+([01][0-9]|2[0-3])-(0[0-9]|[1-5][0-9])`)
 	// HHMM-HHMM
 	file1Exp := regexp.MustCompile(`^([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])\s?-\s?([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])[_ -]`)
+	// UL__HHMM-HHMM__ (upload tool)
+	file2Exp := regexp.MustCompile(`^UL__([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])-([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])__`)
 	files := s.Repo.GetAll()
 	if files != nil {
 		for _, file := range *files {
@@ -292,6 +294,16 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 						newInfo.EndTime, _ = convertTime(timeData[5:7], timeData[7:9], file.FolderDate)
 						newInfo.RuleMatched = "file HHMM-HHMM"
 					}
+
+				// Condition start time and end time is encoded in file name in the form "UL__HHMM-HHMM__" (upload tool)
+				case file2Exp.MatchString(fileName):
+					{
+						timeData = file2Exp.FindString(fileName)
+						newInfo.StartTime, _ = convertTime(timeData[4:6], timeData[6:8], file.FolderDate)
+						newInfo.EndTime, _ = convertTime(timeData[9:11], timeData[11:13], file.FolderDate)
+						newInfo.RuleMatched = "Upload Tool"
+					}
+
 				default:
 					{
 						newInfo.RuleMatched = "None"
