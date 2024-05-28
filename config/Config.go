@@ -38,17 +38,14 @@ type AppConfig struct {
 		CrawlCycleMin  int      `envconfig:"CRAWL_CYCLE_MIN" default:"20"`
 	}
 	Export struct {
-		ExportFolder           string   `envconfig:"EXPORT_FOLDER" default:"C:\\TEMP"`
-		ShortDeltaAllowance    float64  `envconfig:"SHORT_DELTA_ALLOWANCE" default:"5.0"`
-		LongDeltaAllowance     float64  `envconfig:"LONG_DELTA_ALLOWANCE" default:"8.0"`
-		MairListUrl            string   `envconfig:"MAIRLIST_URL" default:"http://localhost:9300/"`
-		MairListUser           string   `envconfig:"MAIRLIST_USER" default:"dbtest"`
-		MairListPassword       string   `envconfig:"MAIRLIST_PASS" default:"dbtest"`
-		AppendPlaylist         bool     `envconfig:"APPEND_PLAYLIST" default:"false"`
-		PrependJingle          bool     `envconfig:"PREPEND_JINGLE" default:"false"`
-		JingleIds              []string `envconfig:"JINGLE_IDS"`
-		TerminateAfterDuration bool     `envconfig:"TERM_AFTER_DUR" default:"true"`
-		SilenceId              string   `envconfig:"SILENCE_ID" default:"0"`
+		ExportFolder           string  `envconfig:"EXPORT_FOLDER" default:"C:\\TEMP"`
+		ShortDeltaAllowance    float64 `envconfig:"SHORT_DELTA_ALLOWANCE" default:"5.0"`
+		LongDeltaAllowance     float64 `envconfig:"LONG_DELTA_ALLOWANCE" default:"8.0"`
+		MairListUrl            string  `envconfig:"MAIRLIST_URL" default:"http://localhost:9300/"`
+		MairListUser           string  `envconfig:"MAIRLIST_USER" default:"dbtest"`
+		MairListPassword       string  `envconfig:"MAIRLIST_PASS" default:"dbtest"`
+		AppendPlaylist         bool    `envconfig:"APPEND_PLAYLIST" default:"false"`
+		TerminateAfterDuration bool    `envconfig:"TERM_AFTER_DUR" default:"true"`
 	}
 	CalCms struct {
 		QueryCalCms bool   `envconfig:"QUERY_CALCMS" default:"false"`

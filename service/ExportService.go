@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -261,20 +260,10 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 				startTime = setStartTime(startTime, time)
 				totalLength = totalLength + file.SlotLength
 				listTime := time + ":00"
-				if s.Cfg.Export.PrependJingle {
-					line := fmt.Sprintf("%v\tH\tI\t%v\n", listTime, s.Cfg.Export.JingleIds[rand.Intn(len(s.Cfg.Export.JingleIds))])
-					s.writeLine(dataWriter, line)
-					line = fmt.Sprintf("\tN\tF\t%v\n", file.Path)
-					err := s.writeLine(dataWriter, line)
-					if err == nil {
-						delete(fileExportList.Files, createIndexFromTime(file.StartTime))
-					}
-				} else {
-					line := fmt.Sprintf("%v\tH\tF\t%v\n", listTime, file.Path)
-					err := s.writeLine(dataWriter, line)
-					if err == nil {
-						delete(fileExportList.Files, createIndexFromTime(file.StartTime))
-					}
+				line := fmt.Sprintf("%v\tH\tF\t%v\n", listTime, file.Path)
+				err := s.writeLine(dataWriter, line)
+				if err == nil {
+					delete(fileExportList.Files, createIndexFromTime(file.StartTime))
 				}
 			}
 			if s.Cfg.Export.TerminateAfterDuration {
@@ -325,8 +314,7 @@ func (s DefaultExportService) writeStartComment(w *bufio.Writer) {
 func (s DefaultExportService) WriteStopper(w *bufio.Writer, startTime time.Time, tlen float64) {
 	dur := time.Duration(tlen * float64(time.Minute))
 	eh := startTime.Add(dur)
-	eh = eh.Add(-1 * time.Second)
-	line := fmt.Sprintf("%v\tH\tI\t%v\n", eh.Format("15:04:05"), s.Cfg.Export.SilenceId)
+	line := fmt.Sprintf("%v\tH\tD\tEnd of block\n", eh.Format("15:04:05"))
 	s.writeLine(w, line)
 }
 
