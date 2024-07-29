@@ -258,7 +258,12 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 			s.writeStartComment(dataWriter)
 			for time, file := range fileExportList.Files {
 				startTime = setStartTime(startTime, time)
-				totalLength = totalLength + file.SlotLength
+				if file.FromCalCMS {
+					plannedDur := file.EndTime.Sub(file.StartTime).Minutes()
+					totalLength = totalLength + plannedDur
+				} else {
+					totalLength = totalLength + file.SlotLength
+				}
 				listTime := time + ":00"
 				line := fmt.Sprintf("%v\tH\tF\t%v\n", listTime, file.Path)
 				err := s.writeLine(dataWriter, line)
