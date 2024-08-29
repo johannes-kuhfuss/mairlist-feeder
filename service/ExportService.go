@@ -60,7 +60,15 @@ func NewExportService(cfg *config.AppConfig, repo *repositories.DefaultFileRepos
 
 func (s DefaultExportService) Export() {
 	nextHour := getNextHour()
-	s.ExportForHour(nextHour)
+	if s.Cfg.Export.LimitTime {
+		// only 23:00, 00:00 and not on Mondays
+		if (nextHour == "23" || nextHour == "00") && (int(time.Now().Weekday()) != 1) {
+			s.ExportForHour(nextHour)
+		}
+	} else {
+		s.ExportForHour(nextHour)
+	}
+
 }
 
 func (s DefaultExportService) ExportAllHours() {

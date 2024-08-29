@@ -46,6 +46,7 @@ type AppConfig struct {
 		MairListPassword       string  `envconfig:"MAIRLIST_PASS" default:"dbtest"`
 		AppendPlaylist         bool    `envconfig:"APPEND_PLAYLIST" default:"false"`
 		TerminateAfterDuration bool    `envconfig:"TERM_AFTER_DUR" default:"true"`
+		LimitTime              bool    `envconfig:"LIMIT_TIME" default:"false"`
 	}
 	CalCms struct {
 		QueryCalCms bool   `envconfig:"QUERY_CALCMS" default:"false"`

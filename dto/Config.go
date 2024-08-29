@@ -31,6 +31,7 @@ type ConfigResp struct {
 	CrawlRunning               string
 	ExportRunning              string
 	CleanRunning               string
+	LimitTime                  string
 }
 
 func GetConfig(cfg *config.AppConfig) ConfigResp {
@@ -58,6 +59,7 @@ func GetConfig(cfg *config.AppConfig) ConfigResp {
 		CrawlRunning:               strconv.FormatBool(cfg.RunTime.CrawlRunning),
 		ExportRunning:              strconv.FormatBool(cfg.RunTime.ExportRunning),
 		CleanRunning:               strconv.FormatBool(cfg.RunTime.CleanRunning),
+		LimitTime:                  strconv.FormatBool(cfg.Export.LimitTime),
 	}
 	if cfg.Server.Host == "" {
 		resp.ServerHost = "localhost"
