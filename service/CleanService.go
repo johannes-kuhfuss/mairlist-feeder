@@ -25,6 +25,18 @@ func NewCleanService(cfg *config.AppConfig, repo *repositories.DefaultFileReposi
 	}
 }
 
+func isYesterdayOrOlder(folderDate string) bool {
+	const dateLayout = "2006-01-02"
+	fileDate, err := time.Parse(dateLayout, folderDate)
+	if err != nil {
+		logger.Error("Could not convert date: ", err)
+		return false
+	}
+	today := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC)
+	diff := today.Sub(fileDate).Hours() / 24
+	return diff >= 1
+}
+
 func (s DefaultCleanService) Clean() {
 	var (
 		filesCleaned int = 0
@@ -34,16 +46,10 @@ func (s DefaultCleanService) Clean() {
 	} else {
 		s.Cfg.RunTime.CleanRunning = true
 		logger.Info("Starting file list clean-up...")
-		const dateLayout = "2006-01-02"
-		cleanDate := time.Now().AddDate(0, 0, -1)
 		files := s.Repo.GetAll()
 		if files != nil {
 			for _, file := range *files {
-				fileDate, err := time.Parse(dateLayout, file.FolderDate)
-				if err != nil {
-					logger.Error("Could not convert date: ", err)
-				}
-				if cleanDate.Sub(fileDate) >= time.Duration(24*time.Hour) {
+				if isYesterdayOrOlder(file.FolderDate) {
 					logger.Info(fmt.Sprintf("Removing entry for expired file %v", file.Path))
 					err := s.Repo.Delete(file.Path)
 					if err != nil {
