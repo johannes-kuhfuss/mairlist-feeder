@@ -149,8 +149,8 @@ func scheduleBgJobs() {
 	bgJobs = cron.New()
 	// Crawl every x minutes
 	bgJobs.AddFunc(crawlCycle, crawlService.Crawl)
-	// Clean 02:03 local time
-	bgJobs.AddFunc("0 3 2 * * *", cleanService.Clean)
+	// Clean 04:30 local time
+	bgJobs.AddFunc("0 30 4 * * *", cleanService.Clean)
 	// Export every hour, 10 minutes to the hour
 	bgJobs.AddFunc("0 50 * * * *", exportService.Export)
 	bgJobs.Start()
