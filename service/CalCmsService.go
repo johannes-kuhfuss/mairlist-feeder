@@ -154,7 +154,7 @@ func (s DefaultCalCmsService) checkCalCmsData(file domain.FileInfo) (*dto.CalCms
 		return nil, err
 	}
 	if len(info) == 0 {
-		logger.Warn(fmt.Sprintf("No information from calCMS for Id %v", file.EventId))
+		logger.Warn(fmt.Sprintf("No information from calCMS for Id %v in today's calCMS events", file.EventId))
 		return nil, errors.New("no such id in calCMS")
 	}
 	if len(info) != 1 {
