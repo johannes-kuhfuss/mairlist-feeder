@@ -24,6 +24,7 @@ type AppConfig struct {
 	Gin struct {
 		Mode         string `envconfig:"GIN_MODE" default:"release"`
 		TemplatePath string `envconfig:"TEMPLATE_PATH" default:"./templates/"`
+		LogToLogger  bool   `envconfig:"LOG_TO_LOGGER" default:"false"`
 	}
 	Misc struct {
 		TestCrawl    bool   `envconfig:"TEST_CRAWL" default:"false"`

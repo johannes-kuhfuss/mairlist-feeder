@@ -73,9 +73,11 @@ func getCmdLine() {
 
 func initRouter() {
 	gin.SetMode(cfg.Gin.Mode)
-	gin.DefaultWriter = logger.GetLogger()
 	router := gin.New()
-	router.Use(gin.Logger())
+	if cfg.Gin.LogToLogger {
+		gin.DefaultWriter = logger.GetLogger()
+		router.Use(gin.Logger())
+	}
 	router.Use(gin.Recovery())
 	router.SetTrustedProxies(nil)
 	globPath := filepath.Join(cfg.Gin.TemplatePath, "*.tmpl")
