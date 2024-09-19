@@ -135,6 +135,7 @@ func mapUrls() {
 	cfg.RunTime.Router.GET("/filelist", statsUiHandler.FileListPage)
 	cfg.RunTime.Router.GET("/actions", statsUiHandler.ActionPage)
 	cfg.RunTime.Router.POST("/actions", statsUiHandler.ExecAction)
+	cfg.RunTime.Router.GET("/logs", statsUiHandler.LogsPage)
 	cfg.RunTime.Router.GET("/about", statsUiHandler.AboutPage)
 }
 

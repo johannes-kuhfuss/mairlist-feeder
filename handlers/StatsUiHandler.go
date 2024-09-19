@@ -55,6 +55,14 @@ func (uh *StatsUiHandler) ActionPage(c *gin.Context) {
 	})
 }
 
+func (uh *StatsUiHandler) LogsPage(c *gin.Context) {
+	logs := logger.GetLogList()
+	c.HTML(http.StatusOK, "logs.page.tmpl", gin.H{
+		"title": "Logs",
+		"logs":  logs,
+	})
+}
+
 func (uh *StatsUiHandler) AboutPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "about.page.tmpl", gin.H{
 		"title": "About",

@@ -212,3 +212,20 @@ func Test_ActionExec_InvalidHour_ReturnsError(t *testing.T) {
 	assert.EqualValues(t, http.StatusBadRequest, res.StatusCode)
 	assert.EqualValues(t, "{\"message\":\"hour must be between 00 and 23\",\"statuscode\":400,\"causes\":null}", string(data))
 }
+
+func Test_LogsPage_Returns_Logs(t *testing.T) {
+	teardown := setupUiTest()
+	defer teardown()
+	router.GET("/logs", uh.LogsPage)
+	request := httptest.NewRequest(http.MethodGet, "/logs", nil)
+
+	router.ServeHTTP(recorder, request)
+	res := recorder.Result()
+	defer res.Body.Close()
+	data, err := io.ReadAll(res.Body)
+	containsTitle := strings.Contains(string(data), "<title>Logs</title>")
+
+	assert.EqualValues(t, http.StatusOK, res.StatusCode)
+	assert.Nil(t, err)
+	assert.True(t, containsTitle)
+}

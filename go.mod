@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/gin-gonic/gin v1.10.0
-	github.com/johannes-kuhfuss/services_utils v1.0.17
+	github.com/johannes-kuhfuss/services_utils v1.0.18
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/stretchr/testify v1.9.0
