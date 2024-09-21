@@ -62,13 +62,12 @@ func (s DefaultCrawlService) Crawl() {
 }
 
 func (s DefaultCrawlService) CrawlRun() {
-	rootFolder := s.Cfg.Crawl.RootFolder
 	s.Cfg.RunTime.CrawlRunNumber++
 	s.Cfg.RunTime.LastCrawlDate = time.Now()
 	logger.Info(fmt.Sprintf("Root folder: %v. Starting crawl #%v.", s.Cfg.Crawl.RootFolder, s.Cfg.RunTime.CrawlRunNumber))
-	fileCount, err := s.crawlFolder(rootFolder, s.Cfg.Crawl.Extensions)
+	fileCount, err := s.crawlFolder(s.Cfg.Crawl.RootFolder, s.Cfg.Crawl.Extensions)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Error crawling folder %v: ", rootFolder), err)
+		logger.Error(fmt.Sprintf("Error crawling folder %v: ", s.Cfg.Crawl.RootFolder), err)
 	}
 	s.Cfg.RunTime.FilesInList = s.Repo.Size()
 	logger.Info(fmt.Sprintf("Finished crawl run #%v. Added %v new files. %v files in list total.", s.Cfg.RunTime.CrawlRunNumber, fileCount, s.Cfg.RunTime.FilesInList))
@@ -122,7 +121,7 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string)
 	if err != nil {
 		return fileCount, err
 	} else {
-		return fileCount, err
+		return fileCount, nil
 	}
 }
 
