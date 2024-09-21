@@ -12,6 +12,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
@@ -24,6 +25,10 @@ import (
 type ExportService interface {
 	Export()
 }
+
+var (
+	exmu sync.Mutex
+)
 
 type DefaultExportService struct {
 	Cfg  *config.AppConfig
@@ -77,32 +82,26 @@ func (s DefaultExportService) ExportAllHours() {
 	}
 }
 
-func (s DefaultExportService) EndExport() {
-	s.Cfg.RunTime.ExportRunning = false
-}
-
 func (s DefaultExportService) ExportForHour(hour string) {
-	if s.Cfg.RunTime.ExportRunning {
-		logger.Warn("Export already running. Not starting another one.")
-	} else {
-		s.Cfg.RunTime.ExportRunning = true
-		defer s.EndExport()
-		files := s.Repo.GetForHour(hour)
-		if files != nil {
-			logger.Info(fmt.Sprintf("Starting export for timeslot %v:00 ...", hour))
-			s.checkTimeAndLenghth(files)
-			exportPath, err := s.ExportToPlayout(hour)
-			if s.Cfg.Export.AppendPlaylist && exportPath != "" && err == nil {
-				err := s.AppendPlaylist(exportPath)
-				if err != nil {
-					logger.Error("Error appending playlist", err)
-				}
+	exmu.Lock()
+	defer exmu.Unlock()
+	s.Cfg.RunTime.ExportRunning = true
+	files := s.Repo.GetForHour(hour)
+	if files != nil {
+		logger.Info(fmt.Sprintf("Starting export for timeslot %v:00 ...", hour))
+		s.checkTimeAndLenghth(files)
+		exportPath, err := s.ExportToPlayout(hour)
+		if s.Cfg.Export.AppendPlaylist && exportPath != "" && err == nil {
+			err := s.AppendPlaylist(exportPath)
+			if err != nil {
+				logger.Error("Error appending playlist", err)
 			}
-			logger.Info(fmt.Sprintf("Finished exporting for timeslot %v:00 ...", hour))
-		} else {
-			logger.Info(fmt.Sprintf("No files to export for timeslot %v:00 ...", hour))
 		}
+		logger.Info(fmt.Sprintf("Finished exporting for timeslot %v:00 ...", hour))
+	} else {
+		logger.Info(fmt.Sprintf("No files to export for timeslot %v:00 ...", hour))
 	}
+	s.Cfg.RunTime.ExportRunning = false
 }
 
 func (s DefaultExportService) checkTimeAndLenghth(files *domain.FileList) {

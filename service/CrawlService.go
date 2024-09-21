@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
@@ -27,6 +28,10 @@ type CrawlService interface {
 	Crawl()
 }
 
+var (
+	crmu sync.Mutex
+)
+
 type DefaultCrawlService struct {
 	Cfg    *config.AppConfig
 	Repo   *repositories.DefaultFileRepository
@@ -41,24 +46,18 @@ func NewCrawlService(cfg *config.AppConfig, repo *repositories.DefaultFileReposi
 	}
 }
 
-func (s DefaultCrawlService) EndCrawl() {
-	s.Cfg.RunTime.CrawlRunning = false
-}
-
 func (s DefaultCrawlService) Crawl() {
 	if s.Cfg.Crawl.RootFolder == "" {
 		logger.Warn("No root folder given. Not running")
 		return
 	}
-	if s.Cfg.RunTime.CrawlRunning {
-		logger.Warn("Crawl already running. Not starting another one.")
-	} else {
-		s.Cfg.RunTime.CrawlRunning = true
-		defer s.EndCrawl()
-		s.CrawlRun()
-		if s.Cfg.CalCms.QueryCalCms {
-			s.CalSvc.Query()
-		}
+	crmu.Lock()
+	defer crmu.Unlock()
+	s.Cfg.RunTime.CrawlRunning = true
+	s.CrawlRun()
+	s.Cfg.RunTime.CrawlRunning = false
+	if s.Cfg.CalCms.QueryCalCms {
+		s.CalSvc.Query()
 	}
 }
 
