@@ -41,6 +41,10 @@ func NewCrawlService(cfg *config.AppConfig, repo *repositories.DefaultFileReposi
 	}
 }
 
+func (s DefaultCrawlService) EndCrawl() {
+	s.Cfg.RunTime.CrawlRunning = false
+}
+
 func (s DefaultCrawlService) Crawl() {
 	if s.Cfg.Crawl.RootFolder == "" {
 		logger.Warn("No root folder given. Not running")
@@ -50,11 +54,11 @@ func (s DefaultCrawlService) Crawl() {
 		logger.Warn("Crawl already running. Not starting another one.")
 	} else {
 		s.Cfg.RunTime.CrawlRunning = true
+		defer s.EndCrawl()
 		s.CrawlRun()
 		if s.Cfg.CalCms.QueryCalCms {
 			s.CalSvc.Query()
 		}
-		s.Cfg.RunTime.CrawlRunning = false
 	}
 }
 

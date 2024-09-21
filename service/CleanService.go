@@ -37,6 +37,10 @@ func isYesterdayOrOlder(folderDate string) bool {
 	return diff >= 1
 }
 
+func (s DefaultCleanService) EndClean() {
+	s.Cfg.RunTime.CleanRunning = false
+}
+
 func (s DefaultCleanService) Clean() {
 	var (
 		filesCleaned int = 0
@@ -45,6 +49,7 @@ func (s DefaultCleanService) Clean() {
 		logger.Warn("Clean-up already running. Not starting another one.")
 	} else {
 		s.Cfg.RunTime.CleanRunning = true
+		defer s.EndClean()
 		logger.Info("Starting file list clean-up...")
 		files := s.Repo.GetAll()
 		if files != nil {
@@ -61,6 +66,5 @@ func (s DefaultCleanService) Clean() {
 			}
 		}
 		logger.Info(fmt.Sprintf("File list clean-up done. Cleaned %v entries.", filesCleaned))
-		s.Cfg.RunTime.CleanRunning = false
 	}
 }

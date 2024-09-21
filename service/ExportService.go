@@ -77,11 +77,16 @@ func (s DefaultExportService) ExportAllHours() {
 	}
 }
 
+func (s DefaultExportService) EndExport() {
+	s.Cfg.RunTime.ExportRunning = false
+}
+
 func (s DefaultExportService) ExportForHour(hour string) {
 	if s.Cfg.RunTime.ExportRunning {
 		logger.Warn("Export already running. Not starting another one.")
 	} else {
 		s.Cfg.RunTime.ExportRunning = true
+		defer s.EndExport()
 		files := s.Repo.GetForHour(hour)
 		if files != nil {
 			logger.Info(fmt.Sprintf("Starting export for timeslot %v:00 ...", hour))
@@ -97,7 +102,6 @@ func (s DefaultExportService) ExportForHour(hour string) {
 		} else {
 			logger.Info(fmt.Sprintf("No files to export for timeslot %v:00 ...", hour))
 		}
-		s.Cfg.RunTime.ExportRunning = false
 	}
 }
 
