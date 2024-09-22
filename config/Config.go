@@ -66,6 +66,7 @@ type AppConfig struct {
 		CrawlRunning       bool
 		ExportRunning      bool
 		CleanRunning       bool
+		LastCleanDate      time.Time
 	}
 }
 

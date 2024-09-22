@@ -32,6 +32,7 @@ type ConfigResp struct {
 	ExportRunning              string
 	CleanRunning               string
 	LimitTime                  string
+	LastCleanDate              string
 }
 
 func GetConfig(cfg *config.AppConfig) ConfigResp {
@@ -54,12 +55,25 @@ func GetConfig(cfg *config.AppConfig) ConfigResp {
 		CrawlRunNumber:             strconv.Itoa(cfg.RunTime.CrawlRunNumber),
 		LastCrawlDate:              cfg.RunTime.LastCrawlDate.Local().Format("2006-01-02 15:04:05 -0700"),
 		FilesInList:                strconv.Itoa(cfg.RunTime.FilesInList),
-		LastExportDate:             cfg.RunTime.LastExportDate.Local().Format("2006-01-02 15:04:05 -0700"),
-		LastExportFileName:         cfg.RunTime.LastExportFileName,
 		CrawlRunning:               strconv.FormatBool(cfg.RunTime.CrawlRunning),
 		ExportRunning:              strconv.FormatBool(cfg.RunTime.ExportRunning),
 		CleanRunning:               strconv.FormatBool(cfg.RunTime.CleanRunning),
 		LimitTime:                  strconv.FormatBool(cfg.Export.LimitTime),
+	}
+	if cfg.RunTime.LastExportDate.IsZero() {
+		resp.LastExportDate = "N/A"
+	} else {
+		resp.LastExportDate = cfg.RunTime.LastExportDate.Local().Format("2006-01-02 15:04:05 -0700")
+	}
+	if cfg.RunTime.LastCleanDate.IsZero() {
+		resp.LastCleanDate = "N/A"
+	} else {
+		resp.LastCleanDate = cfg.RunTime.LastCleanDate.Local().Format("2006-01-02 15:04:05 -0700")
+	}
+	if cfg.RunTime.LastExportFileName == "" {
+		resp.LastExportFileName = "N/A"
+	} else {
+		resp.LastExportFileName = cfg.RunTime.LastExportFileName
 	}
 	if cfg.Server.Host == "" {
 		resp.ServerHost = "localhost"

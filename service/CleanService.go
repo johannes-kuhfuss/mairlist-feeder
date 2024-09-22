@@ -49,6 +49,7 @@ func (s DefaultCleanService) Clean() {
 	clmu.Lock()
 	defer clmu.Unlock()
 	s.Cfg.RunTime.CleanRunning = true
+	s.Cfg.RunTime.LastCleanDate = time.Now()
 	logger.Info("Starting file list clean-up...")
 	files := s.Repo.GetAll()
 	if files != nil {
