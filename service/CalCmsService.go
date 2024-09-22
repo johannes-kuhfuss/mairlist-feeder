@@ -104,7 +104,8 @@ func (s DefaultCalCmsService) Query() {
 			logger.Error("Cannot convert CalCms response data to Json", err)
 			return
 		}
-		s.EnrichFileInformation()
+		enriched := s.EnrichFileInformation()
+		logger.Info(fmt.Sprintf("Added information from calCMS for %v files", enriched))
 		return
 	} else {
 		logger.Warn("CalCms query not enabled in configuration. Not querying.")
@@ -112,11 +113,13 @@ func (s DefaultCalCmsService) Query() {
 	}
 }
 
-func (s DefaultCalCmsService) EnrichFileInformation() {
+func (s DefaultCalCmsService) EnrichFileInformation() int {
 	var (
-		newFile domain.FileInfo
+		newFile        domain.FileInfo
+		calCmsEnriched int
 	)
 	logger.Info("Starting to add information from calCMS...")
+	calCmsEnriched = 0
 	files := s.Repo.GetAll()
 	if files != nil {
 		for _, file := range *files {
@@ -137,6 +140,7 @@ func (s DefaultCalCmsService) EnrichFileInformation() {
 				newFile.EndTime = info.EndTime
 				newFile.CalCmsTitle = info.Title
 				newFile.CalCmsInfoExtracted = true
+				calCmsEnriched++
 				err = s.Repo.Store(newFile)
 				if err != nil {
 					logger.Error("Error updating information in file repository", err)
@@ -145,6 +149,7 @@ func (s DefaultCalCmsService) EnrichFileInformation() {
 		}
 	}
 	logger.Info("Done adding information from calCMS.")
+	return calCmsEnriched
 }
 
 func (s DefaultCalCmsService) checkCalCmsData(file domain.FileInfo) (*dto.CalCmsEntry, error) {
