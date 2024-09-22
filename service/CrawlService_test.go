@@ -1,6 +1,7 @@
 package service
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -168,4 +169,27 @@ func Test_convertTime_CorrectValues_Returns_Time(t *testing.T) {
 	ti, e := convertTime("11", "12", "2024-09-21")
 	assert.Nil(t, e)
 	assert.EqualValues(t, time.Date(2024, time.September, 21, 11, 12, 0, 0, time.Local), ti)
+}
+
+func Test_parseTechMd_NoDate_Returns_Error(t *testing.T) {
+	_, e := parseTechMd([]byte{})
+	assert.NotNil(t, e)
+	assert.EqualValues(t, "unexpected end of JSON input", e.Error())
+}
+
+func Test_parseTechMd_NoDuration_Returns_Error(t *testing.T) {
+	data, _ := os.ReadFile("../samples/ffprobe_nodur.json")
+	_, e := parseTechMd(data)
+	assert.NotNil(t, e)
+	assert.EqualValues(t, "strconv.ParseFloat: parsing \"A\": invalid syntax", e.Error())
+}
+
+func Test_parseTechMd_CorrectData_Returns_TechMD(t *testing.T) {
+	data, _ := os.ReadFile("../samples/ffprobe_allok.json")
+	tm, e := parseTechMd(data)
+	assert.Nil(t, e)
+	assert.NotNil(t, tm)
+	assert.EqualValues(t, 5.034, tm.DurationSec)
+	assert.EqualValues(t, 34, tm.BitRate)
+	assert.EqualValues(t, "MP2/3 (MPEG audio layer 2/3)", tm.FormatName)
 }

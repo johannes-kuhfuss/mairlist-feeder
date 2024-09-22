@@ -1,0 +1,15 @@
+{
+    "format": {
+        "filename": "D:\\Data\\code\\github.com\\johannes-kuhfuss\\mairlist-feeder\\samples\\1600-1700_sine1k.mp3",
+        "nb_streams": 1,
+        "nb_programs": 0,
+        "nb_stream_groups": 0,
+        "format_name": "mp3",
+        "format_long_name": "MP2/3 (MPEG audio layer 2/3)",
+        "start_time": "0.025057",
+        "duration": "5.034",
+        "size": "21819",
+        "bit_rate": "34622",
+        "probe_score": 51
+    }
+}
