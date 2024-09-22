@@ -122,3 +122,23 @@ func Test_extractFileInfo_AnyFile_ReturnsData(t *testing.T) {
 	assert.EqualValues(t, false, fires.FromCalCMS)
 	assert.EqualValues(t, "None", fires.RuleMatched)
 }
+
+func Test_extractFileInfo_RealFile_ReturnsData(t *testing.T) {
+	teardown := setupTestCrawl()
+	defer teardown()
+	cfgCrawl.Crawl.FfprobePath = "../prog/ffprobe.exe"
+	fi1 := domain.FileInfo{
+		Path:       "../samples/1600-1700_sine1k.mp3",
+		FolderDate: "2024-09-22",
+	}
+	repo.Store(fi1)
+	n, e := crawlSvc.extractFileInfo()
+	fires := repo.Get(fi1.Path)
+	assert.Nil(t, e)
+	assert.EqualValues(t, 1, n)
+	assert.EqualValues(t, false, fires.FromCalCMS)
+	assert.EqualValues(t, "file HHMM-HHMM", fires.RuleMatched)
+	assert.EqualValues(t, 5.041633, fires.Duration)
+	assert.EqualValues(t, 34, fires.BitRate)
+	assert.EqualValues(t, "MP2/3 (MPEG audio layer 2/3)", fires.FormatName)
+}
