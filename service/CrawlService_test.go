@@ -142,3 +142,30 @@ func Test_extractFileInfo_RealFile_ReturnsData(t *testing.T) {
 	assert.EqualValues(t, 34, fires.BitRate)
 	assert.EqualValues(t, "MP2/3 (MPEG audio layer 2/3)", fires.FormatName)
 }
+
+func Test_convertTime_WrongStartTime_Returns_Error(t *testing.T) {
+	ti, e := convertTime("A", "B", "C")
+	assert.EqualValues(t, time.Time{}, ti)
+	assert.NotNil(t, e)
+	assert.EqualValues(t, "strconv.Atoi: parsing \"A\": invalid syntax", e.Error())
+}
+
+func Test_convertTime_WrongEndTime_Returns_Error(t *testing.T) {
+	ti, e := convertTime("11", "B", "C")
+	assert.EqualValues(t, time.Time{}, ti)
+	assert.NotNil(t, e)
+	assert.EqualValues(t, "strconv.Atoi: parsing \"B\": invalid syntax", e.Error())
+}
+
+func Test_convertTime_WrongDate_Returns_Error(t *testing.T) {
+	ti, e := convertTime("11", "12", "C")
+	assert.EqualValues(t, time.Time{}, ti)
+	assert.NotNil(t, e)
+	assert.EqualValues(t, "parsing time \"C\" as \"2006-01-02\": cannot parse \"C\" as \"2006\"", e.Error())
+}
+
+func Test_convertTime_CorrectValues_Returns_Time(t *testing.T) {
+	ti, e := convertTime("11", "12", "2024-09-21")
+	assert.Nil(t, e)
+	assert.EqualValues(t, time.Date(2024, time.September, 21, 11, 12, 0, 0, time.Local), ti)
+}
