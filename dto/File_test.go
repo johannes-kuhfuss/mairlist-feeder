@@ -58,7 +58,7 @@ func Test_GetFiles_TwoFiles_ReturnsFileData(t *testing.T) {
 		ScanTime:            time.Time{},
 		FolderDate:          "2023-12-31",
 		RuleMatched:         "None",
-		EventId:             1,
+		EventId:             0,
 		CalCmsTitle:         "",
 		CalCmsInfoExtracted: false,
 	}
@@ -70,4 +70,44 @@ func Test_GetFiles_TwoFiles_ReturnsFileData(t *testing.T) {
 	assert.EqualValues(t, 2, len(res))
 	assert.EqualValues(t, "2023-12-31", res[0].FolderDate)
 	assert.EqualValues(t, "2023-12-31", res[1].FolderDate)
+}
+
+func Test_buildCalCmsInfo_Returns_Info1(t *testing.T) {
+	fi1 := domain.FileInfo{
+		Path:                "A",
+		ModTime:             time.Time{},
+		Duration:            3600,
+		StartTime:           helper.TimeFromHourAndMinute(11, 0),
+		EndTime:             time.Time{},
+		FromCalCMS:          true,
+		InfoExtracted:       true,
+		ScanTime:            time.Time{},
+		FolderDate:          "2023-12-31",
+		RuleMatched:         "None",
+		EventId:             1,
+		CalCmsTitle:         "myTitle",
+		CalCmsInfoExtracted: true,
+	}
+	s := buildCalCmsInfo(fi1)
+	assert.EqualValues(t, "Yes, Yes, \"myTitle\"", s)
+}
+
+func Test_buildCalCmsInfo_Returns_Info2(t *testing.T) {
+	fi1 := domain.FileInfo{
+		Path:                "A",
+		ModTime:             time.Time{},
+		Duration:            3600,
+		StartTime:           helper.TimeFromHourAndMinute(11, 0),
+		EndTime:             time.Time{},
+		FromCalCMS:          false,
+		InfoExtracted:       true,
+		ScanTime:            time.Time{},
+		FolderDate:          "2023-12-31",
+		RuleMatched:         "None",
+		EventId:             1,
+		CalCmsTitle:         "",
+		CalCmsInfoExtracted: false,
+	}
+	s := buildCalCmsInfo(fi1)
+	assert.EqualValues(t, "No, No, None", s)
 }
