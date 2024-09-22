@@ -142,8 +142,9 @@ func (s DefaultCrawlService) parseEventId(srcPath string) int {
 
 func (s DefaultCrawlService) extractFileInfo() (int, error) {
 	var (
-		startTimeDisplay string
-		extractCount     int = 0
+		startTimeDisplay   string
+		extractCount       int = 0
+		roundedDurationMin float64
 	)
 	// /HH-MM (calCMS)
 	folder1Exp := regexp.MustCompile(`[\\/]+([01][0-9]|2[0-3])-(0[0-9]|[1-5][0-9])`)
@@ -161,10 +162,12 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 				techMd, err := analyzeTechMd(file.Path, s.Cfg.Crawl.FfProbeTimeOut, s.Cfg.Crawl.FfprobePath)
 				if err != nil {
 					logger.Error("Could not analyze file length: ", err)
+				} else {
+					newInfo.Duration = techMd.DurationSec
+					newInfo.BitRate = techMd.BitRate
+					newInfo.FormatName = techMd.FormatName
+					roundedDurationMin = math.Round(techMd.DurationSec / 60)
 				}
-				newInfo.Duration = techMd.DurationSec
-				newInfo.BitRate = techMd.BitRate
-				newInfo.FormatName = techMd.FormatName
 				folderName := filepath.Dir(file.Path)
 				fileName := filepath.Base(file.Path)
 				switch {
@@ -185,7 +188,6 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 						newInfo.EndTime, _ = convertTime(timeData[5:7], timeData[7:9], file.FolderDate)
 						newInfo.RuleMatched = "file HHMM-HHMM"
 					}
-
 				// Condition start time and end time is encoded in file name in the form "UL__HHMM-HHMM__" (upload tool)
 				case file2Exp.MatchString(fileName):
 					{
@@ -194,7 +196,6 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 						newInfo.EndTime, _ = convertTime(timeData[9:11], timeData[11:13], file.FolderDate)
 						newInfo.RuleMatched = "Upload Tool"
 					}
-
 				default:
 					{
 						newInfo.RuleMatched = "None"
@@ -211,7 +212,6 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 				} else {
 					startTimeDisplay = newInfo.StartTime.Format("15:04")
 				}
-				roundedDurationMin := math.Round(techMd.DurationSec / 60)
 				logger.Info(fmt.Sprintf("Time Slot: % v, File: %v - Length (min): %v", startTimeDisplay, file.Path, roundedDurationMin))
 			}
 		}
