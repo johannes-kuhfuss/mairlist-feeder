@@ -254,7 +254,7 @@ func analyzeTechMd(essencePath string, timeout int, ffprobePath string) (techMet
 	cancel()
 	techMd, err := parseTechMd(outJson)
 	if err != nil {
-		logger.Error("Could not parse duration: ", err)
+		logger.Error("Could not parse technical metadata from ffprobe: ", err)
 		return nil, err
 	}
 	return techMd, nil
