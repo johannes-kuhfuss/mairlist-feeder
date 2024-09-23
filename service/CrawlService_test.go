@@ -193,3 +193,17 @@ func Test_parseTechMd_CorrectData_Returns_TechMD(t *testing.T) {
 	assert.EqualValues(t, 34, tm.BitRate)
 	assert.EqualValues(t, "MP2/3 (MPEG audio layer 2/3)", tm.FormatName)
 }
+
+func Test_analyzeTechMd_WrongFfprobePath_Returns_Error(t *testing.T) {
+	d, e := analyzeTechMd("/here/file", 5, "/here/no/ffprobe")
+	assert.Nil(t, d)
+	assert.NotNil(t, e)
+	assert.EqualValues(t, "exec: \"/here/no/ffprobe\": executable file not found in %PATH%", e.Error())
+}
+
+func Test_analyzeTechMd_SampleFile_Returns_TechMd(t *testing.T) {
+	d, e := analyzeTechMd("../samples/1600-1700_sine1k.mp3", 5, "../prog/ffprobe.exe")
+	assert.Nil(t, e)
+	assert.NotNil(t, d)
+	assert.EqualValues(t, 5.041633, d.DurationSec)
+}
