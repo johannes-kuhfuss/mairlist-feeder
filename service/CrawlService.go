@@ -239,12 +239,12 @@ func convertTime(t1str string, t2str string, folderDate string) (time.Time, erro
 	return time, nil
 }
 
-func analyzeTechMd(path string, timeout int, ffprobe string) (techMetadata *dto.TechnicalMetadata, err error) {
+func analyzeTechMd(essencePath string, timeout int, ffprobePath string) (techMetadata *dto.TechnicalMetadata, err error) {
 	ctx := context.Background()
 	timeoutDuration := time.Duration(timeout) * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeoutDuration)
 	// Syntax: ffprobe -show_format -print_format json -loglevel quiet <input_file>
-	cmd := exec.CommandContext(ctx, ffprobe, "-show_format", "-print_format", "json", "-loglevel", "quiet", path)
+	cmd := exec.CommandContext(ctx, ffprobePath, "-show_format", "-print_format", "json", "-loglevel", "quiet", essencePath)
 	outJson, err := cmd.CombinedOutput()
 	if err != nil {
 		cancel()
