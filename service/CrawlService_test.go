@@ -12,17 +12,17 @@ import (
 )
 
 var (
-	cfgCrawl config.AppConfig
-	crawlSvc DefaultCrawlService
-	repo     repositories.DefaultFileRepository
+	cfgCrawl  config.AppConfig
+	crawlSvc  DefaultCrawlService
+	crawlRepo repositories.DefaultFileRepository
 )
 
 func setupTestCrawl() func() {
 	config.InitConfig(config.EnvFile, &cfgCrawl)
-	repo = repositories.NewFileRepository(&cfgCrawl)
-	crawlSvc = NewCrawlService(&cfgCrawl, &repo, nil)
+	crawlRepo = repositories.NewFileRepository(&cfgCrawl)
+	crawlSvc = NewCrawlService(&cfgCrawl, &crawlRepo, nil)
 	return func() {
-		repo.DeleteAllData()
+		crawlRepo.DeleteAllData()
 	}
 }
 
@@ -62,9 +62,9 @@ func Test_extractFileInfo_FileCalCms_ReturnsData(t *testing.T) {
 		Path:       "Z:\\sendungen\\2024\\09\\22\\21-00\\test.mp3",
 		FolderDate: "2024-09-22",
 	}
-	repo.Store(fi1)
+	crawlRepo.Store(fi1)
 	n, e := crawlSvc.extractFileInfo()
-	fires := repo.Get(fi1.Path)
+	fires := crawlRepo.Get(fi1.Path)
 	assert.Nil(t, e)
 	assert.EqualValues(t, 1, n)
 	assert.EqualValues(t, true, fires.FromCalCMS)
@@ -79,9 +79,9 @@ func Test_extractFileInfo_FileNamingConvention_ReturnsData(t *testing.T) {
 		Path:       "Z:\\sendungen\\2024\\09\\22\\2000-2100_sendung-xyz.mp3",
 		FolderDate: "2024-09-22",
 	}
-	repo.Store(fi1)
+	crawlRepo.Store(fi1)
 	n, e := crawlSvc.extractFileInfo()
-	fires := repo.Get(fi1.Path)
+	fires := crawlRepo.Get(fi1.Path)
 	assert.Nil(t, e)
 	assert.EqualValues(t, 1, n)
 	assert.EqualValues(t, false, fires.FromCalCMS)
@@ -97,9 +97,9 @@ func Test_extractFileInfo_Uploadtool_ReturnsData(t *testing.T) {
 		Path:       "Z:\\sendungen\\2024\\09\\22\\UL__1800-1900__sendung-xyz.mp3",
 		FolderDate: "2024-09-22",
 	}
-	repo.Store(fi1)
+	crawlRepo.Store(fi1)
 	n, e := crawlSvc.extractFileInfo()
-	fires := repo.Get(fi1.Path)
+	fires := crawlRepo.Get(fi1.Path)
 	assert.Nil(t, e)
 	assert.EqualValues(t, 1, n)
 	assert.EqualValues(t, false, fires.FromCalCMS)
@@ -115,9 +115,9 @@ func Test_extractFileInfo_AnyFile_ReturnsData(t *testing.T) {
 		Path:       "Z:\\sendungen\\2024\\09\\22\\2100_sendung-xyz.mp3",
 		FolderDate: "2024-09-22",
 	}
-	repo.Store(fi1)
+	crawlRepo.Store(fi1)
 	n, e := crawlSvc.extractFileInfo()
-	fires := repo.Get(fi1.Path)
+	fires := crawlRepo.Get(fi1.Path)
 	assert.Nil(t, e)
 	assert.EqualValues(t, 1, n)
 	assert.EqualValues(t, false, fires.FromCalCMS)
@@ -132,9 +132,9 @@ func Test_extractFileInfo_RealFile_ReturnsData(t *testing.T) {
 		Path:       "../samples/1600-1700_sine1k.mp3",
 		FolderDate: "2024-09-22",
 	}
-	repo.Store(fi1)
+	crawlRepo.Store(fi1)
 	n, e := crawlSvc.extractFileInfo()
-	fires := repo.Get(fi1.Path)
+	fires := crawlRepo.Get(fi1.Path)
 	assert.Nil(t, e)
 	assert.EqualValues(t, 1, n)
 	assert.EqualValues(t, false, fires.FromCalCMS)
@@ -232,5 +232,5 @@ func Test_crawlFolder_OneFiles_Returns_One(t *testing.T) {
 
 	assert.Nil(t, e)
 	assert.EqualValues(t, 1, n)
-	assert.EqualValues(t, 1, repo.Size())
+	assert.EqualValues(t, 1, crawlRepo.Size())
 }

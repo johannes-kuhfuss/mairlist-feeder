@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -44,13 +45,17 @@ func isYesterdayOrOlder(folderDate string) (bool, error) {
 
 func (s DefaultCleanService) Clean() {
 	logger.Info("Starting file list clean-up...")
-	filesCleaned := s.runClean()
+	filesCleaned, err := s.runClean()
+	if err != nil {
+		logger.Error("Error while clean repository", err)
+	}
 	logger.Info(fmt.Sprintf("File list clean-up done. Cleaned %v entries.", filesCleaned))
 }
 
-func (s DefaultCleanService) runClean() int {
+func (s DefaultCleanService) runClean() (int, error) {
 	var (
 		filesCleaned int = 0
+		errorCounter int = 0
 	)
 	clmu.Lock()
 	defer clmu.Unlock()
@@ -61,12 +66,14 @@ func (s DefaultCleanService) runClean() int {
 		for _, file := range *files {
 			fromYesterday, err := isYesterdayOrOlder(file.FolderDate)
 			if err != nil {
+				errorCounter++
 				logger.Error("Error converting date", err)
 			}
 			if fromYesterday {
 				logger.Info(fmt.Sprintf("Removing entry for expired file %v", file.Path))
 				err := s.Repo.Delete(file.Path)
 				if err != nil {
+					errorCounter++
 					logger.Error("Could not remove entry: ", err)
 				} else {
 					filesCleaned++
@@ -75,5 +82,10 @@ func (s DefaultCleanService) runClean() int {
 		}
 	}
 	s.Cfg.RunTime.CleanRunning = false
-	return filesCleaned
+	if errorCounter == 0 {
+		return filesCleaned, nil
+	} else {
+		return filesCleaned, errors.New("error cleaning")
+	}
+
 }
