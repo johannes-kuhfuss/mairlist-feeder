@@ -453,3 +453,15 @@ func Test_EnrichFileInformation_OneFiles_Returns_Enriched(t *testing.T) {
 
 	assert.EqualValues(t, 1, n)
 }
+
+func Test_getCalCmsData_WrongUrl_Returns_Error(t *testing.T) {
+	teardown := setupTestCal()
+	defer teardown()
+	cfgCal.CalCms.CmsUrl = "§$%&/()"
+	data, err := calCmsService.getCalCmsData()
+	assert.Nil(t, data)
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "parse \"§$%&/()\": invalid URL escape \"%&/\"", err.Error())
+}
+
+
