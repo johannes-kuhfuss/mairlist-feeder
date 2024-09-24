@@ -63,52 +63,62 @@ func (s DefaultCalCmsService) insertData(data domain.CalCmsPgmData) {
 	CalCmsPgm.Unlock()
 }
 
-func (s DefaultCalCmsService) Query() {
+func (s DefaultCalCmsService) getCalCmsData() ([]byte, error) {
 	//URL: https://programm.coloradio.org/agenda/events.cgi?date=2024-04-09&template=event.json-p
-	if s.Cfg.CalCms.QueryCalCms {
-		calUrl, err := url.Parse(s.Cfg.CalCms.CmsUrl)
-		if err != nil {
-			logger.Error("Cannot parse CalCms Url", err)
-			return
-		}
-		query := url.Values{}
-		if s.Cfg.Misc.TestCrawl {
-			date := strings.ReplaceAll(s.Cfg.Misc.TestDate, "/", "-")
-			query.Add("date", date)
-		} else {
-			query.Add("date", time.Now().Format("2006-01-02"))
-		}
+	calUrl, err := url.Parse(s.Cfg.CalCms.CmsUrl)
+	if err != nil {
+		logger.Error("Cannot parse calCMS Url", err)
+		return []byte{}, err
+	}
+	query := url.Values{}
+	if s.Cfg.Misc.TestCrawl {
+		date := strings.ReplaceAll(s.Cfg.Misc.TestDate, "/", "-")
+		query.Add("date", date)
+	} else {
+		query.Add("date", time.Now().Format("2006-01-02"))
+	}
 
-		query.Add("template", s.Cfg.CalCms.Template)
-		calUrl.RawQuery = query.Encode()
-		req, err := http.NewRequest("GET", calUrl.String(), nil)
+	query.Add("template", s.Cfg.CalCms.Template)
+	calUrl.RawQuery = query.Encode()
+	req, err := http.NewRequest("GET", calUrl.String(), nil)
+	if err != nil {
+		logger.Error("Cannot build calCMS http request", err)
+		return []byte{}, err
+	}
+	resp, err := httpCalClient.Do(req)
+	if err != nil {
+		logger.Error("Cannot execute calCMS http request", err)
+		return []byte{}, err
+	}
+	defer resp.Body.Close()
+	bData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error("Cannot read response data from calCMS http request", err)
+		return []byte{}, err
+	}
+	return bData, nil
+}
+
+func (s DefaultCalCmsService) Query() {
+	if s.Cfg.CalCms.QueryCalCms {
+		logger.Info("Querying information from calCMS")
+		data, err := s.getCalCmsData()
 		if err != nil {
-			logger.Error("Cannot build CalCms http request", err)
-			return
-		}
-		resp, err := httpCalClient.Do(req)
-		if err != nil {
-			logger.Error("Cannot execute CalCms http request", err)
-			return
-		}
-		defer resp.Body.Close()
-		bData, err := io.ReadAll(resp.Body)
-		if err != nil {
-			logger.Error("Cannot read response data from CalCms http request", err)
+			logger.Error("error getting data from calCms", err)
 			return
 		}
 		CalCmsPgm.Lock()
-		err = json.Unmarshal(bData, &CalCmsPgm.data)
+		err = json.Unmarshal(data, &CalCmsPgm.data)
 		CalCmsPgm.Unlock()
 		if err != nil {
-			logger.Error("Cannot convert CalCms response data to Json", err)
+			logger.Error("Cannot convert calCMS response data to Json", err)
 			return
 		}
 		enriched := s.EnrichFileInformation()
 		logger.Info(fmt.Sprintf("Added information from calCMS for %v files", enriched))
 		return
 	} else {
-		logger.Warn("CalCms query not enabled in configuration. Not querying.")
+		logger.Warn("calCMS query not enabled in configuration. Not querying.")
 		return
 	}
 }
