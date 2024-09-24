@@ -29,6 +29,7 @@ type ConfigResp struct {
 	LastCrawlDate              string
 	FilesInList                string
 	LastExportDate             string
+	LastExportedFileDate       string
 	LastExportFileName         string
 	CrawlRunning               string
 	ExportRunning              string
@@ -84,8 +85,9 @@ func GetConfig(cfg *config.AppConfig) ConfigResp {
 		FilesCleaned:               strconv.Itoa(cfg.RunTime.FilesCleaned),
 	}
 	resp.LastCrawlDate = convertDate(cfg.RunTime.LastCrawlDate)
-	resp.LastExportDate = convertDate(cfg.RunTime.LastExportDate)
+	resp.LastExportDate = convertDate(cfg.RunTime.LastExportRunDate)
 	resp.LastCleanDate = convertDate(cfg.RunTime.LastCleanDate)
+	resp.LastExportedFileDate = convertDate(cfg.RunTime.LastExportedFileDate)
 	if cfg.RunTime.LastExportFileName == "" {
 		resp.LastExportFileName = "N/A"
 	} else {

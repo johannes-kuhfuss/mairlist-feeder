@@ -90,6 +90,7 @@ func (s DefaultExportService) ExportForHour(hour string) {
 	exmu.Lock()
 	defer exmu.Unlock()
 	s.Cfg.RunTime.ExportRunning = true
+	s.Cfg.RunTime.LastExportRunDate = time.Now()
 	files := s.Repo.GetForHour(hour)
 	if files != nil {
 		logger.Info(fmt.Sprintf("Starting export for timeslot %v:00 ...", hour))
@@ -322,7 +323,7 @@ func (s DefaultExportService) setExportPath(hour string) string {
 		exportFileName = strings.ReplaceAll(exportDate, "/", "-") + "-" + hour + ".tpi"
 	}
 	s.Cfg.RunTime.LastExportFileName = exportFileName
-	s.Cfg.RunTime.LastExportDate = time.Now()
+	s.Cfg.RunTime.LastExportedFileDate = time.Now()
 	return path.Join(s.Cfg.Export.ExportFolder, exportFileName)
 }
 

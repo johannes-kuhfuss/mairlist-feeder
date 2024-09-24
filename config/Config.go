@@ -56,23 +56,24 @@ type AppConfig struct {
 		Template    string `envconfig:"CALCMS_TEMPLATE" default:"event.json-p"`
 	}
 	RunTime struct {
-		Router             *gin.Engine
-		BgJobs             *cron.Cron
-		ListenAddr         string
-		StartDate          time.Time
-		CrawlRunNumber     int
-		LastCrawlDate      time.Time
-		FilesInList        int
-		LastExportDate     time.Time
-		LastExportFileName string
-		CrawlRunning       bool
-		ExportRunning      bool
-		CleanRunning       bool
-		LastCleanDate      time.Time
-		FilesCleaned       int
-		CrawlJobId         int
-		ExportJobId        int
-		CleanJobId         int
+		Router               *gin.Engine
+		BgJobs               *cron.Cron
+		ListenAddr           string
+		StartDate            time.Time
+		CrawlRunNumber       int
+		LastCrawlDate        time.Time
+		FilesInList          int
+		LastExportRunDate    time.Time
+		LastExportedFileDate time.Time
+		LastExportFileName   string
+		CrawlRunning         bool
+		ExportRunning        bool
+		CleanRunning         bool
+		LastCleanDate        time.Time
+		FilesCleaned         int
+		CrawlJobId           int
+		ExportJobId          int
+		CleanJobId           int
 	}
 }
 
