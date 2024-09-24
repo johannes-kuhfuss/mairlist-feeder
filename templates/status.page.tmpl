@@ -40,6 +40,10 @@
                           <td>{{ .configdata.LongAllowance }}</td>
                         </tr>
                         <tr>
+                          <td>Number of files in list</td>
+                          <td>{{ .configdata.FilesInList }}</td>
+                        </tr>
+                        <tr>
                           <td>Crawl runs executed</td>
                           <td>{{ .configdata.CrawlRunNumber }}</td>
                         </tr>
@@ -48,20 +52,32 @@
                           <td>{{ .configdata.LastCrawlDate }}</td>
                         </tr>
                         <tr>
-                          <td>Number of files in list</td>
-                          <td>{{ .configdata.FilesInList }}</td>
-                        </tr>
-                        <tr>
-                          <td>Last Export Date</td>
-                          <td>{{ .configdata.LastExportDate }}</td>
+                          <td>Next Crawl Run</td>
+                          <td>{{ .configdata.NextCrawlDate }}</td>
                         </tr>
                         <tr>
                           <td>Last file exported</td>
                           <td>{{ .configdata.LastExportFileName }}</td>
                         </tr>
                         <tr>
-                          <td>Last clean Run</td>
+                          <td>Last Export Date</td>
+                          <td>{{ .configdata.LastExportDate }}</td>
+                        </tr>
+                        <tr>
+                          <td>Next Export Date</td>
+                          <td>{{ .configdata.NextExportDate }}</td>
+                        </tr>
+                        <tr>
+                          <td>Number of files removed during last clean run</td>
+                          <td>{{ .configdata.FilesCleaned }}</td>
+                        </tr>
+                        <tr>
+                          <td>Last Clean Run</td>
                           <td>{{ .configdata.LastCleanDate }}</td>
+                        </tr>
+                        <tr>
+                          <td>Next Clean Run</td>
+                          <td>{{ .configdata.NextCleanDate }}</td>
                         </tr>
                         <tr>
                           <td>Crawl process running</td>
