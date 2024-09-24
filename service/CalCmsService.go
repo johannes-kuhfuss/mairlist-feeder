@@ -68,7 +68,7 @@ func (s DefaultCalCmsService) getCalCmsData() ([]byte, error) {
 	calUrl, err := url.Parse(s.Cfg.CalCms.CmsUrl)
 	if err != nil {
 		logger.Error("Cannot parse calCMS Url", err)
-		return []byte{}, err
+		return nil, err
 	}
 	query := url.Values{}
 	if s.Cfg.Misc.TestCrawl {
@@ -83,18 +83,18 @@ func (s DefaultCalCmsService) getCalCmsData() ([]byte, error) {
 	req, err := http.NewRequest("GET", calUrl.String(), nil)
 	if err != nil {
 		logger.Error("Cannot build calCMS http request", err)
-		return []byte{}, err
+		return nil, err
 	}
 	resp, err := httpCalClient.Do(req)
 	if err != nil {
 		logger.Error("Cannot execute calCMS http request", err)
-		return []byte{}, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 	bData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logger.Error("Cannot read response data from calCMS http request", err)
-		return []byte{}, err
+		return nil, err
 	}
 	return bData, nil
 }
