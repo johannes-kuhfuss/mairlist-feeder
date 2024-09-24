@@ -3,8 +3,10 @@ package dto
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
+	"github.com/robfig/cron/v3"
 )
 
 type ConfigResp struct {
@@ -33,6 +35,23 @@ type ConfigResp struct {
 	CleanRunning               string
 	LimitTime                  string
 	LastCleanDate              string
+	NextCrawlDate              string
+	NextExportDate             string
+	NextCleanDate              string
+	FilesCleaned               string
+}
+
+func convertDate(date time.Time) string {
+	if date.IsZero() {
+		return "N/A"
+	} else {
+		return date.Local().Format("2006-01-02 15:04:05 -0700 MST")
+	}
+}
+
+func getNextJobDate(cfg *config.AppConfig, jobId int) string {
+	next := cfg.RunTime.BgJobs.Entry(cron.EntryID(jobId))
+	return next.Next.String()
 }
 
 func GetConfig(cfg *config.AppConfig) ConfigResp {
@@ -53,23 +72,16 @@ func GetConfig(cfg *config.AppConfig) ConfigResp {
 		ShortAllowance:             strconv.FormatFloat(cfg.Export.ShortDeltaAllowance, 'f', 1, 64),
 		LongAllowance:              strconv.FormatFloat(cfg.Export.LongDeltaAllowance, 'f', 1, 64),
 		CrawlRunNumber:             strconv.Itoa(cfg.RunTime.CrawlRunNumber),
-		LastCrawlDate:              cfg.RunTime.LastCrawlDate.Local().Format("2006-01-02 15:04:05 -0700"),
 		FilesInList:                strconv.Itoa(cfg.RunTime.FilesInList),
 		CrawlRunning:               strconv.FormatBool(cfg.RunTime.CrawlRunning),
 		ExportRunning:              strconv.FormatBool(cfg.RunTime.ExportRunning),
 		CleanRunning:               strconv.FormatBool(cfg.RunTime.CleanRunning),
 		LimitTime:                  strconv.FormatBool(cfg.Export.LimitTime),
+		FilesCleaned:               strconv.Itoa(cfg.RunTime.FilesCleaned),
 	}
-	if cfg.RunTime.LastExportDate.IsZero() {
-		resp.LastExportDate = "N/A"
-	} else {
-		resp.LastExportDate = cfg.RunTime.LastExportDate.Local().Format("2006-01-02 15:04:05 -0700")
-	}
-	if cfg.RunTime.LastCleanDate.IsZero() {
-		resp.LastCleanDate = "N/A"
-	} else {
-		resp.LastCleanDate = cfg.RunTime.LastCleanDate.Local().Format("2006-01-02 15:04:05 -0700")
-	}
+	resp.LastCrawlDate = convertDate(cfg.RunTime.LastCrawlDate)
+	resp.LastExportDate = convertDate(cfg.RunTime.LastExportDate)
+	resp.LastCleanDate = convertDate(cfg.RunTime.LastCleanDate)
 	if cfg.RunTime.LastExportFileName == "" {
 		resp.LastExportFileName = "N/A"
 	} else {
@@ -78,5 +90,8 @@ func GetConfig(cfg *config.AppConfig) ConfigResp {
 	if cfg.Server.Host == "" {
 		resp.ServerHost = "localhost"
 	}
+	resp.NextCrawlDate = getNextJobDate(cfg, cfg.RunTime.CrawlJobId)
+	resp.NextCleanDate = getNextJobDate(cfg, cfg.RunTime.CleanJobId)
+	resp.NextExportDate = getNextJobDate(cfg, cfg.RunTime.ExportJobId)
 	return resp
 }
