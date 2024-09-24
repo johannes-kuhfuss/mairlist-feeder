@@ -19,7 +19,7 @@ import (
 )
 
 type CalCmsService interface {
-	Query()
+	Query() error
 }
 
 type DefaultCalCmsService struct {
