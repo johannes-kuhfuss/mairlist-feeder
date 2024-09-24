@@ -49,6 +49,7 @@ func (s DefaultCleanService) Clean() {
 	if err != nil {
 		logger.Error("Error while clean repository", err)
 	}
+	s.Cfg.RunTime.FilesCleaned = filesCleaned
 	logger.Info(fmt.Sprintf("File list clean-up done. Cleaned %v entries.", filesCleaned))
 }
 
