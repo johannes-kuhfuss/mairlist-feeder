@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/robfig/cron"
+	"github.com/robfig/cron/v3"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/handlers"
@@ -36,7 +36,6 @@ var (
 	cleanService   service.DefaultCleanService
 	exportService  service.DefaultExportService
 	calCmsService  service.CalCmsService
-	bgJobs         *cron.Cron
 )
 
 func StartApp() {
@@ -147,18 +146,34 @@ func RegisterForOsSignals() {
 }
 
 func scheduleBgJobs() {
+	// cron format: Minutes, Hours, day of Month, Month, Day of Week
 	logger.Info("Scheduling jobs...")
 	crawlCycle := "@every " + strconv.Itoa(cfg.Crawl.CrawlCycleMin) + "m"
-	bgJobs = cron.New()
+	cfg.RunTime.BgJobs = cron.New()
 	// Crawl every x minutes
-	bgJobs.AddFunc(crawlCycle, crawlService.Crawl)
+	crawlId, crawlErr := cfg.RunTime.BgJobs.AddFunc(crawlCycle, crawlService.Crawl)
 	// Clean 04:30 local time
-	bgJobs.AddFunc("0 30 4 * * *", cleanService.Clean)
+	cleanId, cleanErr := cfg.RunTime.BgJobs.AddFunc("30 4 * * *", cleanService.Clean)
 	// Export every hour, 10 minutes to the hour
-	bgJobs.AddFunc("0 50 * * * *", exportService.Export)
-	bgJobs.Start()
-	for _, job := range bgJobs.Entries() {
-		logger.Info(fmt.Sprintf("Job: %v - Next execution: %v", job.Job, job.Next.String()))
+	exportId, exportErr := cfg.RunTime.BgJobs.AddFunc("50 * * * *", exportService.Export)
+	cfg.RunTime.BgJobs.Start()
+	if crawlErr != nil {
+		logger.Error(fmt.Sprintf("Error when scheduling job %v for crawling", crawlId), crawlErr)
+	} else {
+		cfg.RunTime.CrawlJobId = int(crawlId)
+		logger.Info(fmt.Sprintf("Crawl Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(crawlId).Job, cfg.RunTime.BgJobs.Entry(crawlId).Next.String()))
+	}
+	if cleanErr != nil {
+		logger.Error(fmt.Sprintf("Error when scheduling job %v for cleaning", cleanId), cleanErr)
+	} else {
+		cfg.RunTime.CleanJobId = int(cleanId)
+		logger.Info(fmt.Sprintf("Clean Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(cleanId).Job, cfg.RunTime.BgJobs.Entry(cleanId).Next.String()))
+	}
+	if exportErr != nil {
+		logger.Error(fmt.Sprintf("Error when scheduling job %v for exporting", exportId), exportErr)
+	} else {
+		cfg.RunTime.ExportJobId = int(exportId)
+		logger.Info(fmt.Sprintf("Export Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(exportId).Job, cfg.RunTime.BgJobs.Entry(exportId).Next.String()))
 	}
 	logger.Info("Jobs scheduled")
 }
@@ -180,7 +195,7 @@ func startServer() {
 }
 
 func cleanUp() {
-	bgJobs.Stop()
+	cfg.RunTime.BgJobs.Stop()
 	shutdownTime := time.Duration(cfg.Server.GracefulShutdownTime) * time.Second
 	ctx, cancel = context.WithTimeout(context.Background(), shutdownTime)
 	defer func() {
