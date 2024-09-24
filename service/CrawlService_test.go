@@ -207,3 +207,30 @@ func Test_analyzeTechMd_SampleFile_Returns_TechMd(t *testing.T) {
 	assert.NotNil(t, d)
 	assert.EqualValues(t, 5.041633, d.DurationSec)
 }
+
+func Test_crawlFolder_NoFiles_Returns_Zero(t *testing.T) {
+	teardown := setupTestCrawl()
+	defer teardown()
+
+	cfgCrawl.Misc.TestCrawl = true
+	cfgCrawl.Misc.TestDate = "2024/09/22"
+
+	n, e := crawlSvc.crawlFolder("../samples/", []string{".mp3"})
+
+	assert.Nil(t, e)
+	assert.EqualValues(t, 0, n)
+}
+
+func Test_crawlFolder_OneFiles_Returns_One(t *testing.T) {
+	teardown := setupTestCrawl()
+	defer teardown()
+
+	cfgCrawl.Misc.TestCrawl = true
+	cfgCrawl.Misc.TestDate = "2024/09/23"
+
+	n, e := crawlSvc.crawlFolder("../samples/", []string{".mp3"})
+
+	assert.Nil(t, e)
+	assert.EqualValues(t, 1, n)
+	assert.EqualValues(t, 1, repo.Size())
+}
