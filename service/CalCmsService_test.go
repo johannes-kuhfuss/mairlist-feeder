@@ -13,21 +13,22 @@ import (
 )
 
 var (
-	cfgA          config.AppConfig
-	fileRepoA     repositories.DefaultFileRepository
+	cfgCal        config.AppConfig
+	fileRepoCal   repositories.DefaultFileRepository
 	calCmsService DefaultCalCmsService
 )
 
-func setupTestA() func() {
-	config.InitConfig(config.EnvFile, &cfgA)
-	fileRepoA = repositories.NewFileRepository(&cfgA)
-	calCmsService = NewCalCmsService(&cfgA, &fileRepo)
+func setupTestCal() func() {
+	config.InitConfig(config.EnvFile, &cfgCal)
+	fileRepoCal = repositories.NewFileRepository(&cfgCal)
+	calCmsService = NewCalCmsService(&cfgCal, &fileRepoCal)
 	return func() {
+		fileRepoCal.DeleteAllData()
 	}
 }
 
 func Test_convertToEntry_TimeError1_ReturnsError(t *testing.T) {
-	teardown := setupTestA()
+	teardown := setupTestCal()
 	defer teardown()
 	ev := domain.CalCmsEvent{
 		FullTitle:     "Test",
@@ -41,7 +42,7 @@ func Test_convertToEntry_TimeError1_ReturnsError(t *testing.T) {
 }
 
 func Test_convertToEntry_TimeError2_ReturnsError(t *testing.T) {
-	teardown := setupTestA()
+	teardown := setupTestCal()
 	defer teardown()
 	ev := domain.CalCmsEvent{
 		FullTitle:     "Test",
@@ -55,7 +56,7 @@ func Test_convertToEntry_TimeError2_ReturnsError(t *testing.T) {
 }
 
 func Test_convertToEntry_NoError_ReturnsEntry(t *testing.T) {
-	teardown := setupTestA()
+	teardown := setupTestCal()
 	defer teardown()
 	ev := domain.CalCmsEvent{
 		FullTitle:     "Test",
@@ -74,7 +75,7 @@ func Test_convertToEntry_NoError_ReturnsEntry(t *testing.T) {
 }
 
 func Test_GetCalCmsDataForId_Empty_ReturnsEmptyList(t *testing.T) {
-	teardown := setupTestA()
+	teardown := setupTestCal()
 	defer teardown()
 	res, err := calCmsService.GetCalCmsDataForId(1)
 	assert.Nil(t, err)
@@ -83,7 +84,7 @@ func Test_GetCalCmsDataForId_Empty_ReturnsEmptyList(t *testing.T) {
 
 func Test_GetCalCmsDataForId_WrongData_ReturnsError(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA()
+	teardown := setupTestCal()
 	defer teardown()
 
 	event := domain.CalCmsEvent{
@@ -106,7 +107,7 @@ func Test_GetCalCmsDataForId_WrongData_ReturnsError(t *testing.T) {
 
 func Test_GetCalCmsDataForId_WrongId_ReturnsEmpty(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA()
+	teardown := setupTestCal()
 	defer teardown()
 
 	event := domain.CalCmsEvent{
@@ -128,7 +129,7 @@ func Test_GetCalCmsDataForId_WrongId_ReturnsEmpty(t *testing.T) {
 
 func Test_GetCalCmsDataForId_OneElement_ReturnsData(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA()
+	teardown := setupTestCal()
 	defer teardown()
 
 	event := domain.CalCmsEvent{
@@ -151,7 +152,7 @@ func Test_GetCalCmsDataForId_OneElement_ReturnsData(t *testing.T) {
 
 func Test_GetCalCmsDataForId_TwoElements_ReturnsOne(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA()
+	teardown := setupTestCal()
 	defer teardown()
 
 	event1 := domain.CalCmsEvent{
@@ -180,7 +181,7 @@ func Test_GetCalCmsDataForId_TwoElements_ReturnsOne(t *testing.T) {
 }
 
 func Test_GetCalCmsDataForHour_Empty_ReturnsEmptyList(t *testing.T) {
-	teardown := setupTestA()
+	teardown := setupTestCal()
 	defer teardown()
 	res, err := calCmsService.GetCalCmsDataForHour("12:00")
 	assert.Nil(t, err)
@@ -189,7 +190,7 @@ func Test_GetCalCmsDataForHour_Empty_ReturnsEmptyList(t *testing.T) {
 
 func Test_GetCalCmsDataForHour_OneElement_ReturnsData(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA()
+	teardown := setupTestCal()
 	defer teardown()
 
 	event := domain.CalCmsEvent{
@@ -213,7 +214,7 @@ func Test_GetCalCmsDataForHour_OneElement_ReturnsData(t *testing.T) {
 
 func Test_checkCalCmsData_WrongData_ReturnsError(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA()
+	teardown := setupTestCal()
 	defer teardown()
 
 	event := domain.CalCmsEvent{
@@ -250,7 +251,7 @@ func Test_checkCalCmsData_WrongData_ReturnsError(t *testing.T) {
 
 func Test_checkCalCmsData_NoMatchingData_ReturnsError(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA()
+	teardown := setupTestCal()
 	defer teardown()
 
 	event := domain.CalCmsEvent{
@@ -287,7 +288,7 @@ func Test_checkCalCmsData_NoMatchingData_ReturnsError(t *testing.T) {
 
 func Test_checkCalCmsData_DoubleMatch_ReturnsError(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA()
+	teardown := setupTestCal()
 	defer teardown()
 
 	event1 := domain.CalCmsEvent{
@@ -331,7 +332,7 @@ func Test_checkCalCmsData_DoubleMatch_ReturnsError(t *testing.T) {
 
 func Test_checkCalCmsData_IsLive_ReturnsError(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA()
+	teardown := setupTestCal()
 	defer teardown()
 
 	event := domain.CalCmsEvent{
@@ -369,7 +370,7 @@ func Test_checkCalCmsData_IsLive_ReturnsError(t *testing.T) {
 
 func Test_checkCalCmsData_DataOk_ReturnsData(t *testing.T) {
 	var events []domain.CalCmsEvent
-	teardown := setupTestA()
+	teardown := setupTestCal()
 	defer teardown()
 
 	event := domain.CalCmsEvent{
@@ -407,4 +408,48 @@ func Test_checkCalCmsData_DataOk_ReturnsData(t *testing.T) {
 	st2, _ := time.ParseInLocation("2006-01-02T15:04:05", event.EndDatetime, time.Local)
 	assert.EqualValues(t, fmt.Sprintf("%02d:%02d", st1.Hour(), st1.Minute()), res.StartTime.Format("15:04"))
 	assert.EqualValues(t, fmt.Sprintf("%02d:%02d", st2.Hour(), st2.Minute()), res.EndTime.Format("15:04"))
+}
+
+func Test_EnrichFileInformation_NoFiles_Returns_Zero(t *testing.T) {
+	teardown := setupTestCal()
+	defer teardown()
+	n := calCmsService.EnrichFileInformation()
+	assert.EqualValues(t, 0, n)
+}
+
+func Test_EnrichFileInformation_OneFiles_Returns_Enriched(t *testing.T) {
+	var events []domain.CalCmsEvent
+	teardown := setupTestCal()
+	defer teardown()
+
+	event := domain.CalCmsEvent{
+		FullTitle:     "Test",
+		StartDatetime: "2024-04-01T11:00:00",
+		EndDatetime:   "2024-04-01T12:00:00",
+		EventID:       1234,
+	}
+	events = append(events, event)
+	data := domain.CalCmsPgmData{
+		Events: events,
+	}
+	calCmsService.insertData(data)
+	fi := domain.FileInfo{
+		Path:          "A",
+		ModTime:       time.Time{},
+		Duration:      0,
+		StartTime:     time.Time{},
+		EndTime:       time.Time{},
+		FromCalCMS:    false,
+		InfoExtracted: false,
+		ScanTime:      time.Time{},
+		FolderDate:    "",
+		RuleMatched:   "",
+		EventId:       1234,
+		CalCmsTitle:   "",
+	}
+	fileRepoCal.Store(fi)
+
+	n := calCmsService.EnrichFileInformation()
+
+	assert.EqualValues(t, 1, n)
 }
