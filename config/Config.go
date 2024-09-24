@@ -9,6 +9,7 @@ import (
 	"github.com/johannes-kuhfuss/services_utils/logger"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/robfig/cron/v3"
 )
 
 type AppConfig struct {
@@ -56,6 +57,7 @@ type AppConfig struct {
 	}
 	RunTime struct {
 		Router             *gin.Engine
+		BgJobs             *cron.Cron
 		ListenAddr         string
 		StartDate          time.Time
 		CrawlRunNumber     int
@@ -67,6 +69,10 @@ type AppConfig struct {
 		ExportRunning      bool
 		CleanRunning       bool
 		LastCleanDate      time.Time
+		FilesCleaned       int
+		CrawlJobId         int
+		ExportJobId        int
+		CleanJobId         int
 	}
 }
 
