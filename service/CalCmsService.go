@@ -90,6 +90,11 @@ func (s DefaultCalCmsService) getCalCmsData() ([]byte, error) {
 		logger.Error("Cannot execute calCMS http request", err)
 		return nil, err
 	}
+	if resp.StatusCode != http.StatusOK {
+		err := errors.New(resp.Status)
+		logger.Error(fmt.Sprintf("Received status code %v from calCMS", resp.StatusCode), err)
+		return nil, err
+	}
 	defer resp.Body.Close()
 	bData, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -99,27 +104,27 @@ func (s DefaultCalCmsService) getCalCmsData() ([]byte, error) {
 	return bData, nil
 }
 
-func (s DefaultCalCmsService) Query() {
+func (s DefaultCalCmsService) Query() error {
 	if s.Cfg.CalCms.QueryCalCms {
 		logger.Info("Querying information from calCMS")
 		data, err := s.getCalCmsData()
 		if err != nil {
 			logger.Error("error getting data from calCms", err)
-			return
+			return err
 		}
 		CalCmsPgm.Lock()
 		err = json.Unmarshal(data, &CalCmsPgm.data)
 		CalCmsPgm.Unlock()
 		if err != nil {
 			logger.Error("Cannot convert calCMS response data to Json", err)
-			return
+			return err
 		}
 		enriched := s.EnrichFileInformation()
 		logger.Info(fmt.Sprintf("Added information from calCMS for %v files", enriched))
-		return
+		return nil
 	} else {
 		logger.Warn("calCMS query not enabled in configuration. Not querying.")
-		return
+		return nil
 	}
 }
 

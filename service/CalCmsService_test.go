@@ -2,6 +2,9 @@ package service
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -417,7 +420,7 @@ func Test_EnrichFileInformation_NoFiles_Returns_Zero(t *testing.T) {
 	assert.EqualValues(t, 0, n)
 }
 
-func Test_EnrichFileInformation_OneFiles_Returns_Enriched(t *testing.T) {
+func Test_EnrichFileInformation_OneFile_Returns_Enriched(t *testing.T) {
 	var events []domain.CalCmsEvent
 	teardown := setupTestCal()
 	defer teardown()
@@ -464,4 +467,83 @@ func Test_getCalCmsData_WrongUrl_Returns_Error(t *testing.T) {
 	assert.EqualValues(t, "parse \"§$%&/()\": invalid URL escape \"%&/\"", err.Error())
 }
 
+func Test_getCalCmsData_httpRequest_Returns_Data(t *testing.T) {
+	teardown := setupTestCal()
+	defer teardown()
+	respData, _ := os.ReadFile("../samples/calCMS-response.json")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(respData)
+	}))
+	defer srv.Close()
+	cfgCal.CalCms.CmsUrl = srv.URL
+	cfgCal.Misc.TestCrawl = true
+	cfgCal.Misc.TestDate = "2024/09/24"
+	data, err := calCmsService.getCalCmsData()
+	assert.Nil(t, err)
+	assert.NotNil(t, data)
+	assert.EqualValues(t, respData, data)
+}
 
+func Test_getCalCmsData_httpRequest_Returns_Error(t *testing.T) {
+	teardown := setupTestCal()
+	defer teardown()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Header().Add("Content-Type", "application/json")
+	}))
+	defer srv.Close()
+	cfgCal.CalCms.CmsUrl = srv.URL
+	cfgCal.Misc.TestCrawl = true
+	cfgCal.Misc.TestDate = "2024/09/24"
+	data, err := calCmsService.getCalCmsData()
+	assert.NotNil(t, err)
+	assert.Nil(t, data)
+	assert.EqualValues(t, "400 Bad Request", err.Error())
+}
+
+func Test_Query_Returns_NoError(t *testing.T) {
+	teardown := setupTestCal()
+	defer teardown()
+	respData, _ := os.ReadFile("../samples/calCMS-response.json")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(respData)
+	}))
+	defer srv.Close()
+	cfgCal.CalCms.CmsUrl = srv.URL
+	cfgCal.Misc.TestCrawl = true
+	cfgCal.Misc.TestDate = "2024/09/24"
+	cfgCal.CalCms.QueryCalCms = true
+	err := calCmsService.Query()
+	assert.Nil(t, err)
+}
+
+func Test_Query_Returns_Error(t *testing.T) {
+	teardown := setupTestCal()
+	defer teardown()
+	respData, _ := os.ReadFile("../samples/calCMS-response_error.json")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(respData)
+	}))
+	defer srv.Close()
+	cfgCal.CalCms.CmsUrl = srv.URL
+	cfgCal.Misc.TestCrawl = true
+	cfgCal.Misc.TestDate = "2024/09/24"
+	cfgCal.CalCms.QueryCalCms = true
+	err := calCmsService.Query()
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "invalid character ':' after object key:value pair", err.Error())
+}
+
+func Test_Query_NoQuery_Returns_NoError(t *testing.T) {
+	teardown := setupTestCal()
+	defer teardown()
+	cfgCal.CalCms.QueryCalCms = false
+	err := calCmsService.Query()
+	assert.Nil(t, err)
+}
