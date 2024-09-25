@@ -203,49 +203,6 @@ func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengt
 	return lOk, lengthSlot, detail
 }
 
-func (s DefaultExportService) ExportToCsv() {
-	var (
-		startTimeSlot string
-		endTimeSlot   string
-	)
-	size := s.Repo.Size()
-	if size > 0 {
-		logger.Info(fmt.Sprintf("Exporting %v elements to CSV", size))
-		exportPath := path.Join(s.Cfg.Export.ExportFolder, "filescan_export.csv")
-		logFile, err := os.OpenFile(exportPath, os.O_APPEND|os.O_CREATE, 0644)
-		dataWriter := bufio.NewWriter(logFile)
-		if err != nil {
-			logger.Error("Error writing csv file: ", err)
-		} else {
-			files := s.Repo.GetAll()
-			if files != nil {
-				_, _ = dataWriter.WriteString("Index;StartTime;EndTime;Path;RuleMatched;Length\n")
-				for idx, file := range *files {
-					if file.StartTime.IsZero() {
-						startTimeSlot = "N/A"
-					} else {
-						startTimeSlot = file.StartTime.Format("15:04")
-					}
-					if file.EndTime.IsZero() {
-						endTimeSlot = "N/A"
-					} else {
-						endTimeSlot = file.EndTime.Format("15:04")
-					}
-					infoString := fmt.Sprintf("%04d;%v;%v;%v;%v;%v\n", idx, startTimeSlot, endTimeSlot, file.Path, file.RuleMatched, math.Round(file.Duration))
-					_, _ = dataWriter.WriteString(infoString)
-				}
-			} else {
-				logger.Info("No file entries found to export.")
-			}
-		}
-		dataWriter.Flush()
-		logFile.Close()
-		logger.Info("Done exporting elements to CSV")
-	} else {
-		logger.Info("No elements to export to CSV")
-	}
-}
-
 func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string, err error) {
 	// write export list ot mAirlist-compatible file
 	// Documentation: https://wiki.mairlist.com/reference:text_playlist_import_format_specification
