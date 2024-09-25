@@ -372,7 +372,7 @@ func (s DefaultExportService) AppendPlaylist(fileName string) error {
 	}
 	defer resp.Body.Close()
 	b, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode == 200 && string(b) == "\"ok\"" {
+	if resp.StatusCode == 200 && string(b) == "ok" {
 		return nil
 	}
 	return errors.New(string(b))
