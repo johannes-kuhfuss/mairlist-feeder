@@ -94,10 +94,6 @@ func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 		} else {
 			uh.ExportSvc.ExportForHour(hour)
 		}
-	case "csvexport":
-		uh.ExportSvc.ExportToCsv()
-	case "importfromdisk":
-		uh.Repo.LoadFromDisk(uh.Cfg.Misc.FileSaveFile)
 	case "exporttodisk":
 		uh.Repo.SaveToDisk(uh.Cfg.Misc.FileSaveFile)
 	case "clean":
