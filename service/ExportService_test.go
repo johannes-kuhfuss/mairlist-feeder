@@ -3,6 +3,10 @@ package service
 import (
 	"fmt"
 	"io"
+	"net/http"
+	"net/http/httptest"
+	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -20,16 +24,18 @@ var (
 	exportService DefaultExportService
 )
 
-func setupTest() func() {
+func setupTestEx() func() {
 	config.InitConfig(config.EnvFile, &cfg)
 	fileRepo = repositories.NewFileRepository(&cfg)
 	exportService = NewExportService(&cfg, &fileRepo)
 	return func() {
+		fileRepo.DeleteAllData()
+		fileExportList.Files = nil
 	}
 }
 
 func Test_buildHttpRequest_EmptyUrl_ReturnsError(t *testing.T) {
-	tearDown := setupTest()
+	tearDown := setupTestEx()
 	defer tearDown()
 	cfg.Export.MairListUrl = ""
 
@@ -41,7 +47,7 @@ func Test_buildHttpRequest_EmptyUrl_ReturnsError(t *testing.T) {
 }
 
 func Test_buildHttpRequest_WithUrl_ReturnsRequest(t *testing.T) {
-	tearDown := setupTest()
+	tearDown := setupTestEx()
 	defer tearDown()
 	cfg.Export.MairListUrl = "http://localhost:9300/"
 	cfg.Export.MairListUser = "test"
@@ -148,4 +154,138 @@ func Test_setStartTime_TwoTimeValues_ReturnsEarlier2(t *testing.T) {
 	tt, _ := time.Parse("15:04", "14:00")
 
 	assert.EqualValues(t, st, tt)
+}
+
+func Test_AppendPlaylist_UrlNotFound_Returns_Error(t *testing.T) {
+	tearDown := setupTestEx()
+	defer tearDown()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("nok"))
+	}))
+	defer srv.Close()
+	exportService.Cfg.Export.MairListUrl = srv.URL
+	err := exportService.AppendPlaylist("yfile.txt")
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "url not found", err.Error())
+}
+
+func Test_AppendPlaylist_MairListError_Returns_Error(t *testing.T) {
+	tearDown := setupTestEx()
+	defer tearDown()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("nok"))
+	}))
+	defer srv.Close()
+	exportService.Cfg.Export.MairListUrl = srv.URL
+	err := exportService.AppendPlaylist("yfile.txt")
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "nok", err.Error())
+}
+
+func Test_AppendPlaylist_MairListOk_Returns_Nil(t *testing.T) {
+	tearDown := setupTestEx()
+	defer tearDown()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("ok"))
+	}))
+	defer srv.Close()
+	exportService.Cfg.Export.MairListUrl = srv.URL
+	err := exportService.AppendPlaylist("yfile.txt")
+	assert.Nil(t, err)
+}
+
+func Test_setExportPath_Test_Returns_Test(t *testing.T) {
+	tearDown := setupTestEx()
+	defer tearDown()
+	exportService.Cfg.Misc.TestCrawl = true
+	s := exportService.setExportPath("13")
+	assert.NotNil(t, s)
+	assert.EqualValues(t, "C:\\TEMP/Test_13.tpi", s)
+}
+
+func Test_setExportPath_Regular_Returns_Path(t *testing.T) {
+	tearDown := setupTestEx()
+	defer tearDown()
+	hour := "13"
+	s := exportService.setExportPath(hour)
+	assert.NotNil(t, s)
+	file := time.Now().Format("2006-01-02") + "-" + hour + ".tpi"
+	tp := path.Join(exportService.Cfg.Export.ExportFolder, file)
+	_, fn := filepath.Split(s)
+	assert.EqualValues(t, fn, exportService.Cfg.RunTime.LastExportFileName)
+	assert.GreaterOrEqual(t, time.Now(), exportService.Cfg.RunTime.LastExportedFileDate)
+	assert.EqualValues(t, tp, s)
+}
+
+func Test_checkTimeAndLenghth_OneFile(t *testing.T) {
+	var files domain.FileList
+	tearDown := setupTestEx()
+	defer tearDown()
+	fi := domain.FileInfo{
+		Duration:  3600,
+		StartTime: helper.TimeFromHourAndMinute(14, 0),
+		EndTime:   helper.TimeFromHourAndMinute(15, 0),
+	}
+	files = append(files, fi)
+	assert.EqualValues(t, 0, len(fileExportList.Files))
+	exportService.checkTimeAndLenghth(&files)
+	assert.EqualValues(t, 1, len(fileExportList.Files))
+}
+
+func Test_checkTimeAndLenghth_OneFileSame(t *testing.T) {
+	var files domain.FileList
+	tearDown := setupTestEx()
+	defer tearDown()
+	fi := domain.FileInfo{
+		Path:      "A",
+		Duration:  3600,
+		StartTime: helper.TimeFromHourAndMinute(14, 0),
+		EndTime:   helper.TimeFromHourAndMinute(15, 0),
+	}
+	files = append(files, fi)
+	assert.EqualValues(t, 0, len(fileExportList.Files))
+	exportService.checkTimeAndLenghth(&files)
+	assert.EqualValues(t, 1, len(fileExportList.Files))
+	exportService.checkTimeAndLenghth(&files)
+	assert.EqualValues(t, 1, len(fileExportList.Files))
+	assert.EqualValues(t, "A", fileExportList.Files["14:00"].Path)
+}
+
+func Test_checkTimeAndLenghth_OneFileNewer(t *testing.T) {
+	var files domain.FileList
+	tearDown := setupTestEx()
+	defer tearDown()
+	fi1 := domain.FileInfo{
+		Path:      "A",
+		Duration:  3600,
+		StartTime: helper.TimeFromHourAndMinute(14, 0),
+		EndTime:   helper.TimeFromHourAndMinute(15, 0),
+		ModTime:   time.Now(),
+	}
+	fi2 := domain.FileInfo{
+		Path:      "A2",
+		Duration:  3600,
+		StartTime: helper.TimeFromHourAndMinute(14, 0),
+		EndTime:   helper.TimeFromHourAndMinute(15, 0),
+		ModTime:   time.Now().AddDate(0, 0, -1),
+	}
+	files = append(files, fi1)
+	assert.EqualValues(t, 0, len(fileExportList.Files))
+	exportService.checkTimeAndLenghth(&files)
+	assert.EqualValues(t, 1, len(fileExportList.Files))
+	files = append(files, fi2)
+	exportService.checkTimeAndLenghth(&files)
+	assert.EqualValues(t, 1, len(fileExportList.Files))
+	assert.EqualValues(t, "A", fileExportList.Files["14:00"].Path)
+}
+
+func Test_ExportToPlayout_NoFiles_NoExport(t *testing.T) {
+	tearDown := setupTestEx()
+	defer tearDown()
+	file, err := exportService.ExportToPlayout("13")
+	assert.EqualValues(t, "", file)
+	assert.Nil(t, err)
 }
