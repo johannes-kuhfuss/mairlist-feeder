@@ -120,7 +120,7 @@ func (s DefaultCalCmsService) Query() error {
 			return err
 		}
 		enriched := s.EnrichFileInformation()
-		logger.Info(fmt.Sprintf("Added information from calCMS for %v files", enriched))
+		logger.Info(fmt.Sprintf("Added / updated information from calCMS for %v files", enriched))
 		return nil
 	} else {
 		logger.Warn("calCMS query not enabled in configuration. Not querying.")
