@@ -37,7 +37,7 @@ type AppConfig struct {
 		Extensions     []string `envconfig:"EXTENSIONS" default:".mp3,.m4a,.wav"`
 		FfprobePath    string   `envconfig:"FFPROBE_PATH" default:"/usr/bin/ffprobe"`
 		FfProbeTimeOut int      `envconfig:"FFPROBE_TIMEOUT" default:"60"`
-		CrawlCycleMin  int      `envconfig:"CRAWL_CYCLE_MIN" default:"20"`
+		CrawlCycleMin  int      `envconfig:"CRAWL_CYCLE_MIN" default:"15"`
 	}
 	Export struct {
 		ExportFolder           string  `envconfig:"EXPORT_FOLDER" default:"C:\\TEMP"`
