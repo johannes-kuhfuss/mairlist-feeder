@@ -106,7 +106,7 @@ func (s DefaultCalCmsService) getCalCmsData() ([]byte, error) {
 
 func (s DefaultCalCmsService) Query() error {
 	if s.Cfg.CalCms.QueryCalCms {
-		logger.Info("Querying information from calCMS")
+		logger.Info("Starting to add information from calCMS...")
 		data, err := s.getCalCmsData()
 		if err != nil {
 			logger.Error("error getting data from calCms", err)
@@ -133,7 +133,6 @@ func (s DefaultCalCmsService) EnrichFileInformation() int {
 		newFile        domain.FileInfo
 		calCmsEnriched int
 	)
-	logger.Info("Starting to add information from calCMS...")
 	calCmsEnriched = 0
 	files := s.Repo.GetAll()
 	if files != nil {
@@ -163,7 +162,6 @@ func (s DefaultCalCmsService) EnrichFileInformation() int {
 			}
 		}
 	}
-	logger.Info("Done adding information from calCMS.")
 	return calCmsEnriched
 }
 
