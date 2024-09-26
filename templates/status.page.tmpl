@@ -2,15 +2,15 @@
 
 {{ template "header" .}}
 
-   <div class="container py-5">
+   <div class="container-fluid py-5">
         <div class="row">
             <div class="col">
-                <h2>Status</h2>
+                <h2>Configuration and Runtime</h2>
                 <table class="table table-striped table-sm">
                     <thead>
                         <tr>
-                          <th scope="col" style="width: 50%">Variable</th>
-                          <th scope="col" style="width: 50%">Value</th>
+                          <th scope="col" style="width: 35%">Variable</th>
+                          <th scope="col" style="width: 65%">Value</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -102,14 +102,18 @@
                           <td>Acting on limited timeslots</td>
                           <td>{{ .configdata.LimitTime }}</td>
                         </tr>
+                        <tr>
+                          <td>Start Date</td>
+                          <td>{{ .configdata.StartDate }}</td>
+                        </tr>
                     </tbody>
                 </table>
                 <h2>Server</h2>
                 <table class="table table-striped table-sm">
                     <thead>
                         <tr>
-                        <th scope="col" style="width: 50%">Variable</th>
-                        <th scope="col" style="width: 50%">Value</th>
+                        <th scope="col" style="width: 35%">Variable</th>
+                        <th scope="col" style="width: 65%">Value</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -141,26 +145,11 @@
                             <td>Key File</td>
                             <td>{{ .configdata.ServerKeyFile }}</td>
                         </tr>
-                    </tbody>
-                </table>
-                <h2>Miscellaneous</h2>
-                <table class="table table-striped table-sm">
-                    <thead>
-                        <tr>
-                        <th scope="col" style="width: 50%">Variable</th>
-                        <th scope="col" style="width: 50%">Value</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Start Date</td>
-                            <td>{{ .configdata.StartDate }}</td>
-                        </tr>
                         <tr>
                             <td>Gin-Gonic Mode</td>
                             <td>{{ .configdata.GinMode }}</td>
                         </tr>
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
