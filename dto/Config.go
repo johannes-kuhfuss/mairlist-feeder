@@ -70,7 +70,6 @@ func GetConfig(cfg *config.AppConfig) ConfigResp {
 		ServerCertFile:             cfg.Server.CertFile,
 		ServerKeyFile:              cfg.Server.KeyFile,
 		GinMode:                    cfg.Gin.Mode,
-		StartDate:                  cfg.RunTime.StartDate.Local().Format("2006-01-02 15:04:05 -0700"),
 		RootFolder:                 cfg.Crawl.RootFolder,
 		FileExtensions:             strings.Join(cfg.Crawl.Extensions, ", "),
 		CycleTime:                  strconv.Itoa(cfg.Crawl.CrawlCycleMin),
@@ -90,6 +89,7 @@ func GetConfig(cfg *config.AppConfig) ConfigResp {
 	resp.LastExportDate = convertDate(cfg.RunTime.LastExportRunDate)
 	resp.LastCleanDate = convertDate(cfg.RunTime.LastCleanDate)
 	resp.LastExportedFileDate = convertDate(cfg.RunTime.LastExportedFileDate)
+	resp.StartDate = convertDate(cfg.RunTime.StartDate)
 	if cfg.RunTime.LastExportFileName == "" {
 		resp.LastExportFileName = "N/A"
 	} else {

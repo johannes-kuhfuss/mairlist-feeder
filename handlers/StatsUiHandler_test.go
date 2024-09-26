@@ -154,7 +154,7 @@ func Test_validateAction_UnkownAction_ReturnsError(t *testing.T) {
 func Test_validateAction_CorrectAction_ReturnsNoError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
-	actions := []string{"crawl", "export", "clean", "csvexport", "importfromdisk", "exporttodisk"}
+	actions := []string{"crawl", "export", "clean", "exporttodisk"}
 	for _, action := range actions {
 		err := validateAction(action)
 		assert.Nil(t, err)

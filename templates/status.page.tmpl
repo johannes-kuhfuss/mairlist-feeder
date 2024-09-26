@@ -5,7 +5,7 @@
    <div class="container-fluid py-5">
         <div class="row">
             <div class="col">
-                <h2>Configuration and Runtime</h2>
+                <h3>Configuration and Runtime</h3>
                 <table class="table table-striped table-sm">
                     <thead>
                         <tr>
@@ -43,12 +43,12 @@
                           <td>{{ .configdata.LongAllowance }}</td>
                         </tr>
                         <tr>
-                          <td>Number of files in list</td>
-                          <td>{{ .configdata.FilesInList }}</td>
+                          <td>Acting on limited timeslots</td>
+                          <td>{{ .configdata.LimitTime }}</td>
                         </tr>
                         <tr>
-                          <td>Crawl runs executed</td>
-                          <td>{{ .configdata.CrawlRunNumber }}</td>
+                          <td>Number of files in list</td>
+                          <td>{{ .configdata.FilesInList }}</td>
                         </tr>
                         <tr>
                           <td>Last Crawl Run</td>
@@ -59,24 +59,24 @@
                           <td>{{ .configdata.NextCrawlDate }}</td>
                         </tr>
                         <tr>
+                          <td>Crawl runs executed</td>
+                          <td>{{ .configdata.CrawlRunNumber }}</td>
+                        </tr>
+                        <tr>
+                          <td>Last Export Run</td>
+                          <td>{{ .configdata.LastExportDate }}</td>
+                        </tr>
+                        <tr>
+                          <td>Next Export Run</td>
+                          <td>{{ .configdata.NextExportDate }}</td>
+                        </tr>
+                        <tr>
                           <td>Last file exported</td>
                           <td>{{ .configdata.LastExportFileName }}</td>
                         </tr>
                         <tr>
                           <td>Last file export date</td>
                           <td>{{ .configdata.LastExportedFileDate }}</td>
-                        </tr>
-                        <tr>
-                          <td>Last Export Run Date</td>
-                          <td>{{ .configdata.LastExportDate }}</td>
-                        </tr>
-                        <tr>
-                          <td>Next Export Run Date</td>
-                          <td>{{ .configdata.NextExportDate }}</td>
-                        </tr>
-                        <tr>
-                          <td>Number of files removed during last clean run</td>
-                          <td>{{ .configdata.FilesCleaned }}</td>
                         </tr>
                         <tr>
                           <td>Last Clean Run</td>
@@ -87,28 +87,28 @@
                           <td>{{ .configdata.NextCleanDate }}</td>
                         </tr>
                         <tr>
-                          <td>Crawl process running</td>
+                          <td>Number of files removed during last clean run</td>
+                          <td>{{ .configdata.FilesCleaned }}</td>
+                        </tr>
+                        <tr>
+                          <td>Crawl process currently running</td>
                           <td>{{ .configdata.CrawlRunning }}</td>
                         </tr>
                         <tr>
-                          <td>Export process running</td>
+                          <td>Export process currently running</td>
                           <td>{{ .configdata.ExportRunning }}</td>
                         </tr>
                         <tr>
-                          <td>Clean-up process running</td>
+                          <td>Clean-up process currently running</td>
                           <td>{{ .configdata.CleanRunning }}</td>
                         </tr>
                         <tr>
-                          <td>Acting on limited timeslots</td>
-                          <td>{{ .configdata.LimitTime }}</td>
-                        </tr>
-                        <tr>
-                          <td>Start Date</td>
+                          <td>Service Start Date</td>
                           <td>{{ .configdata.StartDate }}</td>
                         </tr>
                     </tbody>
                 </table>
-                <h2>Server</h2>
+                <h3>Server</h3>
                 <table class="table table-striped table-sm">
                     <thead>
                         <tr>

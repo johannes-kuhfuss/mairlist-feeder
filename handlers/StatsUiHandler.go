@@ -103,7 +103,7 @@ func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 }
 
 func validateAction(action string) api_error.ApiErr {
-	actions := []string{"crawl", "export", "clean", "csvexport", "importfromdisk", "exporttodisk"}
+	actions := []string{"crawl", "export", "clean", "exporttodisk"}
 	exists := misc.SliceContainsString(actions, action)
 	if exists {
 		return nil
