@@ -1,10 +1,12 @@
 package service
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -288,4 +290,31 @@ func Test_ExportToPlayout_NoFiles_NoExport(t *testing.T) {
 	file, err := exportService.ExportToPlayout("13")
 	assert.EqualValues(t, "", file)
 	assert.Nil(t, err)
+}
+
+func Test_ExportToPlayout_OneFiles_Export(t *testing.T) {
+	var fileLines []string
+	tearDown := setupTestEx()
+	defer tearDown()
+	fi := domain.FileInfo{
+		Path:       "A",
+		Duration:   3600,
+		StartTime:  helper.TimeFromHourAndMinute(13, 0),
+		EndTime:    helper.TimeFromHourAndMinute(14, 0),
+		SlotLength: 60.0,
+	}
+	fileExportList.Files["13:00"] = fi
+	file, err := exportService.ExportToPlayout("13")
+	assert.Nil(t, err)
+	readFile, _ := os.Open(file)
+	defer readFile.Close()
+	fileScanner := bufio.NewScanner(readFile)
+	fileScanner.Split(bufio.ScanLines)
+	for fileScanner.Scan() {
+		fileLines = append(fileLines, fileScanner.Text())
+	}
+	assert.EqualValues(t, "13:00:00\tH\tF\tA", fileLines[1])
+	assert.EqualValues(t, "14:00:00\tH\tD\tEnd of block", fileLines[2])
+	assert.EqualValues(t, "\t\tR\tEnd of auto-generated playlist", fileLines[3])
+	os.Remove(file)
 }
