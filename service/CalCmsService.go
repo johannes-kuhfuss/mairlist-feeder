@@ -14,6 +14,7 @@ import (
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
 	"github.com/johannes-kuhfuss/mairlist-feeder/dto"
+	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/johannes-kuhfuss/services_utils/logger"
 )
@@ -65,19 +66,17 @@ func (s DefaultCalCmsService) insertData(data domain.CalCmsPgmData) {
 
 func (s DefaultCalCmsService) getCalCmsData() ([]byte, error) {
 	//URL: https://programm.coloradio.org/agenda/events.cgi?date=2024-04-09&template=event.json-p
+	var (
+		calCmsDate string
+	)
 	calUrl, err := url.Parse(s.Cfg.CalCms.CmsUrl)
 	if err != nil {
 		logger.Error("Cannot parse calCMS Url", err)
 		return nil, err
 	}
 	query := url.Values{}
-	if s.Cfg.Misc.TestCrawl {
-		date := strings.ReplaceAll(s.Cfg.Misc.TestDate, "/", "-")
-		query.Add("date", date)
-	} else {
-		query.Add("date", time.Now().Format("2006-01-02"))
-	}
-
+	calCmsDate = strings.ReplaceAll(helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate), "/", "-")
+	query.Add("date", calCmsDate)
 	query.Add("template", s.Cfg.CalCms.Template)
 	calUrl.RawQuery = query.Encode()
 	req, err := http.NewRequest("GET", calUrl.String(), nil)
