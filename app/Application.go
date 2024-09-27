@@ -152,8 +152,8 @@ func scheduleBgJobs() {
 	cfg.RunTime.BgJobs = cron.New()
 	// Crawl every x minutes
 	crawlId, crawlErr := cfg.RunTime.BgJobs.AddFunc(crawlCycle, crawlService.Crawl)
-	// Clean 04:30 local time
-	cleanId, cleanErr := cfg.RunTime.BgJobs.AddFunc("30 4 * * *", cleanService.Clean)
+	// Clean 01:30 local time
+	cleanId, cleanErr := cfg.RunTime.BgJobs.AddFunc("30 1 * * *", cleanService.Clean)
 	// Export every hour, 10 minutes to the hour
 	exportId, exportErr := cfg.RunTime.BgJobs.AddFunc("50 * * * *", exportService.Export)
 	cfg.RunTime.BgJobs.Start()
