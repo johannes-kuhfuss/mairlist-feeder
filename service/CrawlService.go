@@ -98,7 +98,7 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string)
 					oldFile := s.Repo.Get(srcPath)
 
 					if oldFile.ModTime == i.ModTime() {
-						logger.Info(fmt.Sprintf("File %v already exists and is unmodified. Not adding", srcPath))
+						logger.Debug(fmt.Sprintf("File %v already exists and is unmodified. Not adding", srcPath))
 						return nil
 					}
 				}
