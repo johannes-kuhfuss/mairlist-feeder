@@ -68,6 +68,7 @@ func isNotMonday() bool {
 }
 
 func (s DefaultExportService) Export() {
+	s.Cfg.RunTime.LastExportRunDate = time.Now()
 	nextHour := getNextHour()
 	if s.Cfg.Export.LimitTime {
 		// 23:00, but not on Mondays and 00:00
@@ -90,7 +91,6 @@ func (s DefaultExportService) ExportForHour(hour string) {
 	exmu.Lock()
 	defer exmu.Unlock()
 	s.Cfg.RunTime.ExportRunning = true
-	s.Cfg.RunTime.LastExportRunDate = time.Now()
 	files := s.Repo.GetForHour(hour)
 	if files != nil {
 		logger.Info(fmt.Sprintf("Starting export for timeslot %v:00 ...", hour))
@@ -250,6 +250,8 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 			s.writeEndComment(dataWriter)
 			dataWriter.Flush()
 			defer exportFile.Close()
+			s.Cfg.RunTime.LastExportFileName = exportPath
+			s.Cfg.RunTime.LastExportedFileDate = time.Now()
 			return exportPath, nil
 		}
 	} else {
@@ -279,8 +281,6 @@ func (s DefaultExportService) setExportPath(hour string) string {
 		exportDate := helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate)
 		exportFileName = strings.ReplaceAll(exportDate, "/", "-") + "-" + hour + ".tpi"
 	}
-	s.Cfg.RunTime.LastExportFileName = exportFileName
-	s.Cfg.RunTime.LastExportedFileDate = time.Now()
 	return path.Join(s.Cfg.Export.ExportFolder, exportFileName)
 }
 
