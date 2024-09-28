@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -216,9 +215,6 @@ func Test_setExportPath_Regular_Returns_Path(t *testing.T) {
 	assert.NotNil(t, s)
 	file := time.Now().Format("2006-01-02") + "-" + hour + ".tpi"
 	tp := path.Join(exportService.Cfg.Export.ExportFolder, file)
-	_, fn := filepath.Split(s)
-	assert.EqualValues(t, fn, exportService.Cfg.RunTime.LastExportFileName)
-	assert.GreaterOrEqual(t, time.Now(), exportService.Cfg.RunTime.LastExportedFileDate)
 	assert.EqualValues(t, tp, s)
 }
 
@@ -317,4 +313,6 @@ func Test_ExportToPlayout_OneFiles_Export(t *testing.T) {
 	assert.EqualValues(t, "14:00:00\tH\tD\tEnd of block", fileLines[2])
 	assert.EqualValues(t, "\t\tR\tEnd of auto-generated playlist", fileLines[3])
 	os.Remove(file)
+	assert.EqualValues(t, file, exportService.Cfg.RunTime.LastExportFileName)
+	assert.GreaterOrEqual(t, time.Now(), exportService.Cfg.RunTime.LastExportedFileDate)
 }
