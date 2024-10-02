@@ -173,10 +173,9 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 				}
 				if helper.IsStreamingFile(s.Cfg, file.Path) {
 					newInfo.FileType = "Stream"
-					logger.Info("found streaming file")
 					name, id, err := analyzeStreamData(file.Path, s.Cfg.Crawl.StreamMap)
 					if err != nil {
-						logger.Error("Error analyzing stream data: ", err)
+						logger.Error("Could not analyze stream data", err)
 					} else {
 						newInfo.StreamName = name
 						newInfo.StreamId = id
@@ -226,7 +225,12 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 				} else {
 					startTimeDisplay = newInfo.StartTime.Format("15:04")
 				}
-				logger.Info(fmt.Sprintf("Time Slot: % v, File: %v - Length (min): %v", startTimeDisplay, file.Path, roundedDurationMin))
+				switch newInfo.FileType {
+				case "Stream":
+					logger.Info(fmt.Sprintf("Time Slot: % v, File: %v (Stream Description)", startTimeDisplay, file.Path))
+				default:
+					logger.Info(fmt.Sprintf("Time Slot: % v, File: %v - Length (min): %v", startTimeDisplay, file.Path, roundedDurationMin))
+				}
 			}
 		}
 	}
