@@ -171,20 +171,20 @@ func (s DefaultCalCmsService) checkCalCmsData(file domain.FileInfo) (*dto.CalCms
 		return nil, err
 	}
 	calCmsDate := strings.ReplaceAll(helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate), "/", "-")
-	if calCmsDate != file.FolderDate {
-		return nil, errors.New("file has different date from calCmsData")
-	}
 	if (len(info) == 0) && (calCmsDate == file.FolderDate) {
 		logger.Warn(fmt.Sprintf("No information from calCMS for Id %v in today's calCMS events", file.EventId))
 		return nil, errors.New("no such id in calCMS")
 	}
-	if len(info) != 1 {
+	if len(info) > 1 {
 		logger.Warn(fmt.Sprintf("Ambiguous information from calCMS. Found %v entries. Not adding information.", len(info)))
 		return nil, errors.New("multiple matches in calCMS")
 	}
-	if info[0].Live == 1 {
+	if (len(info) == 1) && (info[0].Live == 1) {
 		logger.Warn(fmt.Sprintf("%v, Id: %v is designated as live. Not adding information.", info[0].Title, info[0].EventId))
 		return nil, errors.New("event is live in calCMS")
+	}
+	if calCmsDate != file.FolderDate {
+		return nil, errors.New("file has different date from calCmsData")
 	}
 	return &info[0], nil
 }

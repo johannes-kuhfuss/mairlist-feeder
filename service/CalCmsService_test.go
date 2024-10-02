@@ -252,7 +252,7 @@ func Test_checkCalCmsData_WrongData_ReturnsError(t *testing.T) {
 	assert.EqualValues(t, "parsing time \"CC:DD\" as \"2006-01-02T15:04:05\": cannot parse \"CC:DD\" as \"2006\"", err.Error())
 }
 
-func Test_checkCalCmsData_DiffereingDates_ReturnsError(t *testing.T) {
+func Test_checkCalCmsData_DifferingDates_ReturnsError(t *testing.T) {
 	var events []domain.CalCmsEvent
 	teardown := setupTestCal()
 	defer teardown()
@@ -316,7 +316,7 @@ func Test_checkCalCmsData_NoMatchingOnSameDayData_ReturnsError(t *testing.T) {
 		ScanTime:      time.Time{},
 		FolderDate:    "2024-09-17",
 		RuleMatched:   "",
-		EventId:       0,
+		EventId:       22,
 		CalCmsTitle:   "",
 	}
 
@@ -361,11 +361,14 @@ func Test_checkCalCmsData_DoubleMatch_ReturnsError(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    "",
+		FolderDate:    "2024-09-17",
 		RuleMatched:   "",
 		EventId:       1,
 		CalCmsTitle:   "",
 	}
+
+	calCmsService.Cfg.Misc.TestCrawl = true
+	calCmsService.Cfg.Misc.TestDate = "2024/09/17"
 
 	_, err := calCmsService.checkCalCmsData(fi)
 
@@ -399,11 +402,14 @@ func Test_checkCalCmsData_IsLive_ReturnsError(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    "",
+		FolderDate:    "2024-09-17",
 		RuleMatched:   "",
 		EventId:       1,
 		CalCmsTitle:   "",
 	}
+
+	calCmsService.Cfg.Misc.TestCrawl = true
+	calCmsService.Cfg.Misc.TestDate = "2024/09/17"
 
 	_, err := calCmsService.checkCalCmsData(fi)
 
@@ -437,11 +443,14 @@ func Test_checkCalCmsData_DataOk_ReturnsData(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    "",
+		FolderDate:    "2024-09-17",
 		RuleMatched:   "",
 		EventId:       1,
 		CalCmsTitle:   "",
 	}
+
+	calCmsService.Cfg.Misc.TestCrawl = true
+	calCmsService.Cfg.Misc.TestDate = "2024/09/17"
 
 	res, err := calCmsService.checkCalCmsData(fi)
 
@@ -485,12 +494,15 @@ func Test_EnrichFileInformation_OneFile_Returns_Enriched(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    "",
+		FolderDate:    "2024-09-17",
 		RuleMatched:   "",
 		EventId:       1234,
 		CalCmsTitle:   "",
 	}
 	fileRepoCal.Store(fi)
+
+	calCmsService.Cfg.Misc.TestCrawl = true
+	calCmsService.Cfg.Misc.TestDate = "2024/09/17"
 
 	n := calCmsService.EnrichFileInformation()
 
