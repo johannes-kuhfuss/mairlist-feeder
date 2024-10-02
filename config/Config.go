@@ -33,11 +33,14 @@ type AppConfig struct {
 		FileSaveFile string `envconfig:"FILE_SAVE_FILE" default:"files.dta"`
 	}
 	Crawl struct {
-		RootFolder     string   `envconfig:"ROOT_FOLDER" default:"Z:\\sendungen"`
-		Extensions     []string `envconfig:"EXTENSIONS" default:".mp3,.m4a,.wav"`
-		FfprobePath    string   `envconfig:"FFPROBE_PATH" default:"/usr/bin/ffprobe"`
-		FfProbeTimeOut int      `envconfig:"FFPROBE_TIMEOUT" default:"60"`
-		CrawlCycleMin  int      `envconfig:"CRAWL_CYCLE_MIN" default:"15"`
+		RootFolder              string         `envconfig:"ROOT_FOLDER" default:"Z:\\sendungen"`
+		CrawlExtensions         []string       `envconfig:"EXTENSIONS" default:".mp3,.m4a,.wav,.stream"`
+		AudioFileExtensions     []string       `envconfig:"AUDIO_FILE_EXTENSIONS" default:".mp3,.m4a,.wav"`
+		StreamingFileExtensions []string       `envconfig:"STREAM_FILE_EXTENSIONS" default:".stream"`
+		FfprobePath             string         `envconfig:"FFPROBE_PATH" default:"/usr/bin/ffprobe"`
+		FfProbeTimeOut          int            `envconfig:"FFPROBE_TIMEOUT" default:"60"`
+		CrawlCycleMin           int            `envconfig:"CRAWL_CYCLE_MIN" default:"15"`
+		StreamMap               map[string]int `envconfig:"STREAM_MAP" default:"blau:737,corax:879,minimal:889"`
 	}
 	Export struct {
 		ExportFolder           string  `envconfig:"EXPORT_FOLDER" default:"C:\\TEMP"`

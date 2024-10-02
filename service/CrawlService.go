@@ -3,9 +3,11 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"math"
+	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -65,7 +67,7 @@ func (s DefaultCrawlService) CrawlRun() {
 	s.Cfg.RunTime.CrawlRunNumber++
 	s.Cfg.RunTime.LastCrawlDate = time.Now()
 	logger.Info(fmt.Sprintf("Root folder: %v. Starting crawl #%v.", s.Cfg.Crawl.RootFolder, s.Cfg.RunTime.CrawlRunNumber))
-	fileCount, err := s.crawlFolder(s.Cfg.Crawl.RootFolder, s.Cfg.Crawl.Extensions)
+	fileCount, err := s.crawlFolder(s.Cfg.Crawl.RootFolder, s.Cfg.Crawl.CrawlExtensions)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Error crawling folder %v: ", s.Cfg.Crawl.RootFolder), err)
 	}
@@ -81,7 +83,7 @@ func (s DefaultCrawlService) CrawlRun() {
 
 }
 
-func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string) (int, error) {
+func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []string) (int, error) {
 	var (
 		fi        domain.FileInfo
 		fileCount int = 0
@@ -92,7 +94,7 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, extensions []string)
 			if err != nil {
 				return err
 			}
-			if misc.SliceContainsString(extensions, filepath.Ext(srcPath)) {
+			if misc.SliceContainsString(crawlExtensions, filepath.Ext(srcPath)) {
 				newFile, _ := info.Info()
 				if s.Repo.Exists(srcPath) {
 					oldFile := s.Repo.Get(srcPath)
@@ -157,14 +159,28 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 				var timeData string
 				var newInfo domain.FileInfo = file
 
-				techMd, err := analyzeTechMd(file.Path, s.Cfg.Crawl.FfProbeTimeOut, s.Cfg.Crawl.FfprobePath)
-				if err != nil {
-					logger.Error("Could not analyze file length: ", err)
-				} else {
-					newInfo.Duration = techMd.DurationSec
-					newInfo.BitRate = techMd.BitRate
-					newInfo.FormatName = techMd.FormatName
-					roundedDurationMin = math.Round(techMd.DurationSec / 60)
+				if helper.IsAudioFile(s.Cfg, file.Path) {
+					newInfo.FileType = "Audio"
+					techMd, err := analyzeTechMd(file.Path, s.Cfg.Crawl.FfProbeTimeOut, s.Cfg.Crawl.FfprobePath)
+					if err != nil {
+						logger.Error("Could not analyze file length: ", err)
+					} else {
+						newInfo.Duration = techMd.DurationSec
+						newInfo.BitRate = techMd.BitRate
+						newInfo.FormatName = techMd.FormatName
+						roundedDurationMin = math.Round(techMd.DurationSec / 60)
+					}
+				}
+				if helper.IsStreamingFile(s.Cfg, file.Path) {
+					newInfo.FileType = "Stream"
+					logger.Info("found streaming file")
+					name, id, err := analyzeStreamData(file.Path, s.Cfg.Crawl.StreamMap)
+					if err != nil {
+						logger.Error("Error analyzing stream data: ", err)
+					} else {
+						newInfo.StreamName = name
+						newInfo.StreamId = id
+					}
 				}
 				folderName := filepath.Dir(file.Path)
 				fileName := filepath.Base(file.Path)
@@ -201,7 +217,7 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 				}
 				newInfo.InfoExtracted = true
 				extractCount++
-				err = s.Repo.Store(newInfo)
+				err := s.Repo.Store(newInfo)
 				if err != nil {
 					logger.Error("Error while storing data: ", err)
 				}
@@ -256,6 +272,21 @@ func analyzeTechMd(essencePath string, timeout int, ffprobePath string) (techMet
 		return nil, err
 	}
 	return techMd, nil
+}
+
+func analyzeStreamData(path string, streamMap map[string]int) (string, int, error) {
+	fileContents, err := os.ReadFile(path)
+	if err != nil {
+		logger.Error("Error reading stream description data from file", err)
+		return "", 0, err
+	}
+	streamData := strings.ToLower(string(fileContents))
+	for stream, id := range streamMap {
+		if strings.Contains(streamData, stream) {
+			return stream, id, nil
+		}
+	}
+	return "", 0, errors.New("no such stream configured")
 }
 
 func parseTechMd(ffprobedata []byte) (techMetadata *dto.TechnicalMetadata, err error) {

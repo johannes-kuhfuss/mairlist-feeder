@@ -3,7 +3,11 @@ package helper
 import (
 	"fmt"
 	"path"
+	"path/filepath"
 	"time"
+
+	"github.com/johannes-kuhfuss/mairlist-feeder/config"
+	"github.com/johannes-kuhfuss/services_utils/misc"
 )
 
 func GetTodayFolder(test bool, testDate string) string {
@@ -34,4 +38,12 @@ func TimeFromHourAndMinute(hour int, minute int) time.Time {
 func TimeFromHourAndMinuteAndDate(hour int, minute int, fd time.Time) time.Time {
 	t := time.Date(fd.Year(), fd.Month(), fd.Day(), hour, minute, 0, 0, time.Local)
 	return t
+}
+
+func IsAudioFile(cfg *config.AppConfig, path string) bool {
+	return misc.SliceContainsString(cfg.Crawl.AudioFileExtensions, filepath.Ext(path))
+}
+
+func IsStreamingFile(cfg *config.AppConfig, path string) bool {
+	return misc.SliceContainsString(cfg.Crawl.StreamingFileExtensions, filepath.Ext(path))
 }

@@ -144,6 +144,28 @@ func Test_extractFileInfo_RealFile_ReturnsData(t *testing.T) {
 	assert.EqualValues(t, "MP2/3 (MPEG audio layer 2/3)", fires.FormatName)
 }
 
+func Test_extractFileInfo_Stream_ReturnsData(t *testing.T) {
+	teardown := setupTestCrawl()
+	defer teardown()
+
+	file := "./temp.stream"
+	fi1 := domain.FileInfo{
+		Path:       file,
+		FolderDate: "2024-09-22",
+	}
+	crawlRepo.Store(fi1)
+	crawlSvc.Cfg.Crawl.StreamMap["test"] = 222
+	os.WriteFile(file, []byte("test"), 0644)
+	n, e := crawlSvc.extractFileInfo()
+	fires := crawlRepo.Get(fi1.Path)
+	assert.Nil(t, e)
+	assert.EqualValues(t, 1, n)
+	assert.EqualValues(t, "Stream", fires.FileType)
+	assert.EqualValues(t, "test", fires.StreamName)
+	assert.EqualValues(t, 222, fires.StreamId)
+	os.Remove(file)
+}
+
 func Test_convertTime_WrongStartTime_Returns_Error(t *testing.T) {
 	ti, e := convertTime("A", "B", "C")
 	assert.EqualValues(t, time.Time{}, ti)
@@ -233,4 +255,33 @@ func Test_crawlFolder_OneFiles_Returns_One(t *testing.T) {
 	assert.Nil(t, e)
 	assert.EqualValues(t, 1, n)
 	assert.EqualValues(t, 1, crawlRepo.Size())
+}
+
+func Test_analyzeStreamData_NoFile_Returns_Error(t *testing.T) {
+	streamMap := make(map[string]int)
+	_, _, err := analyzeStreamData("", streamMap)
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "open : The system cannot find the file specified.", err.Error())
+}
+
+func Test_analyzeStreamData_StreamNotFound_Returns_Error(t *testing.T) {
+	file := "./temp.txt"
+	streamMap := make(map[string]int)
+	os.WriteFile(file, []byte("streamX"), 0644)
+	_, _, err := analyzeStreamData(file, streamMap)
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "no such stream configured", err.Error())
+	os.Remove(file)
+}
+
+func Test_analyzeStreamData_StreamFound_Returns_NameAndId(t *testing.T) {
+	file := "./temp.txt"
+	streamMap := make(map[string]int)
+	streamMap["streamy"] = 55
+	os.WriteFile(file, []byte("streamY"), 0644)
+	name, id, err := analyzeStreamData(file, streamMap)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "streamy", name)
+	assert.EqualValues(t, 55, id)
+	os.Remove(file)
 }

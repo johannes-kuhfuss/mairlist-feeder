@@ -216,6 +216,7 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 	var (
 		totalLength float64
 		startTime   time.Time
+		line        string
 	)
 
 	size := len(fileExportList.Files)
@@ -238,7 +239,12 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 					totalLength = totalLength + file.SlotLength
 				}
 				listTime := time + ":00"
-				line := fmt.Sprintf("%v\tH\tF\t%v\n", listTime, file.Path)
+				switch file.FileType {
+				case "Stream":
+					line = fmt.Sprintf("%v\tH\tI\t%v\n", listTime, file.StreamId)
+				default:
+					line = fmt.Sprintf("%v\tH\tF\t%v\n", listTime, file.Path)
+				}
 				err := s.writeLine(dataWriter, line)
 				if err == nil {
 					delete(fileExportList.Files, createIndexFromTime(file.StartTime))

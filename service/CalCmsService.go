@@ -153,6 +153,9 @@ func (s DefaultCalCmsService) EnrichFileInformation() int {
 				newFile.EndTime = info.EndTime
 				newFile.CalCmsTitle = info.Title
 				newFile.CalCmsInfoExtracted = true
+				if (file.FileType == "Stream") && (file.StreamId != 0) {
+					newFile.Duration = float64(info.Duration.Seconds())
+				}
 				calCmsEnriched++
 				err = s.Repo.Store(newFile)
 				if err != nil {

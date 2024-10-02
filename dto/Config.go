@@ -71,7 +71,7 @@ func GetConfig(cfg *config.AppConfig) ConfigResp {
 		ServerKeyFile:              cfg.Server.KeyFile,
 		GinMode:                    cfg.Gin.Mode,
 		RootFolder:                 cfg.Crawl.RootFolder,
-		FileExtensions:             strings.Join(cfg.Crawl.Extensions, ", "),
+		FileExtensions:             strings.Join(cfg.Crawl.CrawlExtensions, ", "),
 		CycleTime:                  strconv.Itoa(cfg.Crawl.CrawlCycleMin),
 		ExportFolder:               cfg.Export.ExportFolder,
 		AppendToPlayout:            strconv.FormatBool(cfg.Export.AppendPlaylist),

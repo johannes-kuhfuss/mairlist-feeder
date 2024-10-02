@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,4 +35,36 @@ func Test_TimeFromHourAndMinuteAndDate_CorrectTime_ReturnsTime(t *testing.T) {
 	t1 := TimeFromHourAndMinuteAndDate(22, 22, d)
 	t2 := time.Date(2024, 2, 1, 22, 22, 0, 0, time.Local)
 	assert.EqualValues(t, t2, t1)
+}
+
+func Test_IsAudioFile_NotIn_Returns_False(t *testing.T) {
+	var cfg config.AppConfig
+	config.InitConfig("", &cfg)
+	path := "C:\\TEMP\\testfile.flac"
+	isA := IsAudioFile(&cfg, path)
+	assert.EqualValues(t, false, isA)
+}
+
+func Test_IsAudioFile_In_Returns_True(t *testing.T) {
+	var cfg config.AppConfig
+	config.InitConfig("", &cfg)
+	path := "C:\\TEMP\\testfile.mp3"
+	isA := IsAudioFile(&cfg, path)
+	assert.EqualValues(t, true, isA)
+}
+
+func Test_IsStreamingFile_NotIn_Returns_False(t *testing.T) {
+	var cfg config.AppConfig
+	config.InitConfig("", &cfg)
+	path := "C:\\TEMP\\testfile.xyz"
+	isA := IsStreamingFile(&cfg, path)
+	assert.EqualValues(t, false, isA)
+}
+
+func Test_IsStreamingFile_In_Returns_True(t *testing.T) {
+	var cfg config.AppConfig
+	config.InitConfig("", &cfg)
+	path := "C:\\TEMP\\testfile.stream"
+	isA := IsStreamingFile(&cfg, path)
+	assert.EqualValues(t, true, isA)
 }

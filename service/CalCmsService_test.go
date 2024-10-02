@@ -509,6 +509,48 @@ func Test_EnrichFileInformation_OneFile_Returns_Enriched(t *testing.T) {
 	assert.EqualValues(t, 1, n)
 }
 
+func Test_EnrichFileInformation_OneStream_Returns_Enriched(t *testing.T) {
+	var events []domain.CalCmsEvent
+	teardown := setupTestCal()
+	defer teardown()
+
+	event := domain.CalCmsEvent{
+		FullTitle:     "Test",
+		StartDatetime: "2024-04-01T11:00:00",
+		EndDatetime:   "2024-04-01T12:00:00",
+		EventID:       1234,
+	}
+	events = append(events, event)
+	data := domain.CalCmsPgmData{
+		Events: events,
+	}
+	calCmsService.insertData(data)
+	fi := domain.FileInfo{
+		Path:          "A",
+		ModTime:       time.Time{},
+		Duration:      0,
+		StartTime:     time.Time{},
+		EndTime:       time.Time{},
+		FromCalCMS:    false,
+		InfoExtracted: false,
+		ScanTime:      time.Time{},
+		FolderDate:    "2024-09-17",
+		RuleMatched:   "",
+		EventId:       1234,
+		CalCmsTitle:   "",
+		FileType:      "Stream",
+		StreamId:      55,
+	}
+	fileRepoCal.Store(fi)
+
+	calCmsService.Cfg.Misc.TestCrawl = true
+	calCmsService.Cfg.Misc.TestDate = "2024/09/17"
+
+	n := calCmsService.EnrichFileInformation()
+
+	assert.EqualValues(t, 1, n)
+}
+
 func Test_getCalCmsData_WrongUrl_Returns_Error(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()

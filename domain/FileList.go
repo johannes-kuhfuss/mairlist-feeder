@@ -22,6 +22,9 @@ type FileInfo struct {
 	BitRate             int64
 	FormatName          string
 	SlotLength          float64
+	FileType            string
+	StreamId            int
+	StreamName          string
 }
 
 type FileList []FileInfo

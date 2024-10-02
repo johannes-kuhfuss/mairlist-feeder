@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"fmt"
 	"math"
 	"sort"
 	"strconv"
@@ -96,7 +97,19 @@ func buildCalCmsInfo(file domain.FileInfo) string {
 }
 
 func buildTechMd(file domain.FileInfo) string {
-	info := strconv.FormatInt(file.BitRate, 10) + ", " + file.FormatName
+	var info string
+	switch file.FileType {
+	case "Audio":
+		info = fmt.Sprintf("%v @ %vkbps", file.FormatName, file.BitRate)
+	case "Stream":
+		if file.StreamId != 0 {
+			info = fmt.Sprintf("Stream %v with Id %v", file.StreamName, file.StreamId)
+		} else {
+			info = "N/A"
+		}
+	default:
+		info = "N/A"
+	}
 	return info
 }
 
