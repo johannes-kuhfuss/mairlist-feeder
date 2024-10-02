@@ -71,8 +71,8 @@ func (s DefaultExportService) Export() {
 	s.Cfg.RunTime.LastExportRunDate = time.Now()
 	nextHour := getNextHour()
 	if s.Cfg.Export.LimitTime {
-		// 23:00, but not on Mondays and 00:00
-		if (nextHour == "23" && isNotMonday()) || (nextHour == "00") {
+		// 23:00, but not on Mondays and 00:00, 01:00
+		if (nextHour == "23" && isNotMonday()) || (nextHour == "00") || (nextHour == "01") {
 			s.ExportForHour(nextHour)
 		}
 	} else {
