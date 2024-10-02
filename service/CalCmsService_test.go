@@ -252,7 +252,7 @@ func Test_checkCalCmsData_WrongData_ReturnsError(t *testing.T) {
 	assert.EqualValues(t, "parsing time \"CC:DD\" as \"2006-01-02T15:04:05\": cannot parse \"CC:DD\" as \"2006\"", err.Error())
 }
 
-func Test_checkCalCmsData_NoMatchingData_ReturnsError(t *testing.T) {
+func Test_checkCalCmsData_DiffereingDates_ReturnsError(t *testing.T) {
 	var events []domain.CalCmsEvent
 	teardown := setupTestCal()
 	defer teardown()
@@ -277,11 +277,51 @@ func Test_checkCalCmsData_NoMatchingData_ReturnsError(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    "",
+		FolderDate:    "2024-09-17",
 		RuleMatched:   "",
 		EventId:       0,
 		CalCmsTitle:   "",
 	}
+
+	_, err := calCmsService.checkCalCmsData(fi)
+
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "file has different date from calCmsData", err.Error())
+}
+
+func Test_checkCalCmsData_NoMatchingOnSameDayData_ReturnsError(t *testing.T) {
+	var events []domain.CalCmsEvent
+	teardown := setupTestCal()
+	defer teardown()
+
+	event := domain.CalCmsEvent{
+		FullTitle:     "Test",
+		StartDatetime: "2024-04-01T11:00:00",
+		EndDatetime:   "2024-04-01T12:00:00",
+		EventID:       1,
+	}
+	events = append(events, event)
+	data := domain.CalCmsPgmData{
+		Events: events,
+	}
+	calCmsService.insertData(data)
+	fi := domain.FileInfo{
+		Path:          "",
+		ModTime:       time.Time{},
+		Duration:      0,
+		StartTime:     time.Time{},
+		EndTime:       time.Time{},
+		FromCalCMS:    false,
+		InfoExtracted: false,
+		ScanTime:      time.Time{},
+		FolderDate:    "2024-09-17",
+		RuleMatched:   "",
+		EventId:       0,
+		CalCmsTitle:   "",
+	}
+
+	calCmsService.Cfg.Misc.TestCrawl = true
+	calCmsService.Cfg.Misc.TestDate = "2024/09/17"
 
 	_, err := calCmsService.checkCalCmsData(fi)
 
