@@ -466,7 +466,7 @@ func Test_EnrichFileInformation_NoFiles_Returns_Zero(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	n := calCmsService.EnrichFileInformation()
-	assert.EqualValues(t, 0, n)
+	assert.EqualValues(t, 0, n.TotalCount)
 }
 
 func Test_EnrichFileInformation_OneFile_Returns_Enriched(t *testing.T) {
@@ -498,6 +498,7 @@ func Test_EnrichFileInformation_OneFile_Returns_Enriched(t *testing.T) {
 		RuleMatched:   "",
 		EventId:       1234,
 		CalCmsTitle:   "",
+		FileType:      "Audio",
 	}
 	fileRepoCal.Store(fi)
 
@@ -506,7 +507,9 @@ func Test_EnrichFileInformation_OneFile_Returns_Enriched(t *testing.T) {
 
 	n := calCmsService.EnrichFileInformation()
 
-	assert.EqualValues(t, 1, n)
+	assert.EqualValues(t, 1, n.TotalCount)
+	assert.EqualValues(t, 1, n.AudioCount)
+	assert.EqualValues(t, 0, n.StreamCount)
 }
 
 func Test_EnrichFileInformation_OneStream_Returns_Enriched(t *testing.T) {
@@ -548,7 +551,9 @@ func Test_EnrichFileInformation_OneStream_Returns_Enriched(t *testing.T) {
 
 	n := calCmsService.EnrichFileInformation()
 
-	assert.EqualValues(t, 1, n)
+	assert.EqualValues(t, 1, n.TotalCount)
+	assert.EqualValues(t, 1, n.StreamCount)
+	assert.EqualValues(t, 0, n.AudioCount)
 }
 
 func Test_getCalCmsData_WrongUrl_Returns_Error(t *testing.T) {

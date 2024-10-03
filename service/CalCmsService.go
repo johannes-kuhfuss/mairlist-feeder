@@ -118,8 +118,8 @@ func (s DefaultCalCmsService) Query() error {
 			logger.Error("Cannot convert calCMS response data to Json", err)
 			return err
 		}
-		enriched := s.EnrichFileInformation()
-		logger.Info(fmt.Sprintf("Added / updated information from calCMS for %v files", enriched))
+		fc := s.EnrichFileInformation()
+		logger.Info(fmt.Sprintf("Added / updated information from calCMS for %v files, audio: %v, stream: %v", fc.TotalCount, fc.AudioCount, fc.StreamCount))
 		return nil
 	} else {
 		logger.Warn("calCMS query not enabled in configuration. Not querying.")
@@ -127,12 +127,11 @@ func (s DefaultCalCmsService) Query() error {
 	}
 }
 
-func (s DefaultCalCmsService) EnrichFileInformation() int {
+func (s DefaultCalCmsService) EnrichFileInformation() dto.FileCounts {
 	var (
-		newFile        domain.FileInfo
-		calCmsEnriched int
+		newFile domain.FileInfo
+		fc      dto.FileCounts
 	)
-	calCmsEnriched = 0
 	files := s.Repo.GetAll()
 	if files != nil {
 		for _, file := range *files {
@@ -153,10 +152,14 @@ func (s DefaultCalCmsService) EnrichFileInformation() int {
 				newFile.EndTime = info.EndTime
 				newFile.CalCmsTitle = info.Title
 				newFile.CalCmsInfoExtracted = true
+				if file.FileType == "Audio" {
+					fc.AudioCount++
+				}
 				if (file.FileType == "Stream") && (file.StreamId != 0) {
 					newFile.Duration = float64(info.Duration.Seconds())
+					fc.StreamCount++
 				}
-				calCmsEnriched++
+				fc.TotalCount++
 				err = s.Repo.Store(newFile)
 				if err != nil {
 					logger.Error("Error updating information in file repository", err)
@@ -164,7 +167,7 @@ func (s DefaultCalCmsService) EnrichFileInformation() int {
 			}
 		}
 	}
-	return calCmsEnriched
+	return fc
 }
 
 func (s DefaultCalCmsService) checkCalCmsData(file domain.FileInfo) (*dto.CalCmsEntry, error) {
