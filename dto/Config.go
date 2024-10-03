@@ -21,6 +21,8 @@ type ConfigResp struct {
 	StartDate                  string
 	RootFolder                 string
 	FileExtensions             string
+	AudioFileExtensions        string
+	StreamFileExtensions       string
 	CycleTime                  string
 	ExportFolder               string
 	AppendToPlayout            string
@@ -74,6 +76,8 @@ func GetConfig(cfg *config.AppConfig) ConfigResp {
 		GinMode:                    cfg.Gin.Mode,
 		RootFolder:                 cfg.Crawl.RootFolder,
 		FileExtensions:             strings.Join(cfg.Crawl.CrawlExtensions, ", "),
+		AudioFileExtensions:        strings.Join(cfg.Crawl.AudioFileExtensions, ", "),
+		StreamFileExtensions:       strings.Join(cfg.Crawl.StreamingFileExtensions, ", "),
 		CycleTime:                  strconv.Itoa(cfg.Crawl.CrawlCycleMin),
 		ExportFolder:               cfg.Export.ExportFolder,
 		AppendToPlayout:            strconv.FormatBool(cfg.Export.AppendPlaylist),

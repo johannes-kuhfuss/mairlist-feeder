@@ -19,8 +19,8 @@
                           <td>{{ .configdata.RootFolder }}</td>
                         </tr>
                         <tr>
-                          <td>File Extensions to include</td>
-                          <td>{{ .configdata.FileExtensions }}</td>
+                          <td>File Extensions</td>
+                          <td><strong>Scan: </strong>{{ .configdata.FileExtensions }} - <strong>Audio: </strong>{{ .configdata.AudioFileExtensions }} - <strong>Stream: </strong>{{ .configdata.StreamFileExtensions }}</td>
                         </tr>
                         <tr>
                           <td>Crawl Cycle in minutes</td>
@@ -35,12 +35,8 @@
                           <td>{{ .configdata.AppendToPlayout }}</td>
                         </tr>
                         <tr>
-                          <td>How many minutes short and still accepted?</td>
-                          <td>{{ .configdata.ShortAllowance }}</td>
-                        </tr>
-                        <tr>
-                          <td>How many minutes long and still accepted?</td>
-                          <td>{{ .configdata.LongAllowance }}</td>
+                          <td>How many minutes short / long and still accepted?</td>
+                          <td><strong>Short: </strong>{{ .configdata.ShortAllowance }} - <strong>Long: </strong>{{ .configdata.LongAllowance }}</td>
                         </tr>
                         <tr>
                           <td>Acting on limited timeslots</td>
@@ -48,7 +44,7 @@
                         </tr>
                         <tr>
                           <td>Number of files in list</td>
-                          <td>Total: {{ .configdata.FilesInList }}, Audio: {{ .configdata.AudioFilesInList }}, Stream: {{ .configdata.StreamFilesInList }}</td>
+                          <td><strong>Total: </strong>{{ .configdata.FilesInList }}, <strong>Audio: </strong>{{ .configdata.AudioFilesInList }}, <strong>Stream: </strong>{{ .configdata.StreamFilesInList }}</td>
                         </tr>
                         <tr>
                           <td>Last Crawl Run</td>
