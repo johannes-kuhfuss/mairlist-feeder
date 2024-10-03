@@ -28,6 +28,12 @@ type FileResp struct {
 	TechMd         string
 }
 
+type FileCounts struct {
+	TotalCount  int
+	AudioCount  int
+	StreamCount int
+}
+
 func GetFiles(repo *repositories.DefaultFileRepository, CmsUrl string) []FileResp {
 	var (
 		fileDta []FileResp

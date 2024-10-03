@@ -53,6 +53,30 @@ func (fr DefaultFileRepository) Size() int {
 	return len(fileList.Files)
 }
 
+func (fr DefaultFileRepository) AudioSize() int {
+	var count int
+	fileList.RLock()
+	defer fileList.RUnlock()
+	for _, f := range fileList.Files {
+		if f.FileType == "Audio" {
+			count++
+		}
+	}
+	return count
+}
+
+func (fr DefaultFileRepository) StreamSize() int {
+	var count int
+	fileList.RLock()
+	defer fileList.RUnlock()
+	for _, f := range fileList.Files {
+		if f.FileType == "Stream" {
+			count++
+		}
+	}
+	return count
+}
+
 func (fr DefaultFileRepository) Get(filePath string) *domain.FileInfo {
 	var fi domain.FileInfo
 	if !fr.Exists(filePath) {

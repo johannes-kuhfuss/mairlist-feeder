@@ -34,7 +34,7 @@ type AppConfig struct {
 	}
 	Crawl struct {
 		RootFolder              string         `envconfig:"ROOT_FOLDER" default:"Z:\\sendungen"`
-		CrawlExtensions         []string       `envconfig:"EXTENSIONS" default:".mp3,.m4a,.wav,.stream"`
+		CrawlExtensions         []string       `envconfig:"CRAWL_EXTENSIONS" default:".mp3,.m4a,.wav,.stream"`
 		AudioFileExtensions     []string       `envconfig:"AUDIO_FILE_EXTENSIONS" default:".mp3,.m4a,.wav"`
 		StreamingFileExtensions []string       `envconfig:"STREAM_FILE_EXTENSIONS" default:".stream"`
 		FfprobePath             string         `envconfig:"FFPROBE_PATH" default:"/usr/bin/ffprobe"`
@@ -66,6 +66,8 @@ type AppConfig struct {
 		CrawlRunNumber       int
 		LastCrawlDate        time.Time
 		FilesInList          int
+		AudioFilesInList     int
+		StreamFilesInList    int
 		LastExportRunDate    time.Time
 		LastExportedFileDate time.Time
 		LastExportFileName   string

@@ -75,8 +75,10 @@ func (s DefaultCrawlService) CrawlRun() {
 	logger.Info(fmt.Sprintf("Finished crawl run #%v. Added %v new files. %v files in list total.", s.Cfg.RunTime.CrawlRunNumber, fileCount, s.Cfg.RunTime.FilesInList))
 	if s.Repo.NewFiles() {
 		logger.Info("Starting to extract file data...")
-		fileCount, _ := s.extractFileInfo()
-		logger.Info(fmt.Sprintf("Finished extracting file data for %v files.", fileCount))
+		fc, _ := s.extractFileInfo()
+		logger.Info(fmt.Sprintf("Finished extracting file data for %v files. %v audio files, %v stream files", fc.TotalCount, fc.AudioCount, fc.StreamCount))
+		s.Cfg.RunTime.AudioFilesInList = s.Repo.AudioSize()
+		s.Cfg.RunTime.StreamFilesInList = s.Repo.StreamSize()
 	} else {
 		logger.Info("No (new) files in file list. No extraction needed.")
 	}
@@ -140,11 +142,11 @@ func (s DefaultCrawlService) parseEventId(srcPath string) int {
 	return 0
 }
 
-func (s DefaultCrawlService) extractFileInfo() (int, error) {
+func (s DefaultCrawlService) extractFileInfo() (dto.FileCounts, error) {
 	var (
 		startTimeDisplay   string
-		extractCount       int = 0
 		roundedDurationMin float64
+		fc                 dto.FileCounts
 	)
 	// /HH-MM (calCMS)
 	folder1Exp := regexp.MustCompile(`[\\/]+([01][0-9]|2[0-3])-(0[0-9]|[1-5][0-9])`)
@@ -169,6 +171,7 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 						newInfo.BitRate = techMd.BitRate
 						newInfo.FormatName = techMd.FormatName
 						roundedDurationMin = math.Round(techMd.DurationSec / 60)
+						fc.AudioCount++
 					}
 				}
 				if helper.IsStreamingFile(s.Cfg, file.Path) {
@@ -179,6 +182,7 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 					} else {
 						newInfo.StreamName = name
 						newInfo.StreamId = id
+						fc.StreamCount++
 					}
 				}
 				folderName := filepath.Dir(file.Path)
@@ -215,7 +219,7 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 					}
 				}
 				newInfo.InfoExtracted = true
-				extractCount++
+				fc.TotalCount++
 				err := s.Repo.Store(newInfo)
 				if err != nil {
 					logger.Error("Error while storing data: ", err)
@@ -234,7 +238,7 @@ func (s DefaultCrawlService) extractFileInfo() (int, error) {
 			}
 		}
 	}
-	return extractCount, nil
+	return fc, nil
 }
 
 func convertTime(t1str string, t2str string, folderDate string) (time.Time, error) {

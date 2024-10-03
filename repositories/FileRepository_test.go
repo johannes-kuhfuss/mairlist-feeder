@@ -288,3 +288,35 @@ func TestNewFilesTrue(t *testing.T) {
 
 	assert.EqualValues(t, true, newFiles)
 }
+
+func Test_AudioSize_Returns_NumberOfAudioFiles(t *testing.T) {
+	teardown := setupTest()
+	defer teardown()
+
+	s1 := repo.AudioSize()
+	fi1 := domain.FileInfo{
+		Path:      "A",
+		StartTime: helper.TimeFromHourAndMinute(11, 0),
+		FileType:  "Audio",
+	}
+	repo.Store(fi1)
+	s2 := repo.AudioSize()
+	assert.EqualValues(t, 0, s1)
+	assert.EqualValues(t, 1, s2)
+}
+
+func Test_StreamSize_Returns_NumberOfStreamFiles(t *testing.T) {
+	teardown := setupTest()
+	defer teardown()
+
+	s1 := repo.StreamSize()
+	fi1 := domain.FileInfo{
+		Path:      "A",
+		StartTime: helper.TimeFromHourAndMinute(11, 0),
+		FileType:  "Stream",
+	}
+	repo.Store(fi1)
+	s2 := repo.StreamSize()
+	assert.EqualValues(t, 0, s1)
+	assert.EqualValues(t, 1, s2)
+}
