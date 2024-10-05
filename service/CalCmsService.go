@@ -65,6 +65,7 @@ func (s DefaultCalCmsService) insertData(data domain.CalCmsPgmData) {
 }
 
 func (s DefaultCalCmsService) getCalCmsData() ([]byte, error) {
+	//API doc: https://github.com/rapilodev/racalmas/blob/master/docs/event-api.md
 	//URL: https://programm.coloradio.org/agenda/events.cgi?date=2024-04-09&template=event.json-p
 	var (
 		calCmsDate string
