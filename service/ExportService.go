@@ -232,7 +232,7 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 			s.writeStartComment(dataWriter)
 			for time, file := range fileExportList.Files {
 				startTime = setStartTime(startTime, time)
-				if file.FromCalCMS {
+				if file.FromCalCMS && !file.EndTime.IsZero() {
 					plannedDur := file.EndTime.Sub(file.StartTime).Minutes()
 					totalLength = totalLength + plannedDur
 				} else {
