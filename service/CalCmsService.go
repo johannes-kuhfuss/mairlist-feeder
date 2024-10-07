@@ -64,11 +64,21 @@ func (s DefaultCalCmsService) insertData(data domain.CalCmsPgmData) {
 	CalCmsPgm.Unlock()
 }
 
+func calcCalCmsEndDate(startDate string) (string, error) {
+	d, err := time.Parse("2006-01-02", startDate)
+	if err != nil {
+		return "", err
+	}
+	endDate := d.AddDate(0, 0, 1)
+	return endDate.Format("2006-01-02"), nil
+}
+
 func (s DefaultCalCmsService) getCalCmsData() ([]byte, error) {
 	//API doc: https://github.com/rapilodev/racalmas/blob/master/docs/event-api.md
-	//URL: https://programm.coloradio.org/agenda/events.cgi?date=2024-04-09&template=event.json-p
+	//URL old: https://programm.coloradio.org/agenda/events.cgi?date=2024-04-09&template=event.json-p
+	//URL new: https://programm.coloradio.org/agenda/events.cgi?from_date=2024-10-04&from_time=00:00&till_date=2024-10-05&till_time=00:00&template=event.json-p
 	var (
-		calCmsDate string
+		calCmsStartDate string
 	)
 	calUrl, err := url.Parse(s.Cfg.CalCms.CmsUrl)
 	if err != nil {
@@ -76,8 +86,15 @@ func (s DefaultCalCmsService) getCalCmsData() ([]byte, error) {
 		return nil, err
 	}
 	query := url.Values{}
-	calCmsDate = strings.ReplaceAll(helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate), "/", "-")
-	query.Add("date", calCmsDate)
+	calCmsStartDate = strings.ReplaceAll(helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate), "/", "-")
+	calCmsEndDate, err := calcCalCmsEndDate(calCmsStartDate)
+	if err != nil {
+		return nil, err
+	}
+	query.Add("from_date", calCmsStartDate)
+	query.Add("from_time", "00:00")
+	query.Add("till_date", calCmsEndDate)
+	query.Add("till_time", "00:00")
 	query.Add("template", s.Cfg.CalCms.Template)
 	calUrl.RawQuery = query.Encode()
 	req, err := http.NewRequest("GET", calUrl.String(), nil)

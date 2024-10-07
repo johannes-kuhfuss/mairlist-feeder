@@ -646,3 +646,18 @@ func Test_Query_NoQuery_Returns_NoError(t *testing.T) {
 	err := calCmsService.Query()
 	assert.Nil(t, err)
 }
+
+func Test_calcCalCmsEndDate_WrongDate_Returns_Erros(t *testing.T) {
+	startDate := "sdf"
+	endDate, err := calcCalCmsEndDate(startDate)
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "", endDate)
+	assert.EqualValues(t, "parsing time \"sdf\" as \"2006-01-02\": cannot parse \"sdf\" as \"2006\"", err.Error())
+}
+
+func Test_calcCalCmsEndDate_Date_Returns_NextDay(t *testing.T) {
+	startDate := "2024-09-17"
+	endDate, err := calcCalCmsEndDate(startDate)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "2024-09-18", endDate)
+}
