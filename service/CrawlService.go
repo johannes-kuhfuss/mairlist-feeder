@@ -77,12 +77,11 @@ func (s DefaultCrawlService) CrawlRun() {
 		logger.Info("Starting to extract file data...")
 		fc, _ := s.extractFileInfo()
 		logger.Info(fmt.Sprintf("Finished extracting file data for %v files. %v audio files, %v stream files", fc.TotalCount, fc.AudioCount, fc.StreamCount))
-		s.Cfg.RunTime.AudioFilesInList = s.Repo.AudioSize()
-		s.Cfg.RunTime.StreamFilesInList = s.Repo.StreamSize()
 	} else {
 		logger.Info("No (new) files in file list. No extraction needed.")
 	}
-
+	s.Cfg.RunTime.AudioFilesInList = s.Repo.AudioSize()
+	s.Cfg.RunTime.StreamFilesInList = s.Repo.StreamSize()
 }
 
 func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []string) (int, error) {
