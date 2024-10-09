@@ -23,6 +23,10 @@
                           <td><strong>Scan: </strong>{{ .configdata.FileExtensions }} - <strong>Audio: </strong>{{ .configdata.AudioFileExtensions }} - <strong>Stream: </strong>{{ .configdata.StreamFileExtensions }}</td>
                         </tr>
                         <tr>
+                          <td>Stream Mappings</td>
+                          <td>{{ .configdata.StreamFileMapping }}</td>
+                        </tr>
+                        <tr>
                           <td>Crawl Cycle in minutes</td>
                           <td>{{ .configdata.CycleTime }}</td>
                         </tr>

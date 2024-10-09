@@ -23,6 +23,7 @@ type ConfigResp struct {
 	FileExtensions             string
 	AudioFileExtensions        string
 	StreamFileExtensions       string
+	StreamFileMapping          string
 	CycleTime                  string
 	ExportFolder               string
 	AppendToPlayout            string
@@ -61,7 +62,14 @@ func getNextJobDate(cfg *config.AppConfig, jobId int) string {
 	} else {
 		return "N/A"
 	}
+}
 
+func getStreamMappings(mappings map[string]int) string {
+	var mapStr string
+	for stream, id := range mappings {
+		mapStr = mapStr + stream + " -> " + strconv.Itoa(id) + "; "
+	}
+	return mapStr
 }
 
 func GetConfig(cfg *config.AppConfig) ConfigResp {
@@ -109,5 +117,6 @@ func GetConfig(cfg *config.AppConfig) ConfigResp {
 	resp.NextCrawlDate = getNextJobDate(cfg, cfg.RunTime.CrawlJobId)
 	resp.NextCleanDate = getNextJobDate(cfg, cfg.RunTime.CleanJobId)
 	resp.NextExportDate = getNextJobDate(cfg, cfg.RunTime.ExportJobId)
+	resp.StreamFileMapping = getStreamMappings(cfg.Crawl.StreamMap)
 	return resp
 }
