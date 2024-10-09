@@ -40,7 +40,7 @@ type AppConfig struct {
 		FfprobePath             string         `envconfig:"FFPROBE_PATH" default:"/usr/bin/ffprobe"`
 		FfProbeTimeOut          int            `envconfig:"FFPROBE_TIMEOUT" default:"60"`
 		CrawlCycleMin           int            `envconfig:"CRAWL_CYCLE_MIN" default:"15"`
-		StreamMap               map[string]int `envconfig:"STREAM_MAP" default:"coloextra:891,kreischamobil:877,minimalradio:889,blau:738,corax:919,frei:880,zett:921,roman:922,rundfunkkombinat:923"`
+		StreamMap               map[string]int `envconfig:"STREAM_MAP"`
 	}
 	Export struct {
 		ExportFolder           string  `envconfig:"EXPORT_FOLDER" default:"C:\\TEMP"`
