@@ -110,3 +110,22 @@ func Test_runClean_FileWrongDate_Returns_Error(t *testing.T) {
 	assert.EqualValues(t, 0, n)
 	assert.EqualValues(t, 1, f)
 }
+
+func Test_Clean_NoFiles_Returns_Zero(t *testing.T) {
+	teardown := setupTestClean()
+	defer teardown()
+	cleanSvc.Clean()
+	assert.EqualValues(t, 0, cleanSvc.Cfg.RunTime.FilesCleaned)
+}
+
+func Test_Clean_OneFile_Returns_One(t *testing.T) {
+	teardown := setupTestClean()
+	defer teardown()
+	fi1 := domain.FileInfo{
+		Path:       "A",
+		FolderDate: time.Now().AddDate(0, 0, -2).Format("2006-01-02"),
+	}
+	cleanRepo.Store(fi1)
+	cleanSvc.Clean()
+	assert.EqualValues(t, 1, cleanSvc.Cfg.RunTime.FilesCleaned)
+}

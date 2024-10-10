@@ -88,5 +88,4 @@ func (s DefaultCleanService) runClean() (int, error) {
 	} else {
 		return filesCleaned, errors.New("error cleaning")
 	}
-
 }
