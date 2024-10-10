@@ -57,7 +57,7 @@ func convertDate(date time.Time) string {
 }
 
 func getNextJobDate(cfg *config.AppConfig, jobId int) string {
-	if cfg.RunTime.BgJobs != nil {
+	if cfg.RunTime.BgJobs != nil && cfg.RunTime.BgJobs.Entry(cron.EntryID(jobId)).Valid() {
 		return cfg.RunTime.BgJobs.Entry(cron.EntryID(jobId)).Next.String()
 	} else {
 		return "N/A"
