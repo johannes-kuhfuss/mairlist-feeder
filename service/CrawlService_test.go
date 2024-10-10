@@ -291,3 +291,26 @@ func Test_analyzeStreamData_StreamFound_Returns_NameAndId(t *testing.T) {
 	assert.EqualValues(t, 55, id)
 	os.Remove(file)
 }
+
+func Test_checkForOrphanFiles_NoFiles_Returns_Zero(t *testing.T) {
+	teardown := setupTestCrawl()
+	defer teardown()
+	fr := crawlSvc.checkForOrphanFiles()
+	assert.EqualValues(t, 0, fr)
+}
+
+func Test_checkForOrphanFiles_OneOrphanFile_Returns_One(t *testing.T) {
+	teardown := setupTestCrawl()
+	defer teardown()
+	fi1 := domain.FileInfo{
+		Path:       "../file.txt",
+		FolderDate: "2024-09-22",
+	}
+	crawlRepo.Store(fi1)
+	s1 := crawlRepo.Size()
+	fr := crawlSvc.checkForOrphanFiles()
+	s2 := crawlRepo.Size()
+	assert.EqualValues(t, 1, s1)
+	assert.EqualValues(t, 1, fr)
+	assert.EqualValues(t, 0, s2)
+}

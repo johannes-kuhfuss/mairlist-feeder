@@ -106,6 +106,9 @@ func setDefaults(config *AppConfig) {
 	config.RunTime.CrawlRunning = false
 	config.RunTime.ExportRunning = false
 	config.RunTime.CleanRunning = false
+	if len(config.Crawl.StreamMap) == 0 {
+		config.Crawl.StreamMap = make(map[string]int)
+	}
 }
 
 func loadConfig(file string) error {

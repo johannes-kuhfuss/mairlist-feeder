@@ -63,16 +63,38 @@ func (s DefaultCrawlService) Crawl() {
 	}
 }
 
+func (s DefaultCrawlService) checkForOrphanFiles() int {
+	var (
+		filesRemoved int
+	)
+	if s.Repo.Size() > 0 {
+		files := s.Repo.GetAll()
+		for _, file := range *files {
+			if _, err := os.Stat(file.Path); errors.Is(err, os.ErrNotExist) {
+				err := s.Repo.Delete(file.Path)
+				if err == nil {
+					logger.Warn(fmt.Sprintf("File %v not found on disk. Removing from list.", file.Path))
+					filesRemoved++
+				} else {
+					logger.Error("Error removing orphaned file.", err)
+				}
+			}
+		}
+	}
+	return filesRemoved
+}
+
 func (s DefaultCrawlService) CrawlRun() {
 	s.Cfg.RunTime.CrawlRunNumber++
 	s.Cfg.RunTime.LastCrawlDate = time.Now()
 	logger.Info(fmt.Sprintf("Root folder: %v. Starting crawl #%v.", s.Cfg.Crawl.RootFolder, s.Cfg.RunTime.CrawlRunNumber))
+	filesRemoved := s.checkForOrphanFiles()
 	fileCount, err := s.crawlFolder(s.Cfg.Crawl.RootFolder, s.Cfg.Crawl.CrawlExtensions)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Error crawling folder %v: ", s.Cfg.Crawl.RootFolder), err)
 	}
 	s.Cfg.RunTime.FilesInList = s.Repo.Size()
-	logger.Info(fmt.Sprintf("Finished crawl run #%v. Added %v new files. %v files in list total.", s.Cfg.RunTime.CrawlRunNumber, fileCount, s.Cfg.RunTime.FilesInList))
+	logger.Info(fmt.Sprintf("Finished crawl run #%v. Removed %v orphaned files. Added %v new files. %v files in list total.", s.Cfg.RunTime.CrawlRunNumber, filesRemoved, fileCount, s.Cfg.RunTime.FilesInList))
 	if s.Repo.NewFiles() {
 		logger.Info("Starting to extract file data...")
 		fc, _ := s.extractFileInfo()
