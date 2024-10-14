@@ -320,3 +320,34 @@ func Test_StreamSize_Returns_NumberOfStreamFiles(t *testing.T) {
 	assert.EqualValues(t, 0, s1)
 	assert.EqualValues(t, 1, s2)
 }
+
+func Test_EventIdExists_NoEvents_Returns_False(t *testing.T) {
+	teardown := setupTest()
+	defer teardown()
+	ex := repo.EventIdExists(1)
+	assert.EqualValues(t, false, ex)
+}
+
+func Test_EventIdExists_NoMatchingEvents_Returns_False(t *testing.T) {
+	teardown := setupTest()
+	defer teardown()
+	fi1 := domain.FileInfo{
+		Path:    "A",
+		EventId: 2,
+	}
+	repo.Store(fi1)
+	ex := repo.EventIdExists(1)
+	assert.EqualValues(t, false, ex)
+}
+
+func Test_EventIdExists_MatchingEvent_Returns_True(t *testing.T) {
+	teardown := setupTest()
+	defer teardown()
+	fi1 := domain.FileInfo{
+		Path:    "A",
+		EventId: 2,
+	}
+	repo.Store(fi1)
+	ex := repo.EventIdExists(2)
+	assert.EqualValues(t, true, ex)
+}

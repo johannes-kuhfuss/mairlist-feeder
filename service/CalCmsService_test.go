@@ -661,3 +661,28 @@ func Test_calcCalCmsEndDate_Date_Returns_NextDay(t *testing.T) {
 	assert.Nil(t, err)
 	assert.EqualValues(t, "2024-09-18", endDate)
 }
+
+func Test_parseDuration_Returns_Duration(t *testing.T) {
+	dur := parseDuration("05:00:02")
+	assert.EqualValues(t, "05:00", dur)
+}
+
+func Test_GetEvents_Returns_data(t *testing.T) {
+	teardown := setupTestCal()
+	defer teardown()
+	respData, _ := os.ReadFile("../samples/calCMS-response.json")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(respData)
+	}))
+	defer srv.Close()
+	cfgCal.CalCms.CmsUrl = srv.URL
+	cfgCal.Misc.TestCrawl = true
+	cfgCal.Misc.TestDate = "2024/09/24"
+	cfgCal.CalCms.QueryCalCms = true
+	ev, err := calCmsService.GetEvents()
+	assert.Nil(t, err)
+	assert.EqualValues(t, 8, len(ev))
+	assert.EqualValues(t, "Morgenmagazin - der Freien Radios", ev[0].Title)
+}

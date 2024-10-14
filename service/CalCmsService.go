@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -271,4 +272,52 @@ func (s DefaultCalCmsService) convertToEntry(event domain.CalCmsEvent) (dto.CalC
 	entry.EventId = event.EventID
 	entry.Live = event.Live
 	return entry, nil
+}
+
+func parseDuration(dur string) string {
+	d, _ := time.Parse("15:04:05", dur)
+	return d.Format("15:04")
+}
+
+func (s DefaultCalCmsService) GetEvents() ([]dto.Event, error) {
+	var (
+		el         []dto.Event
+		calCmsData domain.CalCmsPgmData
+	)
+	if s.Cfg.CalCms.QueryCalCms {
+		data, err := s.getCalCmsData()
+		if err != nil {
+			logger.Error("error getting data from calCms", err)
+			return nil, err
+		}
+		err = json.Unmarshal(data, &calCmsData)
+		if err != nil {
+			logger.Error("Cannot convert calCMS response data to Json", err)
+			return nil, err
+		}
+		for _, event := range calCmsData.Events {
+			var ev dto.Event
+			ev.EventId = strconv.Itoa(event.EventID)
+			ev.StartDate = event.StartDate
+			ev.StartTime = event.StartTime
+			ev.EndTime = event.EndTime
+			ev.Title = event.FullTitle
+			ev.Duration = parseDuration(event.Duration)
+			if event.Live == 0 {
+				ev.LiveEvent = false
+			} else {
+				ev.LiveEvent = true
+			}
+			if s.Repo.EventIdExists(event.EventID) {
+				ev.FilePresent = true
+			} else {
+				ev.FilePresent = false
+			}
+			el = append(el, ev)
+		}
+		return el, nil
+	} else {
+		logger.Warn("calCMS query not enabled in configuration. Not querying.")
+		return nil, nil
+	}
 }

@@ -11,20 +11,24 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
+	"github.com/johannes-kuhfuss/mairlist-feeder/service"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	repo     repositories.DefaultFileRepository
-	uh       StatsUiHandler
-	cfg      config.AppConfig
-	router   *gin.Engine
-	recorder *httptest.ResponseRecorder
+	repo      repositories.DefaultFileRepository
+	uh        StatsUiHandler
+	cfg       config.AppConfig
+	router    *gin.Engine
+	recorder  *httptest.ResponseRecorder
+	calCmsSvc service.DefaultCalCmsService
 )
 
 func setupUiTest() func() {
+	config.InitConfig("", &cfg)
 	repo = repositories.NewFileRepository(&cfg)
-	uh = NewStatsUiHandler(&cfg, &repo, nil, nil, nil)
+	calCmsSvc = service.NewCalCmsService(&cfg, &repo)
+	uh = NewStatsUiHandler(&cfg, &repo, nil, nil, nil, &calCmsSvc)
 	router = gin.Default()
 	router.LoadHTMLGlob("../templates/*.tmpl")
 	recorder = httptest.NewRecorder()
@@ -224,6 +228,24 @@ func Test_LogsPage_Returns_Logs(t *testing.T) {
 	defer res.Body.Close()
 	data, err := io.ReadAll(res.Body)
 	containsTitle := strings.Contains(string(data), "<title>Logs</title>")
+
+	assert.EqualValues(t, http.StatusOK, res.StatusCode)
+	assert.Nil(t, err)
+	assert.True(t, containsTitle)
+}
+
+func Test_EventsPage_Returns_Events(t *testing.T) {
+	teardown := setupUiTest()
+	defer teardown()
+	cfg.CalCms.QueryCalCms = true
+	router.GET("/events", uh.EventsPage)
+	request := httptest.NewRequest(http.MethodGet, "/events", nil)
+
+	router.ServeHTTP(recorder, request)
+	res := recorder.Result()
+	defer res.Body.Close()
+	data, err := io.ReadAll(res.Body)
+	containsTitle := strings.Contains(string(data), "<title>Event List</title>")
 
 	assert.EqualValues(t, http.StatusOK, res.StatusCode)
 	assert.Nil(t, err)

@@ -35,7 +35,7 @@ var (
 	crawlService   service.DefaultCrawlService
 	cleanService   service.DefaultCleanService
 	exportService  service.DefaultExportService
-	calCmsService  service.CalCmsService
+	calCmsService  service.DefaultCalCmsService
 )
 
 func StartApp() {
@@ -128,12 +128,13 @@ func wireApp() {
 	crawlService = service.NewCrawlService(&cfg, &fileRepo, calCmsService)
 	cleanService = service.NewCleanService(&cfg, &fileRepo)
 	exportService = service.NewExportService(&cfg, &fileRepo)
-	statsUiHandler = handlers.NewStatsUiHandler(&cfg, &fileRepo, &crawlService, &exportService, &cleanService)
+	statsUiHandler = handlers.NewStatsUiHandler(&cfg, &fileRepo, &crawlService, &exportService, &cleanService, &calCmsService)
 }
 
 func mapUrls() {
 	cfg.RunTime.Router.GET("/", statsUiHandler.StatusPage)
 	cfg.RunTime.Router.GET("/filelist", statsUiHandler.FileListPage)
+	cfg.RunTime.Router.GET("/events", statsUiHandler.EventsPage)
 	cfg.RunTime.Router.GET("/actions", statsUiHandler.ActionPage)
 	cfg.RunTime.Router.POST("/actions", statsUiHandler.ExecAction)
 	cfg.RunTime.Router.GET("/logs", statsUiHandler.LogsPage)

@@ -17,8 +17,14 @@ import (
 type FileRepository interface {
 	Exists(string) bool
 	Size() int
-	GetFileData(string) domain.FileInfo
-	StoreFileData(domain.FileInfo) error
+	AudioSize() int
+	StreamSize() int
+	Get(string) *domain.FileInfo
+	GetAll() *domain.FileList
+	GetForHour(string) *domain.FileList
+	EventIdExists(int) bool
+	Store(domain.FileInfo) error
+	Delete(string) error
 	SaveToDisk(string)
 	LoadFromDisk(string)
 	DeleteAllData()
@@ -121,6 +127,25 @@ func (fr DefaultFileRepository) GetForHour(hour string) *domain.FileList {
 		return nil
 	}
 
+}
+
+func (fr DefaultFileRepository) EventIdExists(eventId int) bool {
+	var list domain.FileList
+	if fr.Size() == 0 {
+		return false
+	}
+	fileList.RLock()
+	defer fileList.RUnlock()
+	for _, file := range fileList.Files {
+		if file.EventId == eventId {
+			list = append(list, file)
+		}
+	}
+	if len(list) == 0 {
+		return false
+	} else {
+		return true
+	}
 }
 
 func (fr DefaultFileRepository) Store(fi domain.FileInfo) error {

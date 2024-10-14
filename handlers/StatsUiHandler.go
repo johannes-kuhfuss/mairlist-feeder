@@ -20,15 +20,17 @@ type StatsUiHandler struct {
 	CrawlSvc  *service.DefaultCrawlService
 	ExportSvc *service.DefaultExportService
 	CleanSvc  *service.DefaultCleanService
+	CalCmsSvc *service.DefaultCalCmsService
 }
 
-func NewStatsUiHandler(cfg *config.AppConfig, repo *repositories.DefaultFileRepository, crs *service.DefaultCrawlService, exs *service.DefaultExportService, cls *service.DefaultCleanService) StatsUiHandler {
+func NewStatsUiHandler(cfg *config.AppConfig, repo *repositories.DefaultFileRepository, crs *service.DefaultCrawlService, exs *service.DefaultExportService, cls *service.DefaultCleanService, csv *service.DefaultCalCmsService) StatsUiHandler {
 	return StatsUiHandler{
 		Cfg:       cfg,
 		Repo:      repo,
 		CrawlSvc:  crs,
 		ExportSvc: exs,
 		CleanSvc:  cls,
+		CalCmsSvc: csv,
 	}
 }
 
@@ -45,6 +47,14 @@ func (uh *StatsUiHandler) FileListPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "filelist.page.tmpl", gin.H{
 		"title": "File List",
 		"files": files,
+	})
+}
+
+func (uh *StatsUiHandler) EventsPage(c *gin.Context) {
+	events, _ := uh.CalCmsSvc.GetEvents()
+	c.HTML(http.StatusOK, "eventlist.page.tmpl", gin.H{
+		"title":  "Event List",
+		"events": events,
 	})
 }
 
