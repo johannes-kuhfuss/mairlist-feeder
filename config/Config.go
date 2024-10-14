@@ -54,9 +54,10 @@ type AppConfig struct {
 		LimitTime              bool    `envconfig:"LIMIT_TIME" default:"false"`
 	}
 	CalCms struct {
-		QueryCalCms bool   `envconfig:"QUERY_CALCMS" default:"false"`
-		CmsUrl      string `envconfig:"CALCMS_URL" default:"https://programm.coloradio.org/agenda/events.cgi"`
-		Template    string `envconfig:"CALCMS_TEMPLATE" default:"event.json-p"`
+		QueryCalCms    bool     `envconfig:"QUERY_CALCMS" default:"false"`
+		CmsUrl         string   `envconfig:"CALCMS_URL" default:"https://programm.coloradio.org/agenda/events.cgi"`
+		Template       string   `envconfig:"CALCMS_TEMPLATE" default:"event.json-p"`
+		EventExclusion []string `envconfig:"EVENT_EXCLUSION"`
 	}
 	RunTime struct {
 		Router               *gin.Engine

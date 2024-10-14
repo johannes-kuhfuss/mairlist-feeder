@@ -18,6 +18,7 @@ import (
 	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/johannes-kuhfuss/services_utils/logger"
+	"github.com/johannes-kuhfuss/services_utils/misc"
 )
 
 type CalCmsService interface {
@@ -279,23 +280,12 @@ func parseDuration(dur string) string {
 	return d.Format("15:04")
 }
 
-func (s DefaultCalCmsService) GetEvents() ([]dto.Event, error) {
+func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dto.Event {
 	var (
-		el         []dto.Event
-		calCmsData domain.CalCmsPgmData
+		el []dto.Event
 	)
-	if s.Cfg.CalCms.QueryCalCms {
-		data, err := s.getCalCmsData()
-		if err != nil {
-			logger.Error("error getting data from calCms", err)
-			return nil, err
-		}
-		err = json.Unmarshal(data, &calCmsData)
-		if err != nil {
-			logger.Error("Cannot convert calCMS response data to Json", err)
-			return nil, err
-		}
-		for _, event := range calCmsData.Events {
+	for _, event := range calCmsData.Events {
+		if !misc.SliceContainsString(s.Cfg.CalCms.EventExclusion, event.Skey) {
 			var ev dto.Event
 			ev.EventId = strconv.Itoa(event.EventID)
 			ev.StartDate = event.StartDate
@@ -315,6 +305,26 @@ func (s DefaultCalCmsService) GetEvents() ([]dto.Event, error) {
 			}
 			el = append(el, ev)
 		}
+	}
+	return el
+}
+
+func (s DefaultCalCmsService) GetEvents() ([]dto.Event, error) {
+	var (
+		calCmsData domain.CalCmsPgmData
+	)
+	if s.Cfg.CalCms.QueryCalCms {
+		data, err := s.getCalCmsData()
+		if err != nil {
+			logger.Error("error getting data from calCms", err)
+			return nil, err
+		}
+		err = json.Unmarshal(data, &calCmsData)
+		if err != nil {
+			logger.Error("Cannot convert calCMS response data to Json", err)
+			return nil, err
+		}
+		el := s.convertEvent(calCmsData)
 		return el, nil
 	} else {
 		logger.Warn("calCMS query not enabled in configuration. Not querying.")
