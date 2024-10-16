@@ -294,14 +294,19 @@ func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dt
 			ev.Title = event.FullTitle
 			ev.Duration = parseDuration(event.Duration)
 			if event.Live == 0 {
-				ev.LiveEvent = false
+				ev.EventType = "Preproduction"
+				n := s.Repo.EventIdExists(event.EventID)
+				switch {
+				case n == 0:
+					ev.FileStatus = "Missing"
+				case n == 1:
+					ev.FileStatus = "Present"
+				case n > 1:
+					ev.FileStatus = "Multiple"
+				}
 			} else {
-				ev.LiveEvent = true
-			}
-			if s.Repo.EventIdExists(event.EventID) {
-				ev.FilePresent = true
-			} else {
-				ev.FilePresent = false
+				ev.EventType = "Live"
+				ev.FileStatus = "N/A"
 			}
 			el = append(el, ev)
 		}

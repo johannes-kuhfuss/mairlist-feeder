@@ -22,7 +22,7 @@ type FileRepository interface {
 	Get(string) *domain.FileInfo
 	GetAll() *domain.FileList
 	GetForHour(string) *domain.FileList
-	EventIdExists(int) bool
+	EventIdExists(int) int
 	Store(domain.FileInfo) error
 	Delete(string) error
 	SaveToDisk(string)
@@ -129,10 +129,10 @@ func (fr DefaultFileRepository) GetForHour(hour string) *domain.FileList {
 
 }
 
-func (fr DefaultFileRepository) EventIdExists(eventId int) bool {
+func (fr DefaultFileRepository) EventIdExists(eventId int) int {
 	var list domain.FileList
 	if fr.Size() == 0 {
-		return false
+		return 0
 	}
 	fileList.RLock()
 	defer fileList.RUnlock()
@@ -142,9 +142,9 @@ func (fr DefaultFileRepository) EventIdExists(eventId int) bool {
 		}
 	}
 	if len(list) == 0 {
-		return false
+		return 0
 	} else {
-		return true
+		return len(list)
 	}
 }
 

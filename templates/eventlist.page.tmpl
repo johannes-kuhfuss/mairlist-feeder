@@ -27,16 +27,18 @@
                           <td>{{ .StartTime }}</td>
                           <td>{{ .EndTime }}</td>
                           <td>{{ .Duration }}</td>
-                          {{ if .LiveEvent }}
-                            <td>Live</td>
-                            <td>N/A</td>
-                          {{ else }}
-                            <td>Preproduction</td>
-                            {{ if .FilePresent }}
-                            <td style="color: green">Yes</td>
-                            {{ else }}
-                            <td style="color: red">No</td>
+                          <td>{{ .EventType }}</td>
+                          {{ if eq .FileStatus "N/A" }}
+                            <td>{{ .FileStatus }}</td>
                           {{ end }}
+                          {{ if eq .FileStatus "Missing" }}
+                            <td style="color: red">{{ .FileStatus }}</td>
+                          {{ end }}
+                          {{ if eq .FileStatus "Present" }}
+                            <td style="color: green">{{ .FileStatus }}</td>
+                          {{ end }}
+                          {{ if eq .FileStatus "Multiple" }}
+                            <td style="color: yellow">{{ .FileStatus }}</td>
                           {{ end }}
                         </tr>
                         {{ end }}
