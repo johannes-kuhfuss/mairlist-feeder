@@ -41,6 +41,7 @@ type AppConfig struct {
 		FfProbeTimeOut          int            `envconfig:"FFPROBE_TIMEOUT" default:"60"`
 		CrawlCycleMin           int            `envconfig:"CRAWL_CYCLE_MIN" default:"15"`
 		StreamMap               map[string]int `envconfig:"STREAM_MAP"`
+		GenerateHash            bool           `envconfig:"GENERATE_HASH" default:"false"`
 	}
 	Export struct {
 		ExportFolder           string  `envconfig:"EXPORT_FOLDER" default:"C:\\TEMP"`

@@ -25,6 +25,7 @@ type FileInfo struct {
 	FileType            string
 	StreamId            int
 	StreamName          string
+	Checksum            string
 }
 
 type FileList []FileInfo

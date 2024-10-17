@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -60,6 +62,33 @@ func (s DefaultCrawlService) Crawl() {
 	s.Cfg.RunTime.CrawlRunning = false
 	if s.Cfg.CalCms.QueryCalCms {
 		s.CalSvc.Query()
+	}
+}
+
+func (s DefaultCrawlService) GenHashes() {
+	for {
+		time.Sleep(1 * time.Minute)
+		if s.Repo.Size() > 0 {
+			files := s.Repo.GetAll()
+			for _, file := range *files {
+				if file.Checksum == "" {
+					t1 := time.Now()
+					hash, err := generateHash(file.Path)
+					t2 := time.Now()
+					dur := t2.Sub(t1)
+					if err != nil {
+						logger.Error(fmt.Sprintf("Error when creating hash for %v", file.Path), err)
+					} else {
+						file.Checksum = hash
+						err := s.Repo.Store(file)
+						if err != nil {
+							logger.Error("Error storing file", err)
+						}
+						logger.Info(fmt.Sprintf("Added hash for file %v in %v seconds", file.Path, dur.Seconds()))
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -161,6 +190,19 @@ func (s DefaultCrawlService) parseEventId(srcPath string) int {
 		}
 	}
 	return 0
+}
+
+func generateHash(path string) (string, error) {
+	hasher := md5.New()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	_, err = hasher.Write(data)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
 func (s DefaultCrawlService) extractFileInfo() (dto.FileCounts, error) {

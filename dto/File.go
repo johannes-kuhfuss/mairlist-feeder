@@ -116,6 +116,9 @@ func buildTechMd(file domain.FileInfo) string {
 	default:
 		info = "N/A"
 	}
+	if file.Checksum != "" {
+		info = info + " [" + file.Checksum + "]"
+	}
 	return info
 }
 

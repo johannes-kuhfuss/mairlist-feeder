@@ -314,3 +314,16 @@ func Test_checkForOrphanFiles_OneOrphanFile_Returns_One(t *testing.T) {
 	assert.EqualValues(t, 1, fr)
 	assert.EqualValues(t, 0, s2)
 }
+
+func Test_generateHash_NoFile_Returns_Error(t *testing.T) {
+	hash, err := generateHash("../no-file")
+	assert.EqualValues(t, "", hash)
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "open ../no-file: The system cannot find the file specified.", err.Error())
+}
+
+func Test_generateHash_SampleFile_Returns_Hash(t *testing.T) {
+	hash, err := generateHash("../samples/1600-1700_sine1k.mp3")
+	assert.Nil(t, err)
+	assert.EqualValues(t, "50c2fcde004eea6790580b01c7032f1d", hash)
+}

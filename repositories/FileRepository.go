@@ -130,7 +130,9 @@ func (fr DefaultFileRepository) GetForHour(hour string) *domain.FileList {
 }
 
 func (fr DefaultFileRepository) EventIdExists(eventId int) int {
-	var list domain.FileList
+	var (
+		list domain.FileList
+	)
 	if fr.Size() == 0 {
 		return 0
 	}
@@ -141,11 +143,7 @@ func (fr DefaultFileRepository) EventIdExists(eventId int) int {
 			list = append(list, file)
 		}
 	}
-	if len(list) == 0 {
-		return 0
-	} else {
-		return len(list)
-	}
+	return len(list)
 }
 
 func (fr DefaultFileRepository) Store(fi domain.FileInfo) error {

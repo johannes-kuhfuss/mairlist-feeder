@@ -46,6 +46,7 @@ type ConfigResp struct {
 	NextExportDate             string
 	NextCleanDate              string
 	FilesCleaned               string
+	GenHashes                  string
 }
 
 func convertDate(date time.Time) string {
@@ -100,6 +101,7 @@ func GetConfig(cfg *config.AppConfig) ConfigResp {
 		CleanRunning:               strconv.FormatBool(cfg.RunTime.CleanRunning),
 		LimitTime:                  strconv.FormatBool(cfg.Export.LimitTime),
 		FilesCleaned:               strconv.Itoa(cfg.RunTime.FilesCleaned),
+		GenHashes:                  strconv.FormatBool(cfg.Crawl.GenerateHash),
 	}
 	resp.LastCrawlDate = convertDate(cfg.RunTime.LastCrawlDate)
 	resp.LastExportDate = convertDate(cfg.RunTime.LastExportRunDate)
