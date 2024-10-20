@@ -66,7 +66,7 @@ func Test_extractFileInfo_FileCalCms_ReturnsData(t *testing.T) {
 	}
 	crawlRepo.Store(fi1)
 	n, e := crawlSvc.extractFileInfo()
-	fires := crawlRepo.Get(fi1.Path)
+	fires := crawlRepo.GetByPath(fi1.Path)
 	assert.Nil(t, e)
 	assert.EqualValues(t, 1, n.TotalCount)
 	assert.EqualValues(t, true, fires.FromCalCMS)
@@ -83,7 +83,7 @@ func Test_extractFileInfo_FileNamingConvention_ReturnsData(t *testing.T) {
 	}
 	crawlRepo.Store(fi1)
 	n, e := crawlSvc.extractFileInfo()
-	fires := crawlRepo.Get(fi1.Path)
+	fires := crawlRepo.GetByPath(fi1.Path)
 	assert.Nil(t, e)
 	assert.EqualValues(t, 1, n.TotalCount)
 	assert.EqualValues(t, false, fires.FromCalCMS)
@@ -101,7 +101,7 @@ func Test_extractFileInfo_Uploadtool_ReturnsData(t *testing.T) {
 	}
 	crawlRepo.Store(fi1)
 	n, e := crawlSvc.extractFileInfo()
-	fires := crawlRepo.Get(fi1.Path)
+	fires := crawlRepo.GetByPath(fi1.Path)
 	assert.Nil(t, e)
 	assert.EqualValues(t, 1, n.TotalCount)
 	assert.EqualValues(t, false, fires.FromCalCMS)
@@ -119,7 +119,7 @@ func Test_extractFileInfo_AnyFile_ReturnsData(t *testing.T) {
 	}
 	crawlRepo.Store(fi1)
 	n, e := crawlSvc.extractFileInfo()
-	fires := crawlRepo.Get(fi1.Path)
+	fires := crawlRepo.GetByPath(fi1.Path)
 	assert.Nil(t, e)
 	assert.EqualValues(t, 1, n.TotalCount)
 	assert.EqualValues(t, false, fires.FromCalCMS)
@@ -136,7 +136,7 @@ func Test_extractFileInfo_RealFile_ReturnsData(t *testing.T) {
 	}
 	crawlRepo.Store(fi1)
 	n, e := crawlSvc.extractFileInfo()
-	fires := crawlRepo.Get(fi1.Path)
+	fires := crawlRepo.GetByPath(fi1.Path)
 	assert.Nil(t, e)
 	assert.EqualValues(t, 1, n.TotalCount)
 	assert.EqualValues(t, 1, n.AudioCount)
@@ -161,7 +161,7 @@ func Test_extractFileInfo_Stream_ReturnsData(t *testing.T) {
 	crawlSvc.Cfg.Crawl.StreamMap["test"] = 222
 	os.WriteFile(file, []byte("test"), 0644)
 	n, e := crawlSvc.extractFileInfo()
-	fires := crawlRepo.Get(fi1.Path)
+	fires := crawlRepo.GetByPath(fi1.Path)
 	assert.Nil(t, e)
 	assert.EqualValues(t, 1, n.TotalCount)
 	assert.EqualValues(t, 0, n.AudioCount)

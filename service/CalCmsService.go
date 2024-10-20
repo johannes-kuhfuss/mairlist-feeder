@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -276,8 +277,40 @@ func (s DefaultCalCmsService) convertToEntry(event domain.CalCmsEvent) (dto.CalC
 }
 
 func parseDuration(dur string) string {
-	d, _ := time.Parse("15:04:05", dur)
-	return d.Format("15:04")
+	dStr := dur[0:2] + "h" + dur[3:5] + "m" + dur[6:8] + "s"
+	d, err := time.ParseDuration(dStr)
+	if err != nil {
+		return "N/A"
+	}
+	return strconv.FormatFloat(math.Round(d.Seconds()/60), 'f', 1, 64)
+}
+
+func extractFileInfo(files *domain.FileList, hashEnabled bool) (string, string) {
+	var (
+		filesIdentical bool
+		hash           string
+	)
+	if len(*files) == 1 {
+		return "Present", strconv.FormatFloat(math.Round((*files)[0].Duration/60), 'f', 1, 64)
+	}
+	if hashEnabled {
+		filesIdentical = true
+		for _, file := range *files {
+			if hash == "" {
+				hash = file.Checksum
+			} else {
+				filesIdentical = (hash == file.Checksum)
+			}
+		}
+		if filesIdentical {
+			return "Multiple (identical)", strconv.FormatFloat(math.Round((*files)[0].Duration/60), 'f', 1, 64)
+		} else {
+			return "Multiple (different)", "N/A"
+		}
+	} else {
+		return "Multiple", "N/A"
+	}
+
 }
 
 func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dto.Event {
@@ -292,21 +325,20 @@ func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dt
 			ev.StartTime = event.StartTime
 			ev.EndTime = event.EndTime
 			ev.Title = event.FullTitle
-			ev.Duration = parseDuration(event.Duration)
+			ev.PlannedDuration = parseDuration(event.Duration)
 			if event.Live == 0 {
 				ev.EventType = "Preproduction"
-				n := s.Repo.EventIdExists(event.EventID)
-				switch {
-				case n == 0:
+				files := s.Repo.GetByEventId(event.EventID)
+				if (files == nil) || (len(*files) == 0) {
 					ev.FileStatus = "Missing"
-				case n == 1:
-					ev.FileStatus = "Present"
-				case n > 1:
-					ev.FileStatus = "Multiple"
+					ev.ActualDuration = "N/A"
+				} else {
+					ev.FileStatus, ev.ActualDuration = extractFileInfo(files, s.Cfg.Crawl.GenerateHash)
 				}
 			} else {
 				ev.EventType = "Live"
 				ev.FileStatus = "N/A"
+				ev.ActualDuration = "N/A"
 			}
 			el = append(el, ev)
 		}

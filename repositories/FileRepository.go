@@ -83,7 +83,7 @@ func (fr DefaultFileRepository) StreamSize() int {
 	return count
 }
 
-func (fr DefaultFileRepository) Get(filePath string) *domain.FileInfo {
+func (fr DefaultFileRepository) GetByPath(filePath string) *domain.FileInfo {
 	var fi domain.FileInfo
 	if !fr.Exists(filePath) {
 		return nil
@@ -92,6 +92,21 @@ func (fr DefaultFileRepository) Get(filePath string) *domain.FileInfo {
 	defer fileList.RUnlock()
 	fi = fileList.Files[filePath]
 	return &fi
+}
+
+func (fr DefaultFileRepository) GetByEventId(eventId int) *domain.FileList {
+	var list domain.FileList
+	if fr.Size() == 0 {
+		return nil
+	}
+	fileList.RLock()
+	defer fileList.RUnlock()
+	for _, file := range fileList.Files {
+		if file.EventId == eventId {
+			list = append(list, file)
+		}
+	}
+	return &list
 }
 
 func (fr DefaultFileRepository) GetAll() *domain.FileList {

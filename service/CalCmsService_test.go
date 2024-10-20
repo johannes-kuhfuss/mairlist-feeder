@@ -664,7 +664,8 @@ func Test_calcCalCmsEndDate_Date_Returns_NextDay(t *testing.T) {
 
 func Test_parseDuration_Returns_Duration(t *testing.T) {
 	dur := parseDuration("05:00:02")
-	assert.EqualValues(t, "05:00", dur)
+	assert.EqualValues(t, "300.0", dur)
+
 }
 
 func Test_GetEvents_Returns_data(t *testing.T) {

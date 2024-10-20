@@ -13,7 +13,8 @@
                           <th scope="col">Start Date</th>
                           <th scope="col">Start Time</th>
                           <th scope="col">End Time</th>
-                          <th scope="col">Planned Duration</th>
+                          <th scope="col">Planned<br />Duration (min)</th>
+                          <th scope="col">Actual<br />Duration (min)</th>
                           <th scope="col">Event Type</th>
                           <th scope="col">File Present</th>
                         </tr>
@@ -26,7 +27,8 @@
                           <td>{{ .StartDate }}</td>
                           <td>{{ .StartTime }}</td>
                           <td>{{ .EndTime }}</td>
-                          <td>{{ .Duration }}</td>
+                          <td>{{ .PlannedDuration }}</td>
+                          <td>{{ .ActualDuration }}</td>
                           <td>{{ .EventType }}</td>
                           {{ if eq .FileStatus "N/A" }}
                             <td>{{ .FileStatus }}</td>
@@ -36,6 +38,12 @@
                           {{ end }}
                           {{ if eq .FileStatus "Present" }}
                             <td style="color: green">{{ .FileStatus }}</td>
+                          {{ end }}
+                          {{ if eq .FileStatus "Multiple (identical)" }}
+                            <td style="color: green">{{ .FileStatus }}</td>
+                          {{ end }}
+                          {{ if eq .FileStatus "Multiple (different)" }}
+                            <td style="color: yellow">{{ .FileStatus }}</td>
                           {{ end }}
                           {{ if eq .FileStatus "Multiple" }}
                             <td style="color: yellow">{{ .FileStatus }}</td>

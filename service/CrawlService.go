@@ -149,7 +149,7 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []st
 			if misc.SliceContainsString(crawlExtensions, filepath.Ext(srcPath)) {
 				newFile, _ := info.Info()
 				if s.Repo.Exists(srcPath) {
-					oldFile := s.Repo.Get(srcPath)
+					oldFile := s.Repo.GetByPath(srcPath)
 					if oldFile.ModTime == newFile.ModTime() {
 						return nil
 					}

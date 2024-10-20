@@ -29,11 +29,11 @@ func TestEmptyListIsEmpty(t *testing.T) {
 	assert.EqualValues(t, 0, repo.Size())
 }
 
-func TestGetOnEmptyList(t *testing.T) {
+func TestGetByPathOnEmptyList(t *testing.T) {
 	teardown := setupTest()
 	defer teardown()
 
-	res := repo.Get("B")
+	res := repo.GetByPath("B")
 
 	assert.Nil(t, res)
 }
@@ -58,7 +58,7 @@ func TestAddItemWithEmptyPath(t *testing.T) {
 	assert.EqualValues(t, "cannot add item with empty path to list", err.Error())
 }
 
-func TestAddAndGet(t *testing.T) {
+func TestAddAndGetByPath(t *testing.T) {
 	teardown := setupTest()
 	defer teardown()
 
@@ -68,7 +68,7 @@ func TestAddAndGet(t *testing.T) {
 	}
 	err := repo.Store(fi)
 
-	res := repo.Get("A")
+	res := repo.GetByPath("A")
 
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -367,4 +367,87 @@ func Test_EventIdExists_MultipleEvents_Returns_True(t *testing.T) {
 	repo.Store(fi2)
 	n := repo.EventIdExists(2)
 	assert.EqualValues(t, 2, n)
+}
+
+func TestGetByEventId_Empty_Returns_Empty(t *testing.T) {
+	teardown := setupTest()
+	defer teardown()
+
+	res := repo.GetByEventId(1)
+
+	assert.Nil(t, res)
+}
+
+func TestGetByEventId_NoEventId_Returns_Empty(t *testing.T) {
+	teardown := setupTest()
+	defer teardown()
+	fi1 := domain.FileInfo{
+		Path:    "A",
+		EventId: 2,
+	}
+	repo.Store(fi1)
+
+	res := repo.GetByEventId(1)
+
+	assert.NotNil(t, res)
+	assert.EqualValues(t, 0, len(*res))
+}
+
+func TestGetByEventId_OneEventId_Returns_One(t *testing.T) {
+	teardown := setupTest()
+	defer teardown()
+	fi1 := domain.FileInfo{
+		Path:    "A",
+		EventId: 1,
+	}
+	repo.Store(fi1)
+
+	res := repo.GetByEventId(1)
+
+	assert.NotNil(t, res)
+	assert.EqualValues(t, 1, len(*res))
+	assert.EqualValues(t, "A", (*res)[0].Path)
+}
+
+func TestGetByEventId_TwoEventIds_Returns_One(t *testing.T) {
+	teardown := setupTest()
+	defer teardown()
+	fi1 := domain.FileInfo{
+		Path:    "A",
+		EventId: 1,
+	}
+	fi2 := domain.FileInfo{
+		Path:    "B",
+		EventId: 2,
+	}
+	repo.Store(fi1)
+	repo.Store(fi2)
+
+	res := repo.GetByEventId(1)
+
+	assert.NotNil(t, res)
+	assert.EqualValues(t, 1, len(*res))
+	assert.EqualValues(t, "A", (*res)[0].Path)
+}
+
+func TestGetByEventId_TwoEventIds_Returns_Two(t *testing.T) {
+	teardown := setupTest()
+	defer teardown()
+	fi1 := domain.FileInfo{
+		Path:    "A",
+		EventId: 1,
+	}
+	fi2 := domain.FileInfo{
+		Path:    "B",
+		EventId: 1,
+	}
+	repo.Store(fi1)
+	repo.Store(fi2)
+
+	res := repo.GetByEventId(1)
+
+	assert.NotNil(t, res)
+	assert.EqualValues(t, 2, len(*res))
+	assert.EqualValues(t, "A", (*res)[0].Path)
+	assert.EqualValues(t, "B", (*res)[1].Path)
 }
