@@ -296,10 +296,14 @@ func extractFileInfo(files *domain.FileList, hashEnabled bool) (string, string) 
 	if hashEnabled {
 		filesIdentical = true
 		for _, file := range *files {
-			if hash == "" {
-				hash = file.Checksum
+			if file.Checksum == "" {
+				return "Multiple", "N/A"
 			} else {
-				filesIdentical = (hash == file.Checksum)
+				if hash == "" {
+					hash = file.Checksum
+				} else {
+					filesIdentical = (hash == file.Checksum)
+				}
 			}
 		}
 		if filesIdentical {
