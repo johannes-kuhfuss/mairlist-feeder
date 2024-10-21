@@ -65,7 +65,10 @@ func (s DefaultCrawlService) Crawl() {
 	}
 }
 
-func (s DefaultCrawlService) GenHashes() {
+func (s DefaultCrawlService) GenHashes() int {
+	var (
+		hashCount int
+	)
 	if s.Repo.Size() > 0 {
 		files := s.Repo.GetAll()
 		for _, file := range *files {
@@ -81,12 +84,16 @@ func (s DefaultCrawlService) GenHashes() {
 					err := s.Repo.Store(file)
 					if err != nil {
 						logger.Error("Error storing file", err)
+					} else {
+						hashCount++
+						logger.Info(fmt.Sprintf("Added hash for file %v in %v seconds", file.Path, dur.Seconds()))
 					}
-					logger.Info(fmt.Sprintf("Added hash for file %v in %v seconds", file.Path, dur.Seconds()))
+
 				}
 			}
 		}
 	}
+	return hashCount
 }
 
 func (s DefaultCrawlService) checkForOrphanFiles() int {
@@ -126,7 +133,9 @@ func (s DefaultCrawlService) CrawlRun() {
 		fc, _ := s.extractFileInfo()
 		logger.Info(fmt.Sprintf("Finished extracting file data for %v files. %v audio files, %v stream files", fc.TotalCount, fc.AudioCount, fc.StreamCount))
 		if s.Cfg.Crawl.GenerateHash {
-			s.GenHashes()
+			logger.Info("Starting to add hashes for new files...")
+			hc := s.GenHashes()
+			logger.Info(fmt.Sprintf("Done adding hashes for %v new files.", hc))
 		}
 	} else {
 		logger.Info("No (new) files in file list. No extraction needed.")
