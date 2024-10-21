@@ -66,26 +66,23 @@ func (s DefaultCrawlService) Crawl() {
 }
 
 func (s DefaultCrawlService) GenHashes() {
-	for {
-		time.Sleep(1 * time.Minute)
-		if s.Repo.Size() > 0 {
-			files := s.Repo.GetAll()
-			for _, file := range *files {
-				if file.Checksum == "" {
-					t1 := time.Now()
-					hash, err := generateHash(file.Path)
-					t2 := time.Now()
-					dur := t2.Sub(t1)
+	if s.Repo.Size() > 0 {
+		files := s.Repo.GetAll()
+		for _, file := range *files {
+			if file.Checksum == "" {
+				t1 := time.Now()
+				hash, err := generateHash(file.Path)
+				t2 := time.Now()
+				dur := t2.Sub(t1)
+				if err != nil {
+					logger.Error(fmt.Sprintf("Error when creating hash for %v", file.Path), err)
+				} else {
+					file.Checksum = hash
+					err := s.Repo.Store(file)
 					if err != nil {
-						logger.Error(fmt.Sprintf("Error when creating hash for %v", file.Path), err)
-					} else {
-						file.Checksum = hash
-						err := s.Repo.Store(file)
-						if err != nil {
-							logger.Error("Error storing file", err)
-						}
-						logger.Info(fmt.Sprintf("Added hash for file %v in %v seconds", file.Path, dur.Seconds()))
+						logger.Error("Error storing file", err)
 					}
+					logger.Info(fmt.Sprintf("Added hash for file %v in %v seconds", file.Path, dur.Seconds()))
 				}
 			}
 		}
@@ -128,6 +125,9 @@ func (s DefaultCrawlService) CrawlRun() {
 		logger.Info("Starting to extract file data...")
 		fc, _ := s.extractFileInfo()
 		logger.Info(fmt.Sprintf("Finished extracting file data for %v files. %v audio files, %v stream files", fc.TotalCount, fc.AudioCount, fc.StreamCount))
+		if s.Cfg.Crawl.GenerateHash {
+			s.GenHashes()
+		}
 	} else {
 		logger.Info("No (new) files in file list. No extraction needed.")
 	}

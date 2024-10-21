@@ -54,9 +54,6 @@ func StartApp() {
 	scheduleBgJobs()
 	go startServer()
 	crawlService.Crawl()
-	if cfg.Crawl.GenerateHash {
-		go crawlService.GenHashes()
-	}
 
 	<-appEnd
 	cleanUp()
