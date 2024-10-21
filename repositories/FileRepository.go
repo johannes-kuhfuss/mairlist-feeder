@@ -141,24 +141,6 @@ func (fr DefaultFileRepository) GetForHour(hour string) *domain.FileList {
 	} else {
 		return nil
 	}
-
-}
-
-func (fr DefaultFileRepository) EventIdExists(eventId int) int {
-	var (
-		list domain.FileList
-	)
-	if fr.Size() == 0 {
-		return 0
-	}
-	fileList.RLock()
-	defer fileList.RUnlock()
-	for _, file := range fileList.Files {
-		if file.EventId == eventId {
-			list = append(list, file)
-		}
-	}
-	return len(list)
 }
 
 func (fr DefaultFileRepository) Store(fi domain.FileInfo) error {

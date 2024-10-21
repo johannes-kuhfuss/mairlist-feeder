@@ -321,54 +321,6 @@ func Test_StreamSize_Returns_NumberOfStreamFiles(t *testing.T) {
 	assert.EqualValues(t, 1, s2)
 }
 
-func Test_EventIdExists_NoEvents_Returns_False(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-	n := repo.EventIdExists(1)
-	assert.EqualValues(t, 0, n)
-}
-
-func Test_EventIdExists_NoMatchingEvents_Returns_False(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-	fi1 := domain.FileInfo{
-		Path:    "A",
-		EventId: 2,
-	}
-	repo.Store(fi1)
-	n := repo.EventIdExists(1)
-	assert.EqualValues(t, 0, n)
-}
-
-func Test_EventIdExists_MatchingEvent_Returns_True(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-	fi1 := domain.FileInfo{
-		Path:    "A",
-		EventId: 2,
-	}
-	repo.Store(fi1)
-	n := repo.EventIdExists(2)
-	assert.EqualValues(t, 1, n)
-}
-
-func Test_EventIdExists_MultipleEvents_Returns_True(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-	fi1 := domain.FileInfo{
-		Path:    "A",
-		EventId: 2,
-	}
-	fi2 := domain.FileInfo{
-		Path:    "B",
-		EventId: 2,
-	}
-	repo.Store(fi1)
-	repo.Store(fi2)
-	n := repo.EventIdExists(2)
-	assert.EqualValues(t, 2, n)
-}
-
 func TestGetByEventId_Empty_Returns_Empty(t *testing.T) {
 	teardown := setupTest()
 	defer teardown()
