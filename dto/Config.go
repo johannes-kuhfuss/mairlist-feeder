@@ -1,3 +1,4 @@
+// package dto defines the data structures used to exchange information
 package dto
 
 import (
@@ -9,6 +10,7 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
+// ConfigResp converted configuration data for display on the web UI
 type ConfigResp struct {
 	ServerHost                 string
 	ServerPort                 string
@@ -49,6 +51,7 @@ type ConfigResp struct {
 	GenHashes                  string
 }
 
+// convertDate converts a date to its display format
 func convertDate(date time.Time) string {
 	if date.IsZero() {
 		return "N/A"
@@ -57,6 +60,7 @@ func convertDate(date time.Time) string {
 	}
 }
 
+// getNextJobDate retrieves a job's next execution date and returns it in its display format
 func getNextJobDate(cfg *config.AppConfig, jobId int) string {
 	if cfg.RunTime.BgJobs != nil && cfg.RunTime.BgJobs.Entry(cron.EntryID(jobId)).Valid() {
 		return cfg.RunTime.BgJobs.Entry(cron.EntryID(jobId)).Next.String()
@@ -65,6 +69,7 @@ func getNextJobDate(cfg *config.AppConfig, jobId int) string {
 	}
 }
 
+// getStreamMappings retrieves the mapping between the stream names and stream IDs and returns it in its display format
 func getStreamMappings(mappings map[string]int) string {
 	var mapStr string
 	for stream, id := range mappings {
@@ -73,6 +78,7 @@ func getStreamMappings(mappings map[string]int) string {
 	return mapStr
 }
 
+// GetConfig converts the configuration to its display format
 func GetConfig(cfg *config.AppConfig) ConfigResp {
 	resp := ConfigResp{
 		ServerHost:                 cfg.Server.Host,

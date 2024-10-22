@@ -1,3 +1,4 @@
+// package dto defines the data structures used to exchange information
 package dto
 
 import (
@@ -11,6 +12,7 @@ import (
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 )
 
+// FileResp defines the data to be displayed in the file list
 type FileResp struct {
 	Path           string
 	ModTime        string
@@ -28,12 +30,14 @@ type FileResp struct {
 	TechMd         string
 }
 
+// FileCounts structure to list counts of file types
 type FileCounts struct {
 	TotalCount  int
 	AudioCount  int
 	StreamCount int
 }
 
+// GetFiles retrives all files maintained in the repository and formats them for display purposes
 func GetFiles(repo *repositories.DefaultFileRepository, CmsUrl string) []FileResp {
 	var (
 		fileDta []FileResp
@@ -82,6 +86,7 @@ func GetFiles(repo *repositories.DefaultFileRepository, CmsUrl string) []FileRes
 	return fileDta
 }
 
+// buildCalCmsInfo formats information from calCms for display
 func buildCalCmsInfo(file domain.FileInfo) string {
 	var info string
 	if file.FromCalCMS {
@@ -102,6 +107,7 @@ func buildCalCmsInfo(file domain.FileInfo) string {
 	return info
 }
 
+// buildTechMd formats information from ffprobe for display
 func buildTechMd(file domain.FileInfo) string {
 	var info string
 	switch file.FileType {
@@ -122,6 +128,7 @@ func buildTechMd(file domain.FileInfo) string {
 	return info
 }
 
+// buildEventIdLink returns a link to a calCms event
 func buildEventIdLink(CmsUrl string, eventId int) string {
 	// https://programm.coloradio.org/agenda/events.cgi?event_id=xxxxx
 	idStr := strconv.Itoa(eventId)

@@ -1,3 +1,4 @@
+// package dto defines the data structures used to exchange information
 package dto
 
 import (
