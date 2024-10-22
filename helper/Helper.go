@@ -1,3 +1,4 @@
+// Package heler implements a few functions that assist processing in the rest of the packages
 package helper
 
 import (
@@ -10,6 +11,9 @@ import (
 	"github.com/johannes-kuhfuss/services_utils/misc"
 )
 
+// GetTodayFolder returns today's date in folder syntax (YYYY/MM/DD).
+// 30 minutes before the date rolls over, GetTodayFolder returns the next day's date.
+// For testing, you can pass in a test date which is then returns to the caller
 func GetTodayFolder(test bool, testDate string) string {
 	var year, month, day string
 	if test {
@@ -30,20 +34,24 @@ func GetTodayFolder(test bool, testDate string) string {
 	return path.Join(year, month, day)
 }
 
+// TimeFromHourAndMinute generates a time.Time{} from an hour and minute value
 func TimeFromHourAndMinute(hour int, minute int) time.Time {
 	t := time.Date(1, 1, 1, hour, minute, 0, 0, time.Local)
 	return t
 }
 
+// TimeFromHourAndMinute generates a time.Time{} from an hour and minute and date value
 func TimeFromHourAndMinuteAndDate(hour int, minute int, fd time.Time) time.Time {
 	t := time.Date(fd.Year(), fd.Month(), fd.Day(), hour, minute, 0, 0, time.Local)
 	return t
 }
 
+// IsAudioFile returns true, if a file's extension is in the configured audio file extensions
 func IsAudioFile(cfg *config.AppConfig, path string) bool {
 	return misc.SliceContainsString(cfg.Crawl.AudioFileExtensions, filepath.Ext(path))
 }
 
+// IsStreamingFile returns true, if a file's extension is in the configured streaming file extensions
 func IsStreamingFile(cfg *config.AppConfig, path string) bool {
 	return misc.SliceContainsString(cfg.Crawl.StreamingFileExtensions, filepath.Ext(path))
 }
