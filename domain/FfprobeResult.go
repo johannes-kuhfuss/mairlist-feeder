@@ -1,4 +1,4 @@
-// package domain defines teh core data structures
+// package domain defines the core data structures
 package domain
 
 // FfprobeResult is the data structure as returned by ffprobe
