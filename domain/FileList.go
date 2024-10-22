@@ -1,3 +1,4 @@
+// package domain defines teh core data structures
 package domain
 
 import (
@@ -5,6 +6,7 @@ import (
 	"time"
 )
 
+// FileInfo defines the information maintained per file entry
 type FileInfo struct {
 	Path                string
 	ModTime             time.Time
@@ -30,6 +32,7 @@ type FileInfo struct {
 
 type FileList []FileInfo
 
+// SafeFileList adds a mutex to allow thread-safe access of the file data entries
 type SafeFileList struct {
 	sync.RWMutex
 	Files map[string]FileInfo

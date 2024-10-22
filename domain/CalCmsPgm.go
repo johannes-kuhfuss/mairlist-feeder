@@ -1,5 +1,7 @@
+// package domain defines teh core data structures
 package domain
 
+// CalCmsPgmData is the data structure returned from calCms
 type CalCmsPgmData struct {
 	Archive     string `json:"archive"`
 	BaseDomain  string `json:"base_domain"`
@@ -93,6 +95,7 @@ type CalCmsPgmData struct {
 	WidgetRenderURL    string        `json:"widget_render_url"`
 }
 
+// CalCmsEvent defines the subset of calCms data relevant for one program event
 type CalCmsEvent struct {
 	First                int    `json:"__first__,omitempty"`
 	ArchiveURL           string `json:"archive_url"`

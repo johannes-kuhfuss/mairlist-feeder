@@ -1,5 +1,7 @@
+// package domain defines teh core data structures
 package domain
 
+// FfprobeResult is the data structure as returned by ffprobe
 type FfprobeResult struct {
 	Format struct {
 		Filename       string `json:"filename"`
