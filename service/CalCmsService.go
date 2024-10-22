@@ -333,7 +333,7 @@ func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dt
 			if event.Live == 0 {
 				ev.EventType = "Preproduction"
 				files := s.Repo.GetByEventId(event.EventID)
-				if (files == nil) || (len(*files) == 0) {
+				if files == nil {
 					ev.FileStatus = "Missing"
 					ev.ActualDuration = "N/A"
 				} else {

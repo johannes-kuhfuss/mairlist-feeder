@@ -1,3 +1,4 @@
+// Package repositories implements an in-memory store for representing the data of the files scanned
 package repositories
 
 import (
@@ -19,14 +20,14 @@ type FileRepository interface {
 	Size() int
 	AudioSize() int
 	StreamSize() int
-	Get(string) *domain.FileInfo
+	GetByPath(string) *domain.FileInfo
+	GetByEventId(int) *domain.FileList
 	GetAll() *domain.FileList
 	GetForHour(string) *domain.FileList
-	EventIdExists(int) int
 	Store(domain.FileInfo) error
 	Delete(string) error
-	SaveToDisk(string)
-	LoadFromDisk(string)
+	SaveToDisk(string) error
+	LoadFromDisk(string) error
 	DeleteAllData()
 	NewFiles() bool
 }
@@ -39,6 +40,7 @@ var (
 	fileList domain.SafeFileList
 )
 
+// NewFileRepository creates a new file repository. You need to pass in the configuration
 func NewFileRepository(cfg *config.AppConfig) DefaultFileRepository {
 	fileList.Files = make(map[string]domain.FileInfo)
 	return DefaultFileRepository{
@@ -46,6 +48,7 @@ func NewFileRepository(cfg *config.AppConfig) DefaultFileRepository {
 	}
 }
 
+// Exists checks whether a file identified by its path exists in the repository
 func (fr DefaultFileRepository) Exists(filePath string) bool {
 	fileList.RLock()
 	defer fileList.RUnlock()
@@ -53,36 +56,37 @@ func (fr DefaultFileRepository) Exists(filePath string) bool {
 	return ok
 }
 
+// Size returns the number of files stored in the repository
 func (fr DefaultFileRepository) Size() int {
 	fileList.RLock()
 	defer fileList.RUnlock()
 	return len(fileList.Files)
 }
 
+// SizeOfType returns the number of files of the specified fileType
+func (fr DefaultFileRepository) sizeOfType(fileType string) int {
+	var count int
+	fileList.RLock()
+	defer fileList.RUnlock()
+	for _, f := range fileList.Files {
+		if f.FileType == fileType {
+			count++
+		}
+	}
+	return count
+}
+
+// AudioSize returns the number of audio files (as identified by their file extension) stored in the repository
 func (fr DefaultFileRepository) AudioSize() int {
-	var count int
-	fileList.RLock()
-	defer fileList.RUnlock()
-	for _, f := range fileList.Files {
-		if f.FileType == "Audio" {
-			count++
-		}
-	}
-	return count
+	return fr.sizeOfType("Audio")
 }
 
+// StreamSize returns the number of stream files (as identified by their file extension) stored in the repository
 func (fr DefaultFileRepository) StreamSize() int {
-	var count int
-	fileList.RLock()
-	defer fileList.RUnlock()
-	for _, f := range fileList.Files {
-		if f.FileType == "Stream" {
-			count++
-		}
-	}
-	return count
+	return fr.sizeOfType("Stream")
 }
 
+// GetByPath returns a file's information where the file is identified by its path. If no file matches, the methods returns nil
 func (fr DefaultFileRepository) GetByPath(filePath string) *domain.FileInfo {
 	var fi domain.FileInfo
 	if !fr.Exists(filePath) {
@@ -94,6 +98,7 @@ func (fr DefaultFileRepository) GetByPath(filePath string) *domain.FileInfo {
 	return &fi
 }
 
+// GetByEventId returns a file's information where the file is identified by its event id (from calCMS). If no file matches, the methods returns nil
 func (fr DefaultFileRepository) GetByEventId(eventId int) *domain.FileList {
 	var list domain.FileList
 	if fr.Size() == 0 {
@@ -106,9 +111,14 @@ func (fr DefaultFileRepository) GetByEventId(eventId int) *domain.FileList {
 			list = append(list, file)
 		}
 	}
-	return &list
+	if len(list) > 0 {
+		return &list
+	} else {
+		return nil
+	}
 }
 
+// GetAll returns all file data from the repository. Returns nil if repository is empty
 func (fr DefaultFileRepository) GetAll() *domain.FileList {
 	var list domain.FileList
 	if fr.Size() == 0 {
@@ -122,6 +132,7 @@ func (fr DefaultFileRepository) GetAll() *domain.FileList {
 	return &list
 }
 
+// GetForHour returns all files' information that fall into a given start hour. If no files match, the methods returns nil
 func (fr DefaultFileRepository) GetForHour(hour string) *domain.FileList {
 	var list domain.FileList
 	if fr.Size() == 0 {
@@ -143,6 +154,7 @@ func (fr DefaultFileRepository) GetForHour(hour string) *domain.FileList {
 	}
 }
 
+// Store stores a new file information entry into the repository
 func (fr DefaultFileRepository) Store(fi domain.FileInfo) error {
 	if fi.Path == "" {
 		return errors.New("cannot add item with empty path to list")
@@ -153,9 +165,10 @@ func (fr DefaultFileRepository) Store(fi domain.FileInfo) error {
 	return nil
 }
 
+// Delete delete a file information entry from the repository, if it exists
 func (fr DefaultFileRepository) Delete(filePath string) error {
 	if !fr.Exists(filePath) {
-		return errors.New("item does not exist")
+		return fmt.Errorf("item with path %v does not exist", filePath)
 	}
 	fileList.Lock()
 	defer fileList.Unlock()
@@ -163,44 +176,54 @@ func (fr DefaultFileRepository) Delete(filePath string) error {
 	return nil
 }
 
-func (fr DefaultFileRepository) SaveToDisk(fileName string) {
+// SaveToDisk writes the repository's contents to a specified file on disk
+func (fr DefaultFileRepository) SaveToDisk(fileName string) error {
 	logger.Info("Saving files data to disk...")
 	fileList.RLock()
 	defer fileList.RUnlock()
 	b, err := json.Marshal(fileList.Files)
 	if err != nil {
 		logger.Error("Error while converting file list to JSON: ", err)
+		return err
 	}
 	err = os.WriteFile(fileName, b, 0644)
 	if err != nil {
 		logger.Error("Error while writing files data to disk: ", err)
+		return err
 	}
 	logger.Info(fmt.Sprintf("Done saving files data to disk (%v items).", len(fileList.Files)))
+	return nil
 }
 
-func (fr DefaultFileRepository) LoadFromDisk(fileName string) {
+// LoadFromDisk loads file information stored on disk into memory
+func (fr DefaultFileRepository) LoadFromDisk(fileName string) error {
 	logger.Info("Reading files data from disk...")
 	fileDta := make(map[string]domain.FileInfo)
 	b, err := os.ReadFile(fileName)
 	if err != nil {
 		logger.Error("Error while reading files data from disk: ", err)
+		return err
 	}
 	err = json.Unmarshal(b, &fileDta)
 	if err != nil {
 		logger.Error("Error while converting files data to json: ", err)
+		return err
 	}
 	fileList.Lock()
 	defer fileList.Unlock()
 	fileList.Files = fileDta
 	logger.Info(fmt.Sprintf("Done reading files data from disk (%v items).", len(fileList.Files)))
+	return nil
 }
 
+// DeleteAllData removes all entries from the repository
 func (fr DefaultFileRepository) DeleteAllData() {
 	fileList.Lock()
 	defer fileList.Unlock()
 	fileList.Files = make(map[string]domain.FileInfo)
 }
 
+// NewFiles returns true, if there are file entries in the repository for which additional information hasn't been extracted
 func (fr DefaultFileRepository) NewFiles() bool {
 	newFiles := false
 	if fr.Size() > 0 {
