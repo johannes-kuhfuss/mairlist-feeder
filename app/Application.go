@@ -1,3 +1,4 @@
+// package app ties together all bits and pieces to start the program
 package app
 
 import (
@@ -38,6 +39,7 @@ var (
 	calCmsService  service.DefaultCalCmsService
 )
 
+// StartApp orchestrates the startup of the application
 func StartApp() {
 	logger.Info("Starting application")
 
@@ -65,11 +67,13 @@ func StartApp() {
 	}
 }
 
+// getCmdLine checks the command line arguments
 func getCmdLine() {
 	flag.StringVar(&config.EnvFile, "config.file", ".env", "Specify location of config file. Default is .env")
 	flag.Parse()
 }
 
+// initRouter initializes gin-gonic as the router
 func initRouter() {
 	gin.SetMode(cfg.Gin.Mode)
 	router := gin.New()
@@ -85,6 +89,7 @@ func initRouter() {
 	cfg.RunTime.Router = router
 }
 
+// initServer checks whether https is enabled and initializes the web server accordingly
 func initServer() {
 	var tlsConfig tls.Config
 
@@ -122,6 +127,7 @@ func initServer() {
 	}
 }
 
+// wireApp initializes the services in the right order and injects the dependencies
 func wireApp() {
 	fileRepo = repositories.NewFileRepository(&cfg)
 	calCmsService = service.NewCalCmsService(&cfg, &fileRepo)
@@ -131,6 +137,7 @@ func wireApp() {
 	statsUiHandler = handlers.NewStatsUiHandler(&cfg, &fileRepo, &crawlService, &exportService, &cleanService, &calCmsService)
 }
 
+// mapUrls defines the handlers for the available URLs
 func mapUrls() {
 	cfg.RunTime.Router.GET("/", statsUiHandler.StatusPage)
 	cfg.RunTime.Router.GET("/filelist", statsUiHandler.FileListPage)
@@ -141,11 +148,13 @@ func mapUrls() {
 	cfg.RunTime.Router.GET("/about", statsUiHandler.AboutPage)
 }
 
+// RegisterForOsSignals listens for OS signals terminating the program and sends an internal signal to start cleanup
 func RegisterForOsSignals() {
 	appEnd = make(chan os.Signal, 1)
 	signal.Notify(appEnd, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 }
 
+// scheduleBgJobs schedules all jobs running in the background, e.g. cleaning yesterday's items from the list
 func scheduleBgJobs() {
 	// cron format: Minutes, Hours, day of Month, Month, Day of Week
 	logger.Info("Scheduling jobs...")
@@ -179,6 +188,7 @@ func scheduleBgJobs() {
 	logger.Info("Jobs scheduled")
 }
 
+// startServer starts the preconfigured web server
 func startServer() {
 	logger.Info(fmt.Sprintf("Listening on %v", cfg.RunTime.ListenAddr))
 	cfg.RunTime.StartDate = date.GetNowUtc()
@@ -195,6 +205,7 @@ func startServer() {
 	}
 }
 
+// cleanUp tries to clean up when the program is stopped
 func cleanUp() {
 	cfg.RunTime.BgJobs.Stop()
 	shutdownTime := time.Duration(cfg.Server.GracefulShutdownTime) * time.Second
