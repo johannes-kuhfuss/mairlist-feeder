@@ -1,3 +1,4 @@
+// package service implements the services and their business logic that provide the main part of the program
 package service
 
 import (
@@ -36,12 +37,14 @@ var (
 	crmu sync.Mutex
 )
 
+// The crawl service handles the cyclical scanning of the supervised folder and the extraction and enrichment of data for all files
 type DefaultCrawlService struct {
 	Cfg    *config.AppConfig
 	Repo   *repositories.DefaultFileRepository
 	CalSvc CalCmsService
 }
 
+// NewCrawlService creates a new crawling service and injects its dependencies
 func NewCrawlService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository, calSvc CalCmsService) DefaultCrawlService {
 	return DefaultCrawlService{
 		Cfg:    cfg,
@@ -50,6 +53,7 @@ func NewCrawlService(cfg *config.AppConfig, repo *repositories.DefaultFileReposi
 	}
 }
 
+// Crawl orchestrates the crawling of the folder on disk
 func (s DefaultCrawlService) Crawl() {
 	if s.Cfg.Crawl.RootFolder == "" {
 		logger.Warn("No root folder given. Not running")
@@ -65,6 +69,7 @@ func (s DefaultCrawlService) Crawl() {
 	}
 }
 
+// GenHashes creates a hash for the files on disk to allow for easy checking for identical files
 func (s DefaultCrawlService) GenHashes() int {
 	var (
 		hashCount int
@@ -96,6 +101,7 @@ func (s DefaultCrawlService) GenHashes() int {
 	return hashCount
 }
 
+// checkForOrphanFiles removes files from the in-memory list, if they are no longer present on disk
 func (s DefaultCrawlService) checkForOrphanFiles() int {
 	var (
 		filesRemoved int
@@ -117,6 +123,7 @@ func (s DefaultCrawlService) checkForOrphanFiles() int {
 	return filesRemoved
 }
 
+// CrawlRun performs the crawling of the folder, the data enrichment and the has creation
 func (s DefaultCrawlService) CrawlRun() {
 	s.Cfg.RunTime.CrawlRunNumber++
 	s.Cfg.RunTime.LastCrawlDate = time.Now()
@@ -144,6 +151,7 @@ func (s DefaultCrawlService) CrawlRun() {
 	s.Cfg.RunTime.StreamFilesInList = s.Repo.StreamSize()
 }
 
+// crawlFolder examines the files on disk and adds an entry in the in-memory representation
 func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []string) (int, error) {
 	var (
 		fi        domain.FileInfo
@@ -186,6 +194,7 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []st
 	}
 }
 
+// parseEventId is a helper function that determines the calCms event id ferom a file's file name
 func (s DefaultCrawlService) parseEventId(srcPath string) int {
 	fileName := filepath.Base(srcPath)
 	idExp := regexp.MustCompile(`-id\d+-`)
@@ -201,6 +210,7 @@ func (s DefaultCrawlService) parseEventId(srcPath string) int {
 	return 0
 }
 
+// generateHash generates an MD5 hash for a given file
 func generateHash(path string) (string, error) {
 	hasher := md5.New()
 	data, err := os.ReadFile(path)
@@ -214,6 +224,9 @@ func generateHash(path string) (string, error) {
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
+// extractFileInfo determines the naming convention and implicitly the likely source of the file
+// It also initiates the data extraction for technical metadata and streaming information
+// The extracted information is stored in the file list in-memory
 func (s DefaultCrawlService) extractFileInfo() (dto.FileCounts, error) {
 	var (
 		startTimeDisplay   string
@@ -313,6 +326,7 @@ func (s DefaultCrawlService) extractFileInfo() (dto.FileCounts, error) {
 	return fc, nil
 }
 
+// convertTime is a helper function to convert time information extracted from the file names into a time.Time
 func convertTime(t1str string, t2str string, folderDate string) (time.Time, error) {
 	t1, err := strconv.Atoi(t1str)
 	if err != nil {
@@ -333,6 +347,7 @@ func convertTime(t1str string, t2str string, folderDate string) (time.Time, erro
 	return time, nil
 }
 
+// analyzeTechMd runs ffprobe to extract technical metadata from audio files
 func analyzeTechMd(essencePath string, timeout int, ffprobePath string) (techMetadata *dto.TechnicalMetadata, err error) {
 	ctx := context.Background()
 	timeoutDuration := time.Duration(timeout) * time.Second
@@ -354,6 +369,7 @@ func analyzeTechMd(essencePath string, timeout int, ffprobePath string) (techMet
 	return techMd, nil
 }
 
+// analyzeStreamData reads the file's contents to extract information about which stream is referred to
 func analyzeStreamData(path string, streamMap map[string]int) (string, int, error) {
 	fileContents, err := os.ReadFile(path)
 	if err != nil {
@@ -369,6 +385,7 @@ func analyzeStreamData(path string, streamMap map[string]int) (string, int, erro
 	return "", 0, errors.New("no such stream configured")
 }
 
+// parseTechMd interprets the output of ffprobe and extracts the desired technical metadata
 func parseTechMd(ffprobedata []byte) (techMetadata *dto.TechnicalMetadata, err error) {
 	var result domain.FfprobeResult
 	var techMd dto.TechnicalMetadata

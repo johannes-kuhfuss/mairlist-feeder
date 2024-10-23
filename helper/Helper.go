@@ -1,4 +1,4 @@
-// Package heler implements a few functions that assist processing in the rest of the packages
+// Package helper implements a few functions that assist processing in the rest of the packages
 package helper
 
 import (

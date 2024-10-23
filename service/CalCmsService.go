@@ -1,3 +1,4 @@
+// package service implements the services and their business logic that provide the main part of the program
 package service
 
 import (
@@ -26,6 +27,7 @@ type CalCmsService interface {
 	Query() error
 }
 
+// The calCms service handles all the communication with calCms and the necessary data transformation
 type DefaultCalCmsService struct {
 	Cfg  *config.AppConfig
 	Repo *repositories.DefaultFileRepository
@@ -40,6 +42,7 @@ var (
 	}
 )
 
+// InitHttpCalClient sets the defaukt values for the http client used to query calCms
 func InitHttpCalClient() {
 	httpCalTr = http.Transport{
 		DisableKeepAlives:  false,
@@ -53,6 +56,7 @@ func InitHttpCalClient() {
 	}
 }
 
+// NewCalCmsService creates a new calCms service and injects dependencies
 func NewCalCmsService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository) DefaultCalCmsService {
 	InitHttpCalClient()
 	return DefaultCalCmsService{
@@ -61,12 +65,14 @@ func NewCalCmsService(cfg *config.AppConfig, repo *repositories.DefaultFileRepos
 	}
 }
 
+// insertData inserts new calCms data in a thread-safe manner
 func (s DefaultCalCmsService) insertData(data domain.CalCmsPgmData) {
 	CalCmsPgm.Lock()
 	CalCmsPgm.data = data
 	CalCmsPgm.Unlock()
 }
 
+// calcCalCmsEndDate calculates the end date based on a gioven start date used to query events from calCms
 func calcCalCmsEndDate(startDate string) (string, error) {
 	d, err := time.Parse("2006-01-02", startDate)
 	if err != nil {
@@ -76,6 +82,7 @@ func calcCalCmsEndDate(startDate string) (string, error) {
 	return endDate.Format("2006-01-02"), nil
 }
 
+// getCalCmsData retrieves the today's event information from calCms
 func (s DefaultCalCmsService) getCalCmsData() ([]byte, error) {
 	//API doc: https://github.com/rapilodev/racalmas/blob/master/docs/event-api.md
 	//URL old: https://programm.coloradio.org/agenda/events.cgi?date=2024-04-09&template=event.json-p
@@ -124,6 +131,7 @@ func (s DefaultCalCmsService) getCalCmsData() ([]byte, error) {
 	return bData, nil
 }
 
+// Query orchestrates the process of querying calCms and adding the retrieved information to the file representations in memory
 func (s DefaultCalCmsService) Query() error {
 	if s.Cfg.CalCms.QueryCalCms {
 		logger.Info("Starting to add information from calCMS...")
@@ -148,6 +156,7 @@ func (s DefaultCalCmsService) Query() error {
 	}
 }
 
+// EnrichFileInformation runs through all file representations and adds information from calCms wherer applicable
 func (s DefaultCalCmsService) EnrichFileInformation() dto.FileCounts {
 	var (
 		newFile domain.FileInfo
@@ -191,6 +200,7 @@ func (s DefaultCalCmsService) EnrichFileInformation() dto.FileCounts {
 	return fc
 }
 
+// checkCalCmsData evaluates calCms event data on a per file basis and performs some sanity checks
 func (s DefaultCalCmsService) checkCalCmsData(file domain.FileInfo) (*dto.CalCmsEntry, error) {
 	info, err := s.GetCalCmsDataForId(file.EventId)
 	if err != nil {
@@ -216,6 +226,7 @@ func (s DefaultCalCmsService) checkCalCmsData(file domain.FileInfo) (*dto.CalCms
 	return &info[0], nil
 }
 
+// GetCalCmsDataForHour retrieves all event data from the calCms data that start within a given hour
 func (s DefaultCalCmsService) GetCalCmsDataForHour(hour string) ([]dto.CalCmsEntry, error) {
 	var entries []dto.CalCmsEntry
 	CalCmsPgm.RLock()
@@ -234,6 +245,7 @@ func (s DefaultCalCmsService) GetCalCmsDataForHour(hour string) ([]dto.CalCmsEnt
 	return entries, nil
 }
 
+// GetCalCmsDataForId retrieves all event data from the calCms data for a given Event Id
 func (s DefaultCalCmsService) GetCalCmsDataForId(id int) ([]dto.CalCmsEntry, error) {
 	var entries []dto.CalCmsEntry
 	CalCmsPgm.RLock()
@@ -254,6 +266,7 @@ func (s DefaultCalCmsService) GetCalCmsDataForId(id int) ([]dto.CalCmsEntry, err
 	return entries, nil
 }
 
+// convertToEntry converts calCms event data to its data transport object
 func (s DefaultCalCmsService) convertToEntry(event domain.CalCmsEvent) (dto.CalCmsEntry, error) {
 	var (
 		entry      dto.CalCmsEntry
@@ -276,6 +289,7 @@ func (s DefaultCalCmsService) convertToEntry(event domain.CalCmsEvent) (dto.CalC
 	return entry, nil
 }
 
+// parseDuration is a helper function converting calCms duration into seconds for display purposes
 func parseDuration(dur string) string {
 	dStr := dur[0:2] + "h" + dur[3:5] + "m" + dur[6:8] + "s"
 	d, err := time.ParseDuration(dStr)
@@ -285,7 +299,8 @@ func parseDuration(dur string) string {
 	return strconv.FormatFloat(math.Round(d.Seconds()/60), 'f', 1, 64)
 }
 
-func extractFileInfo(files *domain.FileList, hashEnabled bool) (string, string) {
+// extractFileInfo is a helper function that returns file status and file duration as strings
+func extractFileInfo(files *domain.FileList, hashEnabled bool) (fileStatus string, duration string) {
 	var (
 		filesIdentical bool
 		hash           string
@@ -317,6 +332,7 @@ func extractFileInfo(files *domain.FileList, hashEnabled bool) (string, string) 
 
 }
 
+// convertEvent is a helper function that converts calCms data into the event representation
 func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dto.Event {
 	var (
 		el []dto.Event
@@ -350,6 +366,7 @@ func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dt
 	return el
 }
 
+// GetEvents orchestrates the generation of an event list for display on the web UI
 func (s DefaultCalCmsService) GetEvents() ([]dto.Event, error) {
 	var (
 		calCmsData domain.CalCmsPgmData

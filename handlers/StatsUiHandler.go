@@ -1,3 +1,4 @@
+// package handlers sets up the handlers for the Web UI
 package handlers
 
 import (
@@ -23,6 +24,7 @@ type StatsUiHandler struct {
 	CalCmsSvc *service.DefaultCalCmsService
 }
 
+// NewStatsUiHandler creates a new web UI handler and injects its dependencies
 func NewStatsUiHandler(cfg *config.AppConfig, repo *repositories.DefaultFileRepository, crs *service.DefaultCrawlService, exs *service.DefaultExportService, cls *service.DefaultCleanService, csv *service.DefaultCalCmsService) StatsUiHandler {
 	return StatsUiHandler{
 		Cfg:       cfg,
@@ -34,6 +36,7 @@ func NewStatsUiHandler(cfg *config.AppConfig, repo *repositories.DefaultFileRepo
 	}
 }
 
+// StatusPage is the handler for the status page
 func (uh *StatsUiHandler) StatusPage(c *gin.Context) {
 	configData := dto.GetConfig(uh.Cfg)
 	c.HTML(http.StatusOK, "status.page.tmpl", gin.H{
@@ -42,6 +45,7 @@ func (uh *StatsUiHandler) StatusPage(c *gin.Context) {
 	})
 }
 
+// FileListPage is the handler for the file list page
 func (uh *StatsUiHandler) FileListPage(c *gin.Context) {
 	files := dto.GetFiles(uh.Repo, uh.Cfg.CalCms.CmsUrl)
 	c.HTML(http.StatusOK, "filelist.page.tmpl", gin.H{
@@ -50,7 +54,8 @@ func (uh *StatsUiHandler) FileListPage(c *gin.Context) {
 	})
 }
 
-func (uh *StatsUiHandler) EventsPage(c *gin.Context) {
+// EventListPage is the handler for the event list page
+func (uh *StatsUiHandler) EventListPage(c *gin.Context) {
 	events, _ := uh.CalCmsSvc.GetEvents()
 	c.HTML(http.StatusOK, "eventlist.page.tmpl", gin.H{
 		"title":  "Event List",
@@ -58,6 +63,7 @@ func (uh *StatsUiHandler) EventsPage(c *gin.Context) {
 	})
 }
 
+// ActionPage is the handler for the page where the user can invoke actions
 func (uh *StatsUiHandler) ActionPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "actions.page.tmpl", gin.H{
 		"title": "Actions",
@@ -65,6 +71,7 @@ func (uh *StatsUiHandler) ActionPage(c *gin.Context) {
 	})
 }
 
+// LogsPage is the handler for the page displaying log messages
 func (uh *StatsUiHandler) LogsPage(c *gin.Context) {
 	logs := logger.GetLogList()
 	c.HTML(http.StatusOK, "logs.page.tmpl", gin.H{
@@ -73,6 +80,7 @@ func (uh *StatsUiHandler) LogsPage(c *gin.Context) {
 	})
 }
 
+// AboutPage is the handler for the page displaying a short description of the program and its license
 func (uh *StatsUiHandler) AboutPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "about.page.tmpl", gin.H{
 		"title": "About",
@@ -80,6 +88,7 @@ func (uh *StatsUiHandler) AboutPage(c *gin.Context) {
 	})
 }
 
+// ExecAction is the handler invoked when the user excecutes an action
 func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 	action := c.PostForm("action")
 	hour := c.PostForm("hour")
@@ -112,6 +121,7 @@ func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 	c.JSON(http.StatusOK, nil)
 }
 
+// validateAction filters the actions tring and only allows valid actions
 func validateAction(action string) api_error.ApiErr {
 	actions := []string{"crawl", "export", "clean", "exporttodisk"}
 	exists := misc.SliceContainsString(actions, action)
@@ -122,6 +132,7 @@ func validateAction(action string) api_error.ApiErr {
 	}
 }
 
+// validateHour validates the hour input by the user and only allows valid hours
 func validateHour(hour string) api_error.ApiErr {
 	if hour == "" {
 		return nil

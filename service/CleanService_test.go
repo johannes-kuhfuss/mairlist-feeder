@@ -59,7 +59,7 @@ func Test_isYesterdayOrOlder_WrongDate_ReturnsFalse(t *testing.T) {
 func Test_runClean_NoFiles_Returns_Zero(t *testing.T) {
 	teardown := setupTestClean()
 	defer teardown()
-	n, e := cleanSvc.runClean()
+	n, e := cleanSvc.CleanRun()
 	assert.Nil(t, e)
 	assert.EqualValues(t, 0, n)
 }
@@ -72,7 +72,7 @@ func Test_runClean_OneCurrentFile_Returns_Zero(t *testing.T) {
 		FolderDate: time.Now().Format("2006-01-02"),
 	}
 	cleanRepo.Store(fi1)
-	n, e := cleanSvc.runClean()
+	n, e := cleanSvc.CleanRun()
 	f := cleanRepo.Size()
 	assert.Nil(t, e)
 	assert.EqualValues(t, 0, n)
@@ -88,7 +88,7 @@ func Test_runClean_OneOldFile_Returns_One(t *testing.T) {
 	}
 	cleanRepo.Store(fi1)
 	f1 := cleanRepo.Size()
-	n, e := cleanSvc.runClean()
+	n, e := cleanSvc.CleanRun()
 	f2 := cleanRepo.Size()
 	assert.Nil(t, e)
 	assert.EqualValues(t, 1, n)
@@ -104,7 +104,7 @@ func Test_runClean_FileWrongDate_Returns_Error(t *testing.T) {
 		FolderDate: time.Now().Format("2006/01/02"),
 	}
 	cleanRepo.Store(fi1)
-	n, e := cleanSvc.runClean()
+	n, e := cleanSvc.CleanRun()
 	f := cleanRepo.Size()
 	assert.NotNil(t, e)
 	assert.EqualValues(t, 0, n)

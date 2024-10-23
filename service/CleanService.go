@@ -1,3 +1,4 @@
+// package service implements the services and their business logic that provide the main part of the program
 package service
 
 import (
@@ -19,11 +20,13 @@ var (
 	clmu sync.Mutex
 )
 
+// The clean service handles the cyclical clean-up of the file list kept in memory
 type DefaultCleanService struct {
 	Cfg  *config.AppConfig
 	Repo *repositories.DefaultFileRepository
 }
 
+// NewCleanService creates a new cleaning service and injects its dependencies
 func NewCleanService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository) DefaultCleanService {
 	return DefaultCleanService{
 		Cfg:  cfg,
@@ -31,6 +34,7 @@ func NewCleanService(cfg *config.AppConfig, repo *repositories.DefaultFileReposi
 	}
 }
 
+// isYesterdayOrOlder is a helper function which checks each entry and determines whether this entry can be purged from the list
 func isYesterdayOrOlder(folderDate string) (bool, error) {
 	const dateLayout = "2006-01-02"
 	fileDate, err := time.Parse(dateLayout, folderDate)
@@ -43,9 +47,10 @@ func isYesterdayOrOlder(folderDate string) (bool, error) {
 	return diff >= 1, nil
 }
 
+// Clean orchestrates the clean-up of the file list kept in memory
 func (s DefaultCleanService) Clean() {
 	logger.Info("Starting file list clean-up...")
-	filesCleaned, err := s.runClean()
+	filesCleaned, err := s.CleanRun()
 	if err != nil {
 		logger.Error("Error while clean repository", err)
 	}
@@ -53,7 +58,8 @@ func (s DefaultCleanService) Clean() {
 	logger.Info(fmt.Sprintf("File list clean-up done. Cleaned %v entries.", filesCleaned))
 }
 
-func (s DefaultCleanService) runClean() (int, error) {
+// CleanRun performs the clean-up of expired file list entries
+func (s DefaultCleanService) CleanRun() (int, error) {
 	var (
 		filesCleaned int = 0
 		errorCounter int = 0

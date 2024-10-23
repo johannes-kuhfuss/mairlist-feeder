@@ -238,7 +238,7 @@ func Test_EventsPage_Returns_Events(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	cfg.CalCms.QueryCalCms = true
-	router.GET("/events", uh.EventsPage)
+	router.GET("/events", uh.EventListPage)
 	request := httptest.NewRequest(http.MethodGet, "/events", nil)
 
 	router.ServeHTTP(recorder, request)
