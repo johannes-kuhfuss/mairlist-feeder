@@ -42,8 +42,7 @@ func GetFiles(repo *repositories.DefaultFileRepository, CmsUrl string) []FileRes
 	var (
 		fileDta []FileResp
 	)
-	files := repo.GetAll()
-	if files != nil {
+	if files := repo.GetAll(); files != nil {
 		for _, file := range *files {
 			dta := FileResp{
 				Path:          file.Path,

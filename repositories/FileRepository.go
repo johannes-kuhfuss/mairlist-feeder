@@ -186,8 +186,7 @@ func (fr DefaultFileRepository) SaveToDisk(fileName string) error {
 		logger.Error("Error while converting file list to JSON: ", err)
 		return err
 	}
-	err = os.WriteFile(fileName, b, 0644)
-	if err != nil {
+	if err := os.WriteFile(fileName, b, 0644); err != nil {
 		logger.Error("Error while writing files data to disk: ", err)
 		return err
 	}
@@ -204,8 +203,7 @@ func (fr DefaultFileRepository) LoadFromDisk(fileName string) error {
 		logger.Error("Error while reading files data from disk: ", err)
 		return err
 	}
-	err = json.Unmarshal(b, &fileDta)
-	if err != nil {
+	if err := json.Unmarshal(b, &fileDta); err != nil {
 		logger.Error("Error while converting files data to json: ", err)
 		return err
 	}

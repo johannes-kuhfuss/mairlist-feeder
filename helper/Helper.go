@@ -36,14 +36,12 @@ func GetTodayFolder(test bool, testDate string) string {
 
 // TimeFromHourAndMinute generates a time.Time{} from an hour and minute value
 func TimeFromHourAndMinute(hour int, minute int) time.Time {
-	t := time.Date(1, 1, 1, hour, minute, 0, 0, time.Local)
-	return t
+	return time.Date(1, 1, 1, hour, minute, 0, 0, time.Local)
 }
 
 // TimeFromHourAndMinute generates a time.Time{} from an hour and minute and date value
 func TimeFromHourAndMinuteAndDate(hour int, minute int, fd time.Time) time.Time {
-	t := time.Date(fd.Year(), fd.Month(), fd.Day(), hour, minute, 0, 0, time.Local)
-	return t
+	return time.Date(fd.Year(), fd.Month(), fd.Day(), hour, minute, 0, 0, time.Local)
 }
 
 // IsAudioFile returns true, if a file's extension is in the configured audio file extensions

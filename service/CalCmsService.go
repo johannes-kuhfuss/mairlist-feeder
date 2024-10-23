@@ -141,12 +141,11 @@ func (s DefaultCalCmsService) Query() error {
 			return err
 		}
 		CalCmsPgm.Lock()
-		err = json.Unmarshal(data, &CalCmsPgm.data)
-		CalCmsPgm.Unlock()
-		if err != nil {
+		if err := json.Unmarshal(data, &CalCmsPgm.data); err != nil {
 			logger.Error("Cannot convert calCMS response data to Json", err)
 			return err
 		}
+		CalCmsPgm.Unlock()
 		fc := s.EnrichFileInformation()
 		logger.Info(fmt.Sprintf("Added / updated information from calCMS for %v files, audio: %v, stream: %v", fc.TotalCount, fc.AudioCount, fc.StreamCount))
 		return nil

@@ -207,11 +207,11 @@ func startServer() {
 
 // cleanUp tries to clean up when the program is stopped
 func cleanUp() {
+	logger.Info("Cleaning up...")
 	cfg.RunTime.BgJobs.Stop()
 	shutdownTime := time.Duration(cfg.Server.GracefulShutdownTime) * time.Second
 	ctx, cancel = context.WithTimeout(context.Background(), shutdownTime)
 	defer func() {
-		logger.Info("Cleaning up")
 		logger.Info("Done cleaning up")
 		cancel()
 	}()

@@ -93,12 +93,10 @@ var (
 // InitConfig initializes the configuration and sets the defaults
 func InitConfig(file string, config *AppConfig) api_error.ApiErr {
 	logger.Info(fmt.Sprintf("Initalizing configuration from file %v", file))
-	err := loadConfig(file)
-	if err != nil {
+	if err := loadConfig(file); err != nil {
 		logger.Error("Error while loading config file: ", err)
 	}
-	err = envconfig.Process("", config)
-	if err != nil {
+	if err := envconfig.Process("", config); err != nil {
 		return api_error.NewInternalServerError("Could not initalize configuration: ", err)
 	}
 	setDefaults(config)
@@ -108,10 +106,6 @@ func InitConfig(file string, config *AppConfig) api_error.ApiErr {
 
 // setDefaults sets defaults for some configurations items
 func setDefaults(config *AppConfig) {
-	config.RunTime.CrawlRunNumber = 0
-	config.RunTime.CrawlRunning = false
-	config.RunTime.ExportRunning = false
-	config.RunTime.CleanRunning = false
 	if len(config.Crawl.StreamMap) == 0 {
 		config.Crawl.StreamMap = make(map[string]int)
 	}
@@ -119,8 +113,7 @@ func setDefaults(config *AppConfig) {
 
 // loadConfig loads the configuration from file. Returns an error if loading fails
 func loadConfig(file string) error {
-	err := godotenv.Load(file)
-	if err != nil {
+	if err := godotenv.Load(file); err != nil {
 		return err
 	}
 	return nil

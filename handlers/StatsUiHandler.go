@@ -92,14 +92,12 @@ func (uh *StatsUiHandler) AboutPage(c *gin.Context) {
 func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 	action := c.PostForm("action")
 	hour := c.PostForm("hour")
-	err := validateAction(action)
-	if err != nil {
+	if err := validateAction(action); err != nil {
 		logger.Error("Error: ", err)
 		c.JSON(err.StatusCode(), err)
 		return
 	}
-	err = validateHour(hour)
-	if err != nil {
+	if err := validateHour(hour); err != nil {
 		logger.Error("Error: ", err)
 		c.JSON(err.StatusCode(), err)
 		return
@@ -124,8 +122,7 @@ func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 // validateAction filters the actions tring and only allows valid actions
 func validateAction(action string) api_error.ApiErr {
 	actions := []string{"crawl", "export", "clean", "exporttodisk"}
-	exists := misc.SliceContainsString(actions, action)
-	if exists {
+	if exists := misc.SliceContainsString(actions, action); exists {
 		return nil
 	} else {
 		return api_error.NewBadRequestError("unknown action")
