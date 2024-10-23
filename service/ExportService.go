@@ -101,8 +101,7 @@ func (s DefaultExportService) ExportForHour(hour string) {
 	exmu.Lock()
 	defer exmu.Unlock()
 	s.Cfg.RunTime.ExportRunning = true
-	files := s.Repo.GetForHour(hour)
-	if files != nil {
+	if files := s.Repo.GetForHour(hour); files != nil {
 		logger.Info(fmt.Sprintf("Starting export for timeslot %v:00 ...", hour))
 		s.checkTimeAndLenghth(files)
 		exportPath, err := s.ExportToPlayout(hour)
@@ -237,8 +236,7 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 		line        string
 	)
 
-	size := len(fileExportList.Files)
-	if size > 0 {
+	if size := len(fileExportList.Files); size > 0 {
 		logger.Info(fmt.Sprintf("Exporting %v elements to mAirList for slot %v:00", size, hour))
 		exportPath := s.setExportPath(hour)
 		exportFile, err := os.OpenFile(exportPath, os.O_CREATE, 0644)
@@ -247,6 +245,7 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 			logger.Error("Error when creating playlist file for mAirlist: ", err)
 			return "", err
 		} else {
+			defer exportFile.Close()
 			s.writeStartComment(dataWriter)
 			for time, file := range fileExportList.Files {
 				startTime = setStartTime(startTime, time)
@@ -263,8 +262,7 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 				default:
 					line = fmt.Sprintf("%v\tH\tF\t%v\n", listTime, file.Path)
 				}
-				err := s.writeLine(dataWriter, line)
-				if err == nil {
+				if err := s.writeLine(dataWriter, line); err == nil {
 					delete(fileExportList.Files, createIndexFromTime(file.StartTime))
 				}
 			}
@@ -273,7 +271,6 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 			}
 			s.writeEndComment(dataWriter)
 			dataWriter.Flush()
-			defer exportFile.Close()
 			s.Cfg.RunTime.LastExportFileName = exportPath
 			s.Cfg.RunTime.LastExportedFileDate = time.Now()
 			return exportPath, nil

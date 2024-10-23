@@ -68,8 +68,7 @@ func (s DefaultCleanService) CleanRun() (int, error) {
 	defer clmu.Unlock()
 	s.Cfg.RunTime.CleanRunning = true
 	s.Cfg.RunTime.LastCleanDate = time.Now()
-	files := s.Repo.GetAll()
-	if files != nil {
+	if files := s.Repo.GetAll(); files != nil {
 		for _, file := range *files {
 			fromYesterday, err := isYesterdayOrOlder(file.FolderDate)
 			if err != nil {
@@ -78,8 +77,7 @@ func (s DefaultCleanService) CleanRun() (int, error) {
 			}
 			if fromYesterday {
 				logger.Info(fmt.Sprintf("Removing entry for expired file %v", file.Path))
-				err := s.Repo.Delete(file.Path)
-				if err != nil {
+				if err := s.Repo.Delete(file.Path); err != nil {
 					errorCounter++
 					logger.Error("Could not remove entry: ", err)
 				} else {

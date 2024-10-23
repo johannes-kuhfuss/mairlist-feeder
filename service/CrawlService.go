@@ -86,8 +86,7 @@ func (s DefaultCrawlService) GenHashes() int {
 					logger.Error(fmt.Sprintf("Error when creating hash for %v", file.Path), err)
 				} else {
 					file.Checksum = hash
-					err := s.Repo.Store(file)
-					if err != nil {
+					if err := s.Repo.Store(file); err != nil {
 						logger.Error("Error storing file", err)
 					} else {
 						hashCount++
@@ -110,8 +109,7 @@ func (s DefaultCrawlService) checkForOrphanFiles() int {
 		files := s.Repo.GetAll()
 		for _, file := range *files {
 			if _, err := os.Stat(file.Path); errors.Is(err, os.ErrNotExist) {
-				err := s.Repo.Delete(file.Path)
-				if err == nil {
+				if err := s.Repo.Delete(file.Path); err == nil {
 					logger.Warn(fmt.Sprintf("File %v not found on disk. Removing from list.", file.Path))
 					filesRemoved++
 				} else {
@@ -239,8 +237,7 @@ func (s DefaultCrawlService) extractFileInfo() (dto.FileCounts, error) {
 	file1Exp := regexp.MustCompile(`^([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])\s?-\s?([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])[_ -]`)
 	// UL__HHMM-HHMM__ (upload tool)
 	file2Exp := regexp.MustCompile(`^UL__([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])-([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])__`)
-	files := s.Repo.GetAll()
-	if files != nil {
+	if files := s.Repo.GetAll(); files != nil {
 		for _, file := range *files {
 			if !file.InfoExtracted {
 				var timeData string
@@ -305,8 +302,7 @@ func (s DefaultCrawlService) extractFileInfo() (dto.FileCounts, error) {
 				}
 				newInfo.InfoExtracted = true
 				fc.TotalCount++
-				err := s.Repo.Store(newInfo)
-				if err != nil {
+				if err := s.Repo.Store(newInfo); err != nil {
 					logger.Error("Error while storing data: ", err)
 				}
 				if newInfo.StartTime.IsZero() {
@@ -389,8 +385,7 @@ func analyzeStreamData(path string, streamMap map[string]int) (string, int, erro
 func parseTechMd(ffprobedata []byte) (techMetadata *dto.TechnicalMetadata, err error) {
 	var result domain.FfprobeResult
 	var techMd dto.TechnicalMetadata
-	err = json.Unmarshal(ffprobedata, &result)
-	if err != nil {
+	if err := json.Unmarshal(ffprobedata, &result); err != nil {
 		return nil, err
 	}
 	durFloat, err := strconv.ParseFloat(result.Format.Duration, 64)

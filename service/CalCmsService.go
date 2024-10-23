@@ -161,8 +161,7 @@ func (s DefaultCalCmsService) EnrichFileInformation() dto.FileCounts {
 		newFile domain.FileInfo
 		fc      dto.FileCounts
 	)
-	files := s.Repo.GetAll()
-	if files != nil {
+	if files := s.Repo.GetAll(); files != nil {
 		for _, file := range *files {
 			if file.EventId != 0 {
 				info, err := s.checkCalCmsData(file)
@@ -189,8 +188,7 @@ func (s DefaultCalCmsService) EnrichFileInformation() dto.FileCounts {
 					fc.StreamCount++
 				}
 				fc.TotalCount++
-				err = s.Repo.Store(newFile)
-				if err != nil {
+				if err := s.Repo.Store(newFile); err != nil {
 					logger.Error("Error updating information in file repository", err)
 				}
 			}
@@ -376,8 +374,7 @@ func (s DefaultCalCmsService) GetEvents() ([]dto.Event, error) {
 			logger.Error("error getting data from calCms", err)
 			return nil, err
 		}
-		err = json.Unmarshal(data, &calCmsData)
-		if err != nil {
+		if err := json.Unmarshal(data, &calCmsData); err != nil {
 			logger.Error("Cannot convert calCMS response data to Json", err)
 			return nil, err
 		}
