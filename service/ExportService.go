@@ -364,7 +364,7 @@ func (s DefaultExportService) AppendPlaylist(fileName string) error {
 }
 
 // buildHttpRequest is a helper function constructing the mAirList API request to append the playlist
-func (s DefaultExportService) buildHttpRequest(fileName string) (*http.Request, error) {
+func (s DefaultExportService) buildHttpRequest(fileName string) (req *http.Request, e error) {
 	if s.Cfg.Export.MairListUrl == "" {
 		return nil, errors.New("url cannot be empty")
 	}
@@ -375,7 +375,7 @@ func (s DefaultExportService) buildHttpRequest(fileName string) (*http.Request, 
 	mairListUrl.Path = path.Join(mairListUrl.Path, "/execute")
 	cmd := url.Values{}
 	cmd.Set("command", fmt.Sprintf("PLAYLIST 1 APPEND %v", fileName))
-	req, _ := http.NewRequest("POST", mairListUrl.String(), strings.NewReader(cmd.Encode()))
+	req, _ = http.NewRequest("POST", mairListUrl.String(), strings.NewReader(cmd.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.SetBasicAuth(s.Cfg.Export.MairListUser, s.Cfg.Export.MairListPassword)
 	return req, nil

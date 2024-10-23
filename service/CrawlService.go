@@ -70,10 +70,7 @@ func (s DefaultCrawlService) Crawl() {
 }
 
 // GenHashes creates a hash for the files on disk to allow for easy checking for identical files
-func (s DefaultCrawlService) GenHashes() int {
-	var (
-		hashCount int
-	)
+func (s DefaultCrawlService) GenHashes() (hashCount int) {
 	if s.Repo.Size() > 0 {
 		files := s.Repo.GetAll()
 		for _, file := range *files {
@@ -97,14 +94,11 @@ func (s DefaultCrawlService) GenHashes() int {
 			}
 		}
 	}
-	return hashCount
+	return
 }
 
 // checkForOrphanFiles removes files from the in-memory list, if they are no longer present on disk
-func (s DefaultCrawlService) checkForOrphanFiles() int {
-	var (
-		filesRemoved int
-	)
+func (s DefaultCrawlService) checkForOrphanFiles() (filesRemoved int) {
 	if s.Repo.Size() > 0 {
 		files := s.Repo.GetAll()
 		for _, file := range *files {
@@ -118,7 +112,7 @@ func (s DefaultCrawlService) checkForOrphanFiles() int {
 			}
 		}
 	}
-	return filesRemoved
+	return
 }
 
 // CrawlRun performs the crawling of the folder, the data enrichment and the has creation
@@ -150,10 +144,9 @@ func (s DefaultCrawlService) CrawlRun() {
 }
 
 // crawlFolder examines the files on disk and adds an entry in the in-memory representation
-func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []string) (int, error) {
+func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []string) (fileCount int, e error) {
 	var (
-		fi        domain.FileInfo
-		fileCount int = 0
+		fi domain.FileInfo
 	)
 	today := helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate)
 	err := filepath.WalkDir(path.Join(rootFolder, today),
@@ -192,7 +185,7 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []st
 	}
 }
 
-// parseEventId is a helper function that determines the calCms event id ferom a file's file name
+// parseEventId is a helper function that determines the calCms event id from a file's file name
 func (s DefaultCrawlService) parseEventId(srcPath string) int {
 	fileName := filepath.Base(srcPath)
 	idExp := regexp.MustCompile(`-id\d+-`)
@@ -209,7 +202,7 @@ func (s DefaultCrawlService) parseEventId(srcPath string) int {
 }
 
 // generateHash generates an MD5 hash for a given file
-func generateHash(path string) (string, error) {
+func generateHash(path string) (hash string, e error) {
 	hasher := md5.New()
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -225,11 +218,10 @@ func generateHash(path string) (string, error) {
 // extractFileInfo determines the naming convention and implicitly the likely source of the file
 // It also initiates the data extraction for technical metadata and streaming information
 // The extracted information is stored in the file list in-memory
-func (s DefaultCrawlService) extractFileInfo() (dto.FileCounts, error) {
+func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
 	var (
 		startTimeDisplay   string
 		roundedDurationMin float64
-		fc                 dto.FileCounts
 	)
 	// /HH-MM (calCMS)
 	folder1Exp := regexp.MustCompile(`[\\/]+([01][0-9]|2[0-3])-(0[0-9]|[1-5][0-9])`)
@@ -323,7 +315,7 @@ func (s DefaultCrawlService) extractFileInfo() (dto.FileCounts, error) {
 }
 
 // convertTime is a helper function to convert time information extracted from the file names into a time.Time
-func convertTime(t1str string, t2str string, folderDate string) (time.Time, error) {
+func convertTime(t1str string, t2str string, folderDate string) (t time.Time, e error) {
 	t1, err := strconv.Atoi(t1str)
 	if err != nil {
 		logger.Error("converting start time error", err)
@@ -339,8 +331,7 @@ func convertTime(t1str string, t2str string, folderDate string) (time.Time, erro
 		logger.Error("converting folder date error", err)
 		return time.Time{}, err
 	}
-	time := helper.TimeFromHourAndMinuteAndDate(t1, t2, fd)
-	return time, nil
+	return helper.TimeFromHourAndMinuteAndDate(t1, t2, fd), nil
 }
 
 // analyzeTechMd runs ffprobe to extract technical metadata from audio files
@@ -366,7 +357,7 @@ func analyzeTechMd(essencePath string, timeout int, ffprobePath string) (techMet
 }
 
 // analyzeStreamData reads the file's contents to extract information about which stream is referred to
-func analyzeStreamData(path string, streamMap map[string]int) (string, int, error) {
+func analyzeStreamData(path string, streamMap map[string]int) (streamName string, streamId int, e error) {
 	fileContents, err := os.ReadFile(path)
 	if err != nil {
 		logger.Error("Error reading stream description data from file", err)
@@ -383,8 +374,10 @@ func analyzeStreamData(path string, streamMap map[string]int) (string, int, erro
 
 // parseTechMd interprets the output of ffprobe and extracts the desired technical metadata
 func parseTechMd(ffprobedata []byte) (techMetadata *dto.TechnicalMetadata, err error) {
-	var result domain.FfprobeResult
-	var techMd dto.TechnicalMetadata
+	var (
+		result domain.FfprobeResult
+		techMd dto.TechnicalMetadata
+	)
 	if err := json.Unmarshal(ffprobedata, &result); err != nil {
 		return nil, err
 	}

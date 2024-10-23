@@ -59,10 +59,9 @@ func (s DefaultCleanService) Clean() {
 }
 
 // CleanRun performs the clean-up of expired file list entries
-func (s DefaultCleanService) CleanRun() (int, error) {
+func (s DefaultCleanService) CleanRun() (filesCleaned int, e error) {
 	var (
-		filesCleaned int = 0
-		errorCounter int = 0
+		errorCounter int
 	)
 	clmu.Lock()
 	defer clmu.Unlock()

@@ -64,8 +64,7 @@ func (fr DefaultFileRepository) Size() int {
 }
 
 // SizeOfType returns the number of files of the specified fileType
-func (fr DefaultFileRepository) sizeOfType(fileType string) int {
-	var count int
+func (fr DefaultFileRepository) sizeOfType(fileType string) (count int) {
 	fileList.RLock()
 	defer fileList.RUnlock()
 	for _, f := range fileList.Files {
@@ -73,7 +72,7 @@ func (fr DefaultFileRepository) sizeOfType(fileType string) int {
 			count++
 		}
 	}
-	return count
+	return
 }
 
 // AudioSize returns the number of audio files (as identified by their file extension) stored in the repository
@@ -222,8 +221,7 @@ func (fr DefaultFileRepository) DeleteAllData() {
 }
 
 // NewFiles returns true, if there are file entries in the repository for which additional information hasn't been extracted
-func (fr DefaultFileRepository) NewFiles() bool {
-	newFiles := false
+func (fr DefaultFileRepository) NewFiles() (newFiles bool) {
 	if fr.Size() > 0 {
 		allFiles := fr.GetAll()
 		for _, file := range *allFiles {
@@ -233,5 +231,5 @@ func (fr DefaultFileRepository) NewFiles() bool {
 			}
 		}
 	}
-	return newFiles
+	return
 }

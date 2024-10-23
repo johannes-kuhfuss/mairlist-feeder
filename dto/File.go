@@ -38,10 +38,7 @@ type FileCounts struct {
 }
 
 // GetFiles retrives all files maintained in the repository and formats them for display purposes
-func GetFiles(repo *repositories.DefaultFileRepository, CmsUrl string) []FileResp {
-	var (
-		fileDta []FileResp
-	)
+func GetFiles(repo *repositories.DefaultFileRepository, CmsUrl string) (fileDta []FileResp) {
 	if files := repo.GetAll(); files != nil {
 		for _, file := range *files {
 			dta := FileResp{
@@ -82,12 +79,11 @@ func GetFiles(repo *repositories.DefaultFileRepository, CmsUrl string) []FileRes
 			return true
 		}
 	})
-	return fileDta
+	return
 }
 
 // buildCalCmsInfo formats information from calCms for display
-func buildCalCmsInfo(file domain.FileInfo) string {
-	var info string
+func buildCalCmsInfo(file domain.FileInfo) (info string) {
 	if file.FromCalCMS {
 		info = "Yes, "
 	} else {
@@ -103,12 +99,11 @@ func buildCalCmsInfo(file domain.FileInfo) string {
 	} else {
 		info = info + "None"
 	}
-	return info
+	return
 }
 
 // buildTechMd formats information from ffprobe for display
-func buildTechMd(file domain.FileInfo) string {
-	var info string
+func buildTechMd(file domain.FileInfo) (info string) {
 	switch file.FileType {
 	case "Audio":
 		info = fmt.Sprintf("%v @ %vkbps", file.FormatName, file.BitRate)
@@ -124,13 +119,12 @@ func buildTechMd(file domain.FileInfo) string {
 	if file.Checksum != "" {
 		info = info + " [" + file.Checksum + "]"
 	}
-	return info
+	return
 }
 
 // buildEventIdLink returns a link to a calCms event
 func buildEventIdLink(CmsUrl string, eventId int) string {
 	// https://programm.coloradio.org/agenda/events.cgi?event_id=xxxxx
 	idStr := strconv.Itoa(eventId)
-	link := CmsUrl + "?event_id=" + idStr
-	return link
+	return CmsUrl + "?event_id=" + idStr
 }

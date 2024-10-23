@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/johannes-kuhfuss/services_utils/api_error"
 	"github.com/johannes-kuhfuss/services_utils/logger"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
@@ -91,13 +90,13 @@ var (
 )
 
 // InitConfig initializes the configuration and sets the defaults
-func InitConfig(file string, config *AppConfig) api_error.ApiErr {
+func InitConfig(file string, config *AppConfig) error {
 	logger.Info(fmt.Sprintf("Initalizing configuration from file %v", file))
 	if err := loadConfig(file); err != nil {
 		logger.Error("Error while loading config file: ", err)
 	}
 	if err := envconfig.Process("", config); err != nil {
-		return api_error.NewInternalServerError("Could not initalize configuration: ", err)
+		return fmt.Errorf("could not initalize configuration: %v", err.Error())
 	}
 	setDefaults(config)
 	logger.Info("Done initalizing configuration")

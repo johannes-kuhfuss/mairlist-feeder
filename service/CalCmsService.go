@@ -73,17 +73,17 @@ func (s DefaultCalCmsService) insertData(data domain.CalCmsPgmData) {
 }
 
 // calcCalCmsEndDate calculates the end date based on a gioven start date used to query events from calCms
-func calcCalCmsEndDate(startDate string) (string, error) {
+func calcCalCmsEndDate(startDate string) (endDate string, e error) {
 	d, err := time.Parse("2006-01-02", startDate)
 	if err != nil {
 		return "", err
 	}
-	endDate := d.AddDate(0, 0, 1)
-	return endDate.Format("2006-01-02"), nil
+	endDate = d.AddDate(0, 0, 1).Format("2006-01-02")
+	return endDate, nil
 }
 
 // getCalCmsData retrieves the today's event information from calCms
-func (s DefaultCalCmsService) getCalCmsData() ([]byte, error) {
+func (s DefaultCalCmsService) getCalCmsData() (data []byte, e error) {
 	//API doc: https://github.com/rapilodev/racalmas/blob/master/docs/event-api.md
 	//URL old: https://programm.coloradio.org/agenda/events.cgi?date=2024-04-09&template=event.json-p
 	//URL new: https://programm.coloradio.org/agenda/events.cgi?from_date=2024-10-04&from_time=00:00&till_date=2024-10-05&till_time=00:00&template=event.json-p
@@ -123,12 +123,12 @@ func (s DefaultCalCmsService) getCalCmsData() ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	bData, err := io.ReadAll(resp.Body)
+	data, err = io.ReadAll(resp.Body)
 	if err != nil {
 		logger.Error("Cannot read response data from calCMS http request", err)
 		return nil, err
 	}
-	return bData, nil
+	return data, nil
 }
 
 // Query orchestrates the process of querying calCms and adding the retrieved information to the file representations in memory

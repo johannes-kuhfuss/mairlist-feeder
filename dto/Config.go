@@ -70,17 +70,16 @@ func getNextJobDate(cfg *config.AppConfig, jobId int) string {
 }
 
 // getStreamMappings retrieves the mapping between the stream names and stream IDs and returns it in its display format
-func getStreamMappings(mappings map[string]int) string {
-	var mapStr string
+func getStreamMappings(mappings map[string]int) (mapStr string) {
 	for stream, id := range mappings {
 		mapStr = mapStr + stream + " -> " + strconv.Itoa(id) + "; "
 	}
-	return mapStr
+	return
 }
 
 // GetConfig converts the configuration to its display format
-func GetConfig(cfg *config.AppConfig) ConfigResp {
-	resp := ConfigResp{
+func GetConfig(cfg *config.AppConfig) (resp ConfigResp) {
+	resp = ConfigResp{
 		ServerHost:                 cfg.Server.Host,
 		ServerPort:                 cfg.Server.Port,
 		ServerTlsPort:              cfg.Server.TlsPort,
@@ -126,5 +125,5 @@ func GetConfig(cfg *config.AppConfig) ConfigResp {
 	resp.NextCleanDate = getNextJobDate(cfg, cfg.RunTime.CleanJobId)
 	resp.NextExportDate = getNextJobDate(cfg, cfg.RunTime.ExportJobId)
 	resp.StreamFileMapping = getStreamMappings(cfg.Crawl.StreamMap)
-	return resp
+	return
 }
