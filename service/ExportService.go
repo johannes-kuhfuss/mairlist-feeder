@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -238,7 +239,11 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 
 	if size := len(fileExportList.Files); size > 0 {
 		logger.Info(fmt.Sprintf("Exporting %v elements to mAirList for slot %v:00", size, hour))
-		exportPath := s.setExportPath(hour)
+		exportPath, err := s.setExportPath(hour)
+		if err != nil {
+			logger.Error("Error when setting export path", err)
+			return "", err
+		}
 		exportFile, err := os.OpenFile(exportPath, os.O_CREATE, 0644)
 		dataWriter := bufio.NewWriter(exportFile)
 		if err != nil {
@@ -296,7 +301,7 @@ func setStartTime(startTime time.Time, hour string) time.Time {
 }
 
 // setExportPath is a helper function creating the export path for the ".tpi" playlist file
-func (s DefaultExportService) setExportPath(hour string) string {
+func (s DefaultExportService) setExportPath(hour string) (exportPath string, e error) {
 	var exportFileName string
 	if s.Cfg.Misc.TestCrawl {
 		exportFileName = "Test_" + hour + ".tpi"
@@ -304,7 +309,15 @@ func (s DefaultExportService) setExportPath(hour string) string {
 		exportDate := helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate)
 		exportFileName = strings.ReplaceAll(exportDate, "/", "-") + "-" + hour + ".tpi"
 	}
-	return path.Join(s.Cfg.Export.ExportFolder, exportFileName)
+	expPath := path.Join(s.Cfg.Export.ExportFolder, exportFileName)
+	absExpPath, err := filepath.Abs(expPath)
+	if err != nil {
+		return "", err
+	}
+	if !strings.HasPrefix(absExpPath, s.Cfg.Export.ExportFolder) {
+		return "", errors.New("invalid export path")
+	}
+	return absExpPath, nil
 }
 
 // writeStartComment is a helper function creating the ".tpi" file's start comment

@@ -202,20 +202,21 @@ func Test_setExportPath_Test_Returns_Test(t *testing.T) {
 	tearDown := setupTestEx()
 	defer tearDown()
 	exportService.Cfg.Misc.TestCrawl = true
-	s := exportService.setExportPath("13")
+	s, _ := exportService.setExportPath("13")
 	assert.NotNil(t, s)
-	assert.EqualValues(t, "C:\\TEMP/Test_13.tpi", s)
+	assert.EqualValues(t, "C:\\TEMP\\Test_13.tpi", s)
 }
 
 func Test_setExportPath_Regular_Returns_Path(t *testing.T) {
 	tearDown := setupTestEx()
 	defer tearDown()
 	hour := "13"
-	s := exportService.setExportPath(hour)
+	s, _ := exportService.setExportPath(hour)
 	assert.NotNil(t, s)
 	file := time.Now().Format("2006-01-02") + "-" + hour + ".tpi"
 	tp := path.Join(exportService.Cfg.Export.ExportFolder, file)
-	assert.EqualValues(t, tp, s)
+
+	assert.EqualValues(t, strings.Replace(tp, "/", "\\", -1), s)
 }
 
 func Test_checkTimeAndLenghth_OneFile(t *testing.T) {
