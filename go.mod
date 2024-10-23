@@ -1,6 +1,6 @@
 module github.com/johannes-kuhfuss/mairlist-feeder
 
-go 1.22
+go 1.22.0
 
 require (
 	github.com/gin-gonic/gin v1.10.0
