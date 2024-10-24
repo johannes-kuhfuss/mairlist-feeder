@@ -109,15 +109,18 @@ func (s DefaultCalCmsService) getCalCmsData() (data []byte, e error) {
 	calUrl.RawQuery = query.Encode()
 	req, err := http.NewRequest("GET", calUrl.String(), nil)
 	if err != nil {
+		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
 		logger.Error("Cannot build calCMS http request", err)
 		return nil, err
 	}
 	resp, err := httpCalClient.Do(req)
 	if err != nil {
+		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
 		logger.Error("Cannot execute calCMS http request", err)
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
+		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
 		err := errors.New(resp.Status)
 		logger.Error(fmt.Sprintf("Received status code %v from calCMS", resp.StatusCode), err)
 		return nil, err
@@ -125,9 +128,11 @@ func (s DefaultCalCmsService) getCalCmsData() (data []byte, e error) {
 	defer resp.Body.Close()
 	data, err = io.ReadAll(resp.Body)
 	if err != nil {
+		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
 		logger.Error("Cannot read response data from calCMS http request", err)
 		return nil, err
 	}
+	s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Succeeded (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
 	return data, nil
 }
 

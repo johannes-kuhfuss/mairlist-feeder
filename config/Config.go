@@ -82,6 +82,8 @@ type AppConfig struct {
 		CrawlJobId           int
 		ExportJobId          int
 		CleanJobId           int
+		LastCalCmsState      string
+		LastMairListState    string
 	}
 }
 
@@ -105,6 +107,8 @@ func InitConfig(file string, config *AppConfig) error {
 
 // setDefaults sets defaults for some configurations items
 func setDefaults(config *AppConfig) {
+	config.RunTime.LastCalCmsState = "N/A"
+	config.RunTime.LastMairListState = "N/A"
 	if len(config.Crawl.StreamMap) == 0 {
 		config.Crawl.StreamMap = make(map[string]int)
 	}

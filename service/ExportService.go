@@ -358,21 +358,26 @@ func (s DefaultExportService) AppendPlaylist(fileName string) error {
 	// command = PLAYLIST 1 APPEND <filename>
 	req, err := s.buildHttpRequest(fileName)
 	if err != nil {
+		s.Cfg.RunTime.LastMairListState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
 		return err
 	}
 	resp, err := httpExClient.Do(req)
 	if err != nil {
+		s.Cfg.RunTime.LastMairListState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
 		return err
 	}
 	if resp.StatusCode == 404 {
+		s.Cfg.RunTime.LastMairListState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
 		err := errors.New("url not found")
 		return err
 	}
 	defer resp.Body.Close()
 	b, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode == 200 && string(b) == "ok" {
+		s.Cfg.RunTime.LastMairListState = fmt.Sprintf("Succeeded (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
 		return nil
 	}
+	s.Cfg.RunTime.LastMairListState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
 	return errors.New(string(b))
 }
 
