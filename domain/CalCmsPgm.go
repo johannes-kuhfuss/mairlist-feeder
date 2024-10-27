@@ -119,6 +119,7 @@ type CalCmsEvent struct {
 	EndDate              string `json:"end_date"`
 	EndDateName          string `json:"end_date_name"`
 	EndDatetime          string `json:"end_datetime"`
+	EndDatetimeUtc       string `json:"end_datetime_utc"`
 	EndTime              string `json:"end_time"`
 	EndTimeName          string `json:"end_time_name"`
 	EndUtcEpoch          int    `json:"end_utc_epoch"`
@@ -177,6 +178,7 @@ type CalCmsEvent struct {
 	StartDate            string `json:"start_date"`
 	StartDateName        string `json:"start_date_name"`
 	StartDatetime        string `json:"start_datetime"`
+	StartDatetimeUtc     string `json:"start_datetime_utc"`
 	StartDay             string `json:"start_day"`
 	StartHour            string `json:"start_hour"`
 	StartMinute          string `json:"start_minute"`
