@@ -56,10 +56,11 @@ type AppConfig struct {
 		LimitTime              bool    `envconfig:"LIMIT_TIME" default:"false"`
 	}
 	CalCms struct {
-		QueryCalCms    bool     `envconfig:"QUERY_CALCMS" default:"false"`
-		CmsUrl         string   `envconfig:"CALCMS_URL" default:"https://programm.coloradio.org/agenda/events.cgi"`
-		Template       string   `envconfig:"CALCMS_TEMPLATE" default:"event.json-p"`
-		EventExclusion []string `envconfig:"EVENT_EXCLUSION"`
+		QueryCalCms     bool     `envconfig:"QUERY_CALCMS" default:"false"`
+		CmsUrl          string   `envconfig:"CALCMS_URL" default:"https://programm.coloradio.org/agenda/events.cgi"`
+		Template        string   `envconfig:"CALCMS_TEMPLATE" default:"event.json-p"`
+		EventExclusion  []string `envconfig:"EVENT_EXCLUSION"`
+		ExportDayEvents bool     `envconfig:"EXPORT_DAY_EVENTS" default:"false"`
 	}
 	RunTime struct {
 		Router               *gin.Engine
@@ -82,6 +83,7 @@ type AppConfig struct {
 		CrawlJobId           int
 		ExportJobId          int
 		CleanJobId           int
+		EventJobId           int
 		LastCalCmsState      string
 		LastMairListState    string
 	}

@@ -185,6 +185,16 @@ func scheduleBgJobs() {
 		cfg.RunTime.ExportJobId = int(exportId)
 		logger.Info(fmt.Sprintf("Export Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(exportId).Job, cfg.RunTime.BgJobs.Entry(exportId).Next.String()))
 	}
+	// Export day's events at 23:55
+	if cfg.CalCms.ExportDayEvents {
+		eventId, eventErr := cfg.RunTime.BgJobs.AddFunc("55 23 * * *", calCmsService.ExportDaysEvents)
+		if eventErr != nil {
+			logger.Error(fmt.Sprintf("Error when scheduling job %v for event state", eventId), eventErr)
+		} else {
+			cfg.RunTime.EventJobId = int(eventId)
+			logger.Info(fmt.Sprintf("EventJob: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(eventId).Job, cfg.RunTime.BgJobs.Entry(eventId).Next.String()))
+		}
+	}
 	logger.Info("Jobs scheduled")
 }
 
