@@ -15,6 +15,7 @@ import (
 	"github.com/johannes-kuhfuss/services_utils/logger"
 )
 
+// ExportDayEventsRun runs the export job
 func ExportDayEventsRun() {
 	logger.Info("Exporting the day's event's state...")
 	file, err := exportDayEvents()
@@ -24,6 +25,8 @@ func ExportDayEventsRun() {
 	logger.Info(fmt.Sprintf("Exported day's event's state into file %v", file))
 }
 
+// exportDayEvents exports an HTML file containing the event view
+// represents the event status for the day, so you can retroactively check what files were present
 func exportDayEvents() (fileName string, e error) {
 	u := url.URL{}
 	if cfg.Server.UseTls {

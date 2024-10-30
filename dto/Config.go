@@ -51,6 +51,7 @@ type ConfigResp struct {
 	GenHashes                  string
 	LastCalCmsState            string
 	LastMairListState          string
+	ExportDayEvents            string
 }
 
 // convertDate converts a date to its display format
@@ -111,6 +112,7 @@ func GetConfig(cfg *config.AppConfig) (resp ConfigResp) {
 		GenHashes:                  strconv.FormatBool(cfg.Crawl.GenerateHash),
 		LastCalCmsState:            cfg.RunTime.LastCalCmsState,
 		LastMairListState:          cfg.RunTime.LastMairListState,
+		ExportDayEvents:            strconv.FormatBool(cfg.CalCms.ExportDayEvents),
 	}
 	resp.LastCrawlDate = convertDate(cfg.RunTime.LastCrawlDate)
 	resp.LastExportDate = convertDate(cfg.RunTime.LastExportRunDate)
