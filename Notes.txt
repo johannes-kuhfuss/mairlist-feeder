@@ -1,2 +1,0 @@
-Export view of event list at 23:50 to save state of day
-Allow clear logs
