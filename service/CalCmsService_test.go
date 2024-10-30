@@ -687,26 +687,3 @@ func Test_GetEvents_Returns_data(t *testing.T) {
 	assert.EqualValues(t, 8, len(ev))
 	assert.EqualValues(t, "Morgenmagazin - der Freien Radios", ev[0].Title)
 }
-
-func Test_ExportDayEventState_Events_Writes_File(t *testing.T) {
-	teardown := setupTestCal()
-	defer teardown()
-	respData, _ := os.ReadFile("../samples/calCMS-response.json")
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Header().Add("Content-Type", "application/json")
-		w.Write(respData)
-	}))
-	defer srv.Close()
-	cfgCal.CalCms.CmsUrl = srv.URL
-	cfgCal.Misc.TestCrawl = true
-	cfgCal.Misc.TestDate = "2024/09/24"
-	cfgCal.CalCms.QueryCalCms = true
-
-	file, err := calCmsService.exportDayEventState()
-
-	_, fileErr := os.Stat(file)
-	assert.Nil(t, err)
-	assert.Nil(t, fileErr)
-	os.Remove(file)
-}

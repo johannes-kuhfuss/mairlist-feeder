@@ -187,7 +187,7 @@ func scheduleBgJobs() {
 	}
 	// Export day's events at 23:55
 	if cfg.CalCms.ExportDayEvents {
-		eventId, eventErr := cfg.RunTime.BgJobs.AddFunc("55 23 * * *", calCmsService.ExportDaysEvents)
+		eventId, eventErr := cfg.RunTime.BgJobs.AddFunc("55 23 * * *", ExportDayEventsRun)
 		if eventErr != nil {
 			logger.Error(fmt.Sprintf("Error when scheduling job %v for event state", eventId), eventErr)
 		} else {

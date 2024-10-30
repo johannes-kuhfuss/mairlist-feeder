@@ -9,9 +9,6 @@ import (
 	"math"
 	"net/http"
 	"net/url"
-	"os"
-	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -392,47 +389,4 @@ func (s DefaultCalCmsService) GetEvents() ([]dto.Event, error) {
 		logger.Warn("calCMS query not enabled in configuration. Not querying.")
 		return nil, nil
 	}
-}
-
-func (s DefaultCalCmsService) exportDayEventState() (fileWritten string, e error) {
-	events, err := s.GetEvents()
-	if err != nil {
-		logger.Error("error getting day's events", err)
-		return "", err
-	}
-	event_json, err := json.Marshal(events)
-	if err != nil {
-		logger.Error("error converting day's events to JSON", err)
-		return "", err
-	}
-	exportFileName := "events_" + time.Now().Format("2006-01-02__15-04-05") + ".json"
-	writePath := path.Join(s.Cfg.Export.ExportFolder, exportFileName)
-	absWritePath, err := filepath.Abs(writePath)
-	if err != nil {
-		logger.Error("error creating event export file path", err)
-		return "", err
-	}
-	if !strings.HasPrefix(absWritePath, s.Cfg.Export.ExportFolder) {
-		return "", errors.New("invalid export path")
-	}
-	file, err := os.Create(absWritePath)
-	if err != nil {
-		logger.Error("error creating event export file", err)
-		return "", err
-	}
-	defer file.Close()
-	if _, err := file.Write(event_json); err != nil {
-		logger.Error("error writing event export file", err)
-		return "", err
-	}
-	return file.Name(), nil
-}
-
-func (s DefaultCalCmsService) ExportDaysEvents() {
-	logger.Info("Exporting the day's event's state...")
-	file, err := s.exportDayEventState()
-	if err != nil {
-		logger.Error("Error exporting day's event's state", err)
-	}
-	logger.Info(fmt.Sprintf("Exported day's event's state into file %v", file))
 }
