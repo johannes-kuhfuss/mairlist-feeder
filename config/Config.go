@@ -95,7 +95,7 @@ var (
 
 // InitConfig initializes the configuration and sets the defaults
 func InitConfig(file string, config *AppConfig) error {
-	logger.Info(fmt.Sprintf("Initalizing configuration from file %v", file))
+	logger.Infof("Initalizing configuration from file %v", file)
 	if err := loadConfig(file); err != nil {
 		logger.Error("Error while loading config file: ", err)
 	}

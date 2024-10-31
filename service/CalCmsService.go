@@ -122,7 +122,7 @@ func (s DefaultCalCmsService) getCalCmsData() (data []byte, e error) {
 	if resp.StatusCode != http.StatusOK {
 		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
 		err := errors.New(resp.Status)
-		logger.Error(fmt.Sprintf("Received status code %v from calCMS", resp.StatusCode), err)
+		logger.Errorf("Received status code %v from calCMS. %v", resp.StatusCode, err)
 		return nil, err
 	}
 	defer resp.Body.Close()
@@ -152,7 +152,7 @@ func (s DefaultCalCmsService) Query() error {
 		}
 		CalCmsPgm.Unlock()
 		fc := s.EnrichFileInformation()
-		logger.Info(fmt.Sprintf("Added / updated information from calCMS for %v files, audio: %v, stream: %v", fc.TotalCount, fc.AudioCount, fc.StreamCount))
+		logger.Infof("Added / updated information from calCMS for %v files, audio: %v, stream: %v", fc.TotalCount, fc.AudioCount, fc.StreamCount)
 		return nil
 	} else {
 		logger.Warn("calCMS query not enabled in configuration. Not querying.")
@@ -179,7 +179,7 @@ func (s DefaultCalCmsService) EnrichFileInformation() dto.FileCounts {
 					newFile.FromCalCMS = true
 				}
 				if !file.StartTime.Equal(info.StartTime) {
-					logger.Warn(fmt.Sprintf("Start times differ. File: %v, calCMS: %v. Updating to value from calCMS.", file.StartTime, info.StartTime))
+					logger.Warnf("Start times differ. File: %v, calCMS: %v. Updating to value from calCMS.", file.StartTime, info.StartTime)
 					newFile.StartTime = info.StartTime
 				}
 				newFile.EndTime = info.EndTime
@@ -211,15 +211,15 @@ func (s DefaultCalCmsService) checkCalCmsData(file domain.FileInfo) (*dto.CalCms
 	}
 	calCmsDate := strings.ReplaceAll(helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate), "/", "-")
 	if (len(info) == 0) && (calCmsDate == file.FolderDate) {
-		logger.Warn(fmt.Sprintf("No information from calCMS for Id %v in today's calCMS events", file.EventId))
+		logger.Warnf("No information from calCMS for Id %v in today's calCMS events", file.EventId)
 		return nil, errors.New("no such id in calCMS")
 	}
 	if len(info) > 1 {
-		logger.Warn(fmt.Sprintf("Ambiguous information from calCMS. Found %v entries. Not adding information.", len(info)))
+		logger.Warnf("Ambiguous information from calCMS. Found %v entries. Not adding information.", len(info))
 		return nil, errors.New("multiple matches in calCMS")
 	}
 	if (len(info) == 1) && (info[0].Live == 1) {
-		logger.Warn(fmt.Sprintf("%v, Id: %v is designated as live. Not adding information.", info[0].Title, info[0].EventId))
+		logger.Warnf("%v, Id: %v is designated as live. Not adding information.", info[0].Title, info[0].EventId)
 		return nil, errors.New("event is live in calCMS")
 	}
 	if calCmsDate != file.FolderDate {
@@ -277,12 +277,12 @@ func (s DefaultCalCmsService) convertToEntry(event domain.CalCmsEvent) (dto.CalC
 	entry.Title = event.FullTitle
 	entry.StartTime, err1 = time.ParseInLocation("2006-01-02T15:04:05", event.StartDatetime, time.Local)
 	if err1 != nil {
-		logger.Error(fmt.Sprintf("Could not parse %v into time", event.StartDatetime), err1)
+		logger.Errorf("Could not parse %v into time. %v", event.StartDatetime, err1)
 		return entry, err1
 	}
 	entry.EndTime, err2 = time.ParseInLocation("2006-01-02T15:04:05", event.EndDatetime, time.Local)
 	if err2 != nil {
-		logger.Error(fmt.Sprintf("Could not parse %v into time", event.EndDatetime), err2)
+		logger.Errorf("Could not parse %v into time. %v", event.EndDatetime, err2)
 		return entry, err2
 	}
 	entry.Duration = entry.EndTime.Sub(entry.StartTime)

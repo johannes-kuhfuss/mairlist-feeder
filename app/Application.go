@@ -168,31 +168,31 @@ func scheduleBgJobs() {
 	exportId, exportErr := cfg.RunTime.BgJobs.AddFunc("50 * * * *", exportService.Export)
 	cfg.RunTime.BgJobs.Start()
 	if crawlErr != nil {
-		logger.Error(fmt.Sprintf("Error when scheduling job %v for crawling", crawlId), crawlErr)
+		logger.Errorf("Error when scheduling job %v for crawling. %v", crawlId, crawlErr)
 	} else {
 		cfg.RunTime.CrawlJobId = int(crawlId)
-		logger.Info(fmt.Sprintf("Crawl Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(crawlId).Job, cfg.RunTime.BgJobs.Entry(crawlId).Next.String()))
+		logger.Infof("Crawl Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(crawlId).Job, cfg.RunTime.BgJobs.Entry(crawlId).Next.String())
 	}
 	if cleanErr != nil {
-		logger.Error(fmt.Sprintf("Error when scheduling job %v for cleaning", cleanId), cleanErr)
+		logger.Errorf("Error when scheduling job %v for cleaning. %v", cleanId, cleanErr)
 	} else {
 		cfg.RunTime.CleanJobId = int(cleanId)
-		logger.Info(fmt.Sprintf("Clean Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(cleanId).Job, cfg.RunTime.BgJobs.Entry(cleanId).Next.String()))
+		logger.Infof("Clean Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(cleanId).Job, cfg.RunTime.BgJobs.Entry(cleanId).Next.String())
 	}
 	if exportErr != nil {
-		logger.Error(fmt.Sprintf("Error when scheduling job %v for exporting", exportId), exportErr)
+		logger.Errorf("Error when scheduling job %v for exporting. %v", exportId, exportErr)
 	} else {
 		cfg.RunTime.ExportJobId = int(exportId)
-		logger.Info(fmt.Sprintf("Export Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(exportId).Job, cfg.RunTime.BgJobs.Entry(exportId).Next.String()))
+		logger.Infof("Export Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(exportId).Job, cfg.RunTime.BgJobs.Entry(exportId).Next.String())
 	}
 	// Export day's events at 23:15 (before we start looking at the next day)
 	if cfg.CalCms.ExportDayEvents {
 		eventId, eventErr := cfg.RunTime.BgJobs.AddFunc("15 23 * * *", ExportDayEventsRun)
 		if eventErr != nil {
-			logger.Error(fmt.Sprintf("Error when scheduling job %v for event state", eventId), eventErr)
+			logger.Errorf("Error when scheduling job %v for event state. %v", eventId, eventErr)
 		} else {
 			cfg.RunTime.EventJobId = int(eventId)
-			logger.Info(fmt.Sprintf("Day Event Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(eventId).Job, cfg.RunTime.BgJobs.Entry(eventId).Next.String()))
+			logger.Infof("Day Event Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(eventId).Job, cfg.RunTime.BgJobs.Entry(eventId).Next.String())
 		}
 	}
 	logger.Info("Jobs scheduled")
@@ -200,7 +200,7 @@ func scheduleBgJobs() {
 
 // startServer starts the preconfigured web server
 func startServer() {
-	logger.Info(fmt.Sprintf("Listening on %v", cfg.RunTime.ListenAddr))
+	logger.Infof("Listening on %v", cfg.RunTime.ListenAddr)
 	cfg.RunTime.StartDate = date.GetNowUtc()
 	if cfg.Server.UseTls {
 		if err := server.ListenAndServeTLS(cfg.Server.CertFile, cfg.Server.KeyFile); err != nil && err != http.ErrServerClosed {

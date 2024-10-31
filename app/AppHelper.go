@@ -2,7 +2,6 @@
 package app
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -22,7 +21,7 @@ func ExportDayEventsRun() {
 	if err != nil {
 		logger.Error("Error exporting day's event's state", err)
 	}
-	logger.Info(fmt.Sprintf("Exported day's event's state into file %v", file))
+	logger.Infof("Exported day's event's state into file %v", file)
 }
 
 // exportDayEvents exports an HTML file containing the event view

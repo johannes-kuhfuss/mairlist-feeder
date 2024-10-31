@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/fs"
 	"math"
 	"os"
@@ -80,16 +79,15 @@ func (s DefaultCrawlService) GenHashes() (hashCount int) {
 				t2 := time.Now()
 				dur := t2.Sub(t1)
 				if err != nil {
-					logger.Error(fmt.Sprintf("Error when creating hash for %v", file.Path), err)
+					logger.Errorf("Error when creating hash for %v. %v", file.Path, err)
 				} else {
 					file.Checksum = hash
 					if err := s.Repo.Store(file); err != nil {
 						logger.Error("Error storing file", err)
 					} else {
 						hashCount++
-						logger.Info(fmt.Sprintf("Added hash for file %v in %v seconds", file.Path, dur.Seconds()))
+						logger.Infof("Added hash for file %v in %v seconds", file.Path, dur.Seconds())
 					}
-
 				}
 			}
 		}
@@ -104,7 +102,7 @@ func (s DefaultCrawlService) checkForOrphanFiles() (filesRemoved int) {
 		for _, file := range *files {
 			if _, err := os.Stat(file.Path); errors.Is(err, os.ErrNotExist) {
 				if err := s.Repo.Delete(file.Path); err == nil {
-					logger.Warn(fmt.Sprintf("File %v not found on disk. Removing from list.", file.Path))
+					logger.Warnf("File %v not found on disk. Removing from list.", file.Path)
 					filesRemoved++
 				} else {
 					logger.Error("Error removing orphaned file.", err)
@@ -119,22 +117,22 @@ func (s DefaultCrawlService) checkForOrphanFiles() (filesRemoved int) {
 func (s DefaultCrawlService) CrawlRun() {
 	s.Cfg.RunTime.CrawlRunNumber++
 	s.Cfg.RunTime.LastCrawlDate = time.Now()
-	logger.Info(fmt.Sprintf("Root folder: %v. Starting crawl #%v.", s.Cfg.Crawl.RootFolder, s.Cfg.RunTime.CrawlRunNumber))
+	logger.Infof("Root folder: %v. Starting crawl #%v.", s.Cfg.Crawl.RootFolder, s.Cfg.RunTime.CrawlRunNumber)
 	filesRemoved := s.checkForOrphanFiles()
 	fileCount, err := s.crawlFolder(s.Cfg.Crawl.RootFolder, s.Cfg.Crawl.CrawlExtensions)
 	if err != nil {
-		logger.Error(fmt.Sprintf("Error crawling folder %v: ", s.Cfg.Crawl.RootFolder), err)
+		logger.Errorf("Error crawling folder %v: . %v", s.Cfg.Crawl.RootFolder, err)
 	}
 	s.Cfg.RunTime.FilesInList = s.Repo.Size()
-	logger.Info(fmt.Sprintf("Finished crawl run #%v. Removed %v orphaned files. Added %v new files. %v files in list total.", s.Cfg.RunTime.CrawlRunNumber, filesRemoved, fileCount, s.Cfg.RunTime.FilesInList))
+	logger.Infof("Finished crawl run #%v. Removed %v orphaned files. Added %v new files. %v files in list total.", s.Cfg.RunTime.CrawlRunNumber, filesRemoved, fileCount, s.Cfg.RunTime.FilesInList)
 	if s.Repo.NewFiles() {
 		logger.Info("Starting to extract file data...")
 		fc, _ := s.extractFileInfo()
-		logger.Info(fmt.Sprintf("Finished extracting file data for %v files. %v audio files, %v stream files", fc.TotalCount, fc.AudioCount, fc.StreamCount))
+		logger.Infof("Finished extracting file data for %v files. %v audio files, %v stream files", fc.TotalCount, fc.AudioCount, fc.StreamCount)
 		if s.Cfg.Crawl.GenerateHash {
 			logger.Info("Starting to add hashes for new files...")
 			hc := s.GenHashes()
-			logger.Info(fmt.Sprintf("Done adding hashes for %v new files.", hc))
+			logger.Infof("Done adding hashes for %v new files.", hc)
 		}
 	} else {
 		logger.Info("No (new) files in file list. No extraction needed.")
@@ -173,7 +171,7 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []st
 				fileCount++
 				s.Repo.Store(fi)
 				if s.Cfg.Misc.TestCrawl {
-					logger.Info(fmt.Sprintf("File %v added", srcPath))
+					logger.Infof("File %v added", srcPath)
 				}
 			}
 			return nil
@@ -304,9 +302,9 @@ func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
 				}
 				switch newInfo.FileType {
 				case "Stream":
-					logger.Info(fmt.Sprintf("Time Slot: % v, File: %v (Stream Description)", startTimeDisplay, file.Path))
+					logger.Infof("Time Slot: % v, File: %v (Stream Description)", startTimeDisplay, file.Path)
 				default:
-					logger.Info(fmt.Sprintf("Time Slot: % v, File: %v - Length (min): %v", startTimeDisplay, file.Path, roundedDurationMin))
+					logger.Infof("Time Slot: % v, File: %v - Length (min): %v", startTimeDisplay, file.Path, roundedDurationMin)
 				}
 			}
 		}

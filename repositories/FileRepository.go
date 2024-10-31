@@ -189,7 +189,7 @@ func (fr DefaultFileRepository) SaveToDisk(fileName string) error {
 		logger.Error("Error while writing files data to disk: ", err)
 		return err
 	}
-	logger.Info(fmt.Sprintf("Done saving files data to disk (%v items).", len(fileList.Files)))
+	logger.Infof("Done saving files data to disk (%v items).", len(fileList.Files))
 	return nil
 }
 
@@ -209,7 +209,7 @@ func (fr DefaultFileRepository) LoadFromDisk(fileName string) error {
 	fileList.Lock()
 	defer fileList.Unlock()
 	fileList.Files = fileDta
-	logger.Info(fmt.Sprintf("Done reading files data from disk (%v items).", len(fileList.Files)))
+	logger.Infof("Done reading files data from disk (%v items).", len(fileList.Files))
 	return nil
 }
 

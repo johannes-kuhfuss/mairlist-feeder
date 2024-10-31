@@ -3,7 +3,6 @@ package service
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -55,7 +54,7 @@ func (s DefaultCleanService) Clean() {
 		logger.Error("Error while clean repository", err)
 	}
 	s.Cfg.RunTime.FilesCleaned = filesCleaned
-	logger.Info(fmt.Sprintf("File list clean-up done. Cleaned %v entries.", filesCleaned))
+	logger.Infof("File list clean-up done. Cleaned %v entries.", filesCleaned)
 }
 
 // CleanRun performs the clean-up of expired file list entries
@@ -75,7 +74,7 @@ func (s DefaultCleanService) CleanRun() (filesCleaned int, e error) {
 				logger.Error("Error converting date", err)
 			}
 			if fromYesterday {
-				logger.Info(fmt.Sprintf("Removing entry for expired file %v", file.Path))
+				logger.Infof("Removing entry for expired file %v", file.Path)
 				if err := s.Repo.Delete(file.Path); err != nil {
 					errorCounter++
 					logger.Error("Could not remove entry: ", err)

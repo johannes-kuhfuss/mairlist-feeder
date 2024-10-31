@@ -103,7 +103,7 @@ func (s DefaultExportService) ExportForHour(hour string) {
 	defer exmu.Unlock()
 	s.Cfg.RunTime.ExportRunning = true
 	if files := s.Repo.GetForHour(hour); files != nil {
-		logger.Info(fmt.Sprintf("Starting export for timeslot %v:00 ...", hour))
+		logger.Infof("Starting export for timeslot %v:00 ...", hour)
 		s.checkTimeAndLenghth(files)
 		exportPath, err := s.ExportToPlayout(hour)
 		if s.Cfg.Export.AppendPlaylist && exportPath != "" && err == nil {
@@ -112,9 +112,9 @@ func (s DefaultExportService) ExportForHour(hour string) {
 				logger.Error("Error appending playlist", err)
 			}
 		}
-		logger.Info(fmt.Sprintf("Finished exporting for timeslot %v:00 ...", hour))
+		logger.Infof("Finished exporting for timeslot %v:00 ...", hour)
 	} else {
-		logger.Info(fmt.Sprintf("No files to export for timeslot %v:00 ...", hour))
+		logger.Infof("No files to export for timeslot %v:00 ...", hour)
 	}
 	s.Cfg.RunTime.ExportRunning = false
 }
@@ -124,15 +124,15 @@ func (s DefaultExportService) ExportForHour(hour string) {
 func (s DefaultExportService) checkTimeAndLenghth(files *domain.FileList) {
 	for _, file := range *files {
 		lengthOk, slotLen, info := checkTime(file, s.Cfg.Export.ShortDeltaAllowance, s.Cfg.Export.LongDeltaAllowance)
-		logger.Info(fmt.Sprintf("File: %v, ModDate: %v, IsOK: %v, Info: %v", file.Path, file.ModTime, lengthOk, info))
+		logger.Infof("File: %v, ModDate: %v, IsOK: %v, Info: %v", file.Path, file.ModTime, lengthOk, info)
 		if lengthOk {
 			file.SlotLength = slotLen
 			preFile, exists := fileExportList.Files[createIndexFromTime(file.StartTime)]
 			if exists {
 				if preFile.ModTime.After(file.ModTime) {
-					logger.Info(fmt.Sprintf("Existing file %v is newer than file %v. Not updating.", preFile.Path, file.Path))
+					logger.Infof("Existing file %v is newer than file %v. Not updating.", preFile.Path, file.Path)
 				} else {
-					logger.Info(fmt.Sprintf("Existing file %v is older than file %v. Updating.", preFile.Path, file.Path))
+					logger.Infof("Existing file %v is older than file %v. Updating.", preFile.Path, file.Path)
 					fileExportList.Files[createIndexFromTime(file.StartTime)] = file
 				}
 			} else {
@@ -238,7 +238,7 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 	)
 
 	if size := len(fileExportList.Files); size > 0 {
-		logger.Info(fmt.Sprintf("Exporting %v elements to mAirList for slot %v:00", size, hour))
+		logger.Infof("Exporting %v elements to mAirList for slot %v:00", size, hour)
 		exportPath, err := s.setExportPath(hour)
 		if err != nil {
 			logger.Error("Error when setting export path", err)
@@ -281,7 +281,7 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 			return exportPath, nil
 		}
 	} else {
-		logger.Info(fmt.Sprintf("No elements to export for slot %v:00.", hour))
+		logger.Infof("No elements to export for slot %v:00.", hour)
 		return "", nil
 	}
 }
