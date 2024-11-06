@@ -16,70 +16,51 @@ var (
 	repo DefaultFileRepository
 )
 
-func setupTest() func() {
+func setupTest() {
 	repo = NewFileRepository(&cfg)
-	return func() {
-	}
 }
 
-func Test_NewFileRepository_CreatesEmptyList(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestNewFileRepositoryCreatesEmptyList(t *testing.T) {
+	setupTest()
 	assert.EqualValues(t, 0, repo.Size())
 }
 
-func Test_GetByPath_EmptyList_Returns_Nil(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestGetByPathEmptyListReturnsNil(t *testing.T) {
+	setupTest()
 	res := repo.GetByPath("B")
-
 	assert.Nil(t, res)
 }
 
-func Test_GetAll_EmptyList_Returns_Nil(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestGetAllEmptyListReturnsNil(t *testing.T) {
+    setupTest()
 	res := repo.GetAll()
-
 	assert.Nil(t, res)
 }
 
-func Test_Store_ItemWithEmptyPath_Returns_Error(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestStoreItemWithEmptyPathReturnsError(t *testing.T) {
+	setupTest()
 	fi := domain.FileInfo{}
 	err := repo.Store(fi)
-
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "cannot add item with empty path to list", err.Error())
 }
 
-func Test_GetByPath_CorrectPath_Returns_Element(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestGetByPathCorrectPathReturnsElement(t *testing.T) {
+	setupTest()
 	fi := domain.FileInfo{
 		Path:     "A",
 		Duration: 1.0,
 	}
 	err := repo.Store(fi)
-
 	res := repo.GetByPath("A")
-
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.EqualValues(t, "A", res.Path)
 	assert.EqualValues(t, 1.0, res.Duration)
 }
 
-func Test_GetAll_Returns_AllElements(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestGetAllReturnsAllElements(t *testing.T) {
+	setupTest()
 	fi1 := domain.FileInfo{
 		Path:     "A",
 		Duration: 2.0,
@@ -90,12 +71,10 @@ func Test_GetAll_Returns_AllElements(t *testing.T) {
 	}
 	repo.Store(fi1)
 	repo.Store(fi2)
-
 	size := repo.Size()
 	res := repo.GetAll()
 	el1 := (*res)[0]
 	el2 := (*res)[1]
-
 	assert.NotNil(t, size)
 	assert.EqualValues(t, 2, size)
 	assert.EqualValues(t, 2, len(*res))
@@ -103,84 +82,64 @@ func Test_GetAll_Returns_AllElements(t *testing.T) {
 	assert.EqualValues(t, 2.0, el2.Duration)
 }
 
-func Test_Delete_NonExistingElement_Returns_Error(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestDeleteNonExistingElementReturnsError(t *testing.T) {
+	setupTest()
 	err := repo.Delete("A")
-
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "item with path A does not exist", err.Error())
 }
 
-func Test_Delete_ExistingElement_Deletes_Element(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestDeleteExistingElementDeletesElement(t *testing.T) {
+	setupTest()
 	fi := domain.FileInfo{
 		Path:     "A",
 		Duration: 1.0,
 	}
 	repo.Store(fi)
 	sizeBefore := repo.Size()
-
 	err := repo.Delete("A")
 	sizeAfter := repo.Size()
-
 	assert.Nil(t, err)
 	assert.EqualValues(t, 1, sizeBefore)
 	assert.EqualValues(t, 0, sizeAfter)
 }
 
-func Test_GetForHour_EmptyList_Returns_Nil(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestGetForHourEmptyListReturnsNil(t *testing.T) {
+	setupTest()
 	res := repo.GetForHour("13")
-
 	assert.Nil(t, res)
 }
 
-func Test_GetForHour_NoMatch_Returns_Nil(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestGetForHourNoMatchReturnsNil(t *testing.T) {
+	setupTest()
 	fi := domain.FileInfo{
 		Path:       "A",
 		StartTime:  helper.TimeFromHourAndMinute(12, 0),
 		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
 	}
 	repo.Store(fi)
-
 	res := repo.GetForHour("13")
-
 	assert.Nil(t, res)
 }
 
-func Test_GetForHour_OneMatch_Returns_Element(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestGetForHourOneMatchReturnsElement(t *testing.T) {
+	setupTest()
 	fi := domain.FileInfo{
 		Path:       "A",
 		StartTime:  helper.TimeFromHourAndMinute(12, 0),
 		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
 	}
 	repo.Store(fi)
-
 	res := repo.GetForHour("12")
 	el := (*res)[0]
-
 	assert.NotNil(t, *res)
 	assert.EqualValues(t, 1, len(*res))
 	assert.EqualValues(t, "A", el.Path)
 	assert.EqualValues(t, helper.TimeFromHourAndMinute(12, 0), el.StartTime)
 }
 
-func Test_GetForHour_TwoMatches_Returns_Elements(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestGetForHourTwoMatchesReturnsElements(t *testing.T) {
+	setupTest()
 	fi1 := domain.FileInfo{
 		Path:       "A",
 		StartTime:  helper.TimeFromHourAndMinute(11, 0),
@@ -199,17 +158,13 @@ func Test_GetForHour_TwoMatches_Returns_Elements(t *testing.T) {
 	repo.Store(fi1)
 	repo.Store(fi2)
 	repo.Store(fi3)
-
 	res := repo.GetForHour("12")
-
 	assert.NotNil(t, *res)
 	assert.EqualValues(t, 2, len(*res))
 }
 
-func Test_SaveToDisk_SavesToDisk(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestSaveToDiskSavesToDisk(t *testing.T) {
+	setupTest()
 	fi1 := domain.FileInfo{
 		Path:      "A",
 		StartTime: helper.TimeFromHourAndMinute(11, 0),
@@ -225,13 +180,11 @@ func Test_SaveToDisk_SavesToDisk(t *testing.T) {
 	repo.Store(fi1)
 	repo.Store(fi2)
 	repo.Store(fi3)
-
 	err1 := repo.SaveToDisk("test.dta")
 	repo.DeleteAllData()
 	sizeBefore := repo.Size()
 	err2 := repo.LoadFromDisk("test.dta")
 	sizeAfter := repo.Size()
-
 	assert.Nil(t, err1)
 	assert.Nil(t, err2)
 	assert.EqualValues(t, 0, sizeBefore)
@@ -239,33 +192,24 @@ func Test_SaveToDisk_SavesToDisk(t *testing.T) {
 	os.Remove("test.dta")
 }
 
-func Test_LoadFromDisk_NoFile_Returns_Error(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestLoadFromDiskNoFileReturnsError(t *testing.T) {
+	setupTest()
 	err := repo.LoadFromDisk("no.file")
-
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "open no.file: The system cannot find the file specified.", err.Error())
 }
 
-func Test_LoadFromDisk_WrongData_Returns_Error(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestLoadFromDiskWrongDataReturnsError(t *testing.T) {
+	setupTest()
 	os.WriteFile("test.dta", []byte("someBogusData"), 0666)
-
 	err := repo.LoadFromDisk("test.dta")
-
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "invalid character 's' looking for beginning of value", err.Error())
 	os.Remove("test.dta")
 }
 
-func Test_DeleteAll_Deletes_AllElements(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestDeleteAllDeletesAllElements(t *testing.T) {
+	setupTest()
 	fi1 := domain.FileInfo{
 		Path:      "A",
 		StartTime: helper.TimeFromHourAndMinute(11, 0),
@@ -279,15 +223,12 @@ func Test_DeleteAll_Deletes_AllElements(t *testing.T) {
 	sizeBefore := repo.Size()
 	repo.DeleteAllData()
 	sizeAfter := repo.Size()
-
 	assert.EqualValues(t, 2, sizeBefore)
 	assert.EqualValues(t, 0, sizeAfter)
 }
 
-func Test_NewFiles_NoNewFiles_Returns_False(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestNewFilesNoNewFilesReturnsFalse(t *testing.T) {
+	setupTest()
 	fi1 := domain.FileInfo{
 		Path:          "A",
 		StartTime:     helper.TimeFromHourAndMinute(11, 0),
@@ -295,14 +236,11 @@ func Test_NewFiles_NoNewFiles_Returns_False(t *testing.T) {
 	}
 	repo.Store(fi1)
 	newFiles := repo.NewFiles()
-
 	assert.EqualValues(t, false, newFiles)
 }
 
-func Test_NewFiles_NewFiles_Returns_True(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestNewFilesNewFilesReturnsTrue(t *testing.T) {
+	setupTest()
 	fi1 := domain.FileInfo{
 		Path:          "A",
 		StartTime:     helper.TimeFromHourAndMinute(11, 0),
@@ -310,14 +248,11 @@ func Test_NewFiles_NewFiles_Returns_True(t *testing.T) {
 	}
 	repo.Store(fi1)
 	newFiles := repo.NewFiles()
-
 	assert.EqualValues(t, true, newFiles)
 }
 
-func Test_AudioSize_Returns_NumberOfAudioFiles(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestAudioSizeReturnsNumberOfAudioFiles(t *testing.T) {
+	setupTest()
 	s1 := repo.AudioSize()
 	fi1 := domain.FileInfo{
 		Path:      "A",
@@ -330,10 +265,8 @@ func Test_AudioSize_Returns_NumberOfAudioFiles(t *testing.T) {
 	assert.EqualValues(t, 1, s2)
 }
 
-func Test_StreamSize_Returns_NumberOfStreamFiles(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestStreamSizeReturnsNumberOfStreamFiles(t *testing.T) {
+	setupTest()
 	s1 := repo.StreamSize()
 	fi1 := domain.FileInfo{
 		Path:      "A",
@@ -346,48 +279,38 @@ func Test_StreamSize_Returns_NumberOfStreamFiles(t *testing.T) {
 	assert.EqualValues(t, 1, s2)
 }
 
-func Test_GetByEventId_Empty_Returns_Nil(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
-
+func TestGetByEventIdEmptyReturnsNil(t *testing.T) {
+	setupTest()
 	res := repo.GetByEventId(1)
-
 	assert.Nil(t, res)
 }
 
-func Test_GetByEventId_NoEventId_Returns_Nil(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
+func TestGetByEventIdNoEventIdReturnsNil(t *testing.T) {
+	setupTest()
 	fi1 := domain.FileInfo{
 		Path:    "A",
 		EventId: 2,
 	}
 	repo.Store(fi1)
-
 	res := repo.GetByEventId(1)
-
 	assert.Nil(t, res)
 }
 
-func Test_GetByEventId_OneEventId_Returns_One(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
+func TestGetByEventIdOneEventIdReturnsOne(t *testing.T) {
+	setupTest()
 	fi1 := domain.FileInfo{
 		Path:    "A",
 		EventId: 1,
 	}
 	repo.Store(fi1)
-
 	res := repo.GetByEventId(1)
-
 	assert.NotNil(t, res)
 	assert.EqualValues(t, 1, len(*res))
 	assert.EqualValues(t, "A", (*res)[0].Path)
 }
 
-func Test_GetByEventId_TwoEventIds_Returns_One(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
+func TestGetByEventIdTwoEventIdsReturnsOne(t *testing.T) {
+	setupTest()
 	fi1 := domain.FileInfo{
 		Path:    "A",
 		EventId: 1,
@@ -398,17 +321,14 @@ func Test_GetByEventId_TwoEventIds_Returns_One(t *testing.T) {
 	}
 	repo.Store(fi1)
 	repo.Store(fi2)
-
 	res := repo.GetByEventId(1)
-
 	assert.NotNil(t, res)
 	assert.EqualValues(t, 1, len(*res))
 	assert.EqualValues(t, "A", (*res)[0].Path)
 }
 
-func Test_GetByEventId_TwoEventIds_Returns_Two(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
+func TestGetByEventIdTwoEventIdsReturnsTwo(t *testing.T) {
+	setupTest()
 	fi1 := domain.FileInfo{
 		Path:    "A",
 		EventId: 1,
@@ -419,9 +339,7 @@ func Test_GetByEventId_TwoEventIds_Returns_Two(t *testing.T) {
 	}
 	repo.Store(fi1)
 	repo.Store(fi2)
-
 	res := repo.GetByEventId(1)
-
 	assert.NotNil(t, res)
 	assert.EqualValues(t, 2, len(*res))
 	assert.EqualValues(t, "A", (*res)[0].Path)

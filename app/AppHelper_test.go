@@ -18,7 +18,7 @@ func setupHelperTest() {
 	cfg.RunTime.ListenAddr = fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
 }
 
-func TestExportDayEventsNoConfigReturns_Error(t *testing.T) {
+func TestExportDayEventsNoConfigReturnsError(t *testing.T) {
 	file, err := exportDayEvents()
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "", file)
