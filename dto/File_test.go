@@ -17,22 +17,18 @@ var (
 	cfg  config.AppConfig
 )
 
-func setupTest() func() {
+func setupTest() {
 	repo = repositories.NewFileRepository(&cfg)
-	return func() {
-	}
 }
 
-func Test_GetFiles_NoFiles_ReturnsEmpty(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
+func TestGetFilesNoFilesReturnsEmpty(t *testing.T) {
+	setupTest()
 	res := GetFiles(&repo, "")
 	assert.EqualValues(t, 0, len(res))
 }
 
-func Test_GetFiles_TwoFiles_ReturnsFileData(t *testing.T) {
-	teardown := setupTest()
-	defer teardown()
+func TestGetFilesTwoFilesReturnsFileData(t *testing.T) {
+	setupTest()
 	fi1 := domain.FileInfo{
 		Path:                "A",
 		ModTime:             time.Time{},
@@ -73,7 +69,7 @@ func Test_GetFiles_TwoFiles_ReturnsFileData(t *testing.T) {
 	assert.EqualValues(t, "2023-12-31", res[1].FolderDate)
 }
 
-func Test_buildCalCmsInfo_Returns_Info1(t *testing.T) {
+func TestBuildCalCmsInfoReturnsInfo1(t *testing.T) {
 	fi1 := domain.FileInfo{
 		Path:                "A",
 		ModTime:             time.Time{},
@@ -93,7 +89,7 @@ func Test_buildCalCmsInfo_Returns_Info1(t *testing.T) {
 	assert.EqualValues(t, "Yes, Yes, \"myTitle\"", s)
 }
 
-func Test_buildCalCmsInfo_Returns_Info2(t *testing.T) {
+func TestBuildCalCmsInfoReturnsInfo2(t *testing.T) {
 	fi1 := domain.FileInfo{
 		Path:                "A",
 		ModTime:             time.Time{},

@@ -37,7 +37,7 @@ func setupUiTest() func() {
 	}
 }
 
-func Test_StatusPage_Returns_Status(t *testing.T) {
+func TestStatusPageReturnsStatus(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	router.GET("/", uh.StatusPage)
@@ -54,7 +54,7 @@ func Test_StatusPage_Returns_Status(t *testing.T) {
 	assert.True(t, containsTitle)
 }
 
-func Test_AboutPage_Returns_About(t *testing.T) {
+func TestAboutPageReturnsAbout(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	router.GET("/about", uh.AboutPage)
@@ -71,7 +71,7 @@ func Test_AboutPage_Returns_About(t *testing.T) {
 	assert.True(t, containsTitle)
 }
 
-func Test_FileListPage_Returns_FileListPage(t *testing.T) {
+func TestFileListPageReturnsFileListPage(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	router.GET("/filelist", uh.FileListPage)
@@ -88,7 +88,7 @@ func Test_FileListPage_Returns_FileListPage(t *testing.T) {
 	assert.True(t, containsTitle)
 }
 
-func Test_ActionPage_Returns_Action(t *testing.T) {
+func TestActionPageReturnsAction(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	router.GET("/actions", uh.ActionPage)
@@ -105,14 +105,14 @@ func Test_ActionPage_Returns_Action(t *testing.T) {
 	assert.True(t, containsTitle)
 }
 
-func Test_validateHour_HourEmpty_returnsNoError(t *testing.T) {
+func TestValidateHourHourEmptyreturnsNoError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	err := validateHour("")
 	assert.Nil(t, err)
 }
 
-func Test_validateHour_InvalidHour_returnsError(t *testing.T) {
+func TestValidateHourInvalidHourreturnsError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	err := validateHour("A")
@@ -121,7 +121,7 @@ func Test_validateHour_InvalidHour_returnsError(t *testing.T) {
 	assert.EqualValues(t, 400, err.StatusCode())
 }
 
-func Test_validateHour_HourTooSmall_returnsError(t *testing.T) {
+func TestValidateHourHourTooSmallreturnsError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	err := validateHour("-1")
@@ -130,7 +130,7 @@ func Test_validateHour_HourTooSmall_returnsError(t *testing.T) {
 	assert.EqualValues(t, 400, err.StatusCode())
 }
 
-func Test_validateHour_HourTooLarge_returnsError(t *testing.T) {
+func TestValidateHourHourTooLargereturnsError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	err := validateHour("50")
@@ -139,14 +139,14 @@ func Test_validateHour_HourTooLarge_returnsError(t *testing.T) {
 	assert.EqualValues(t, 400, err.StatusCode())
 }
 
-func Test_validateHour_ValidHour_returnsNoError(t *testing.T) {
+func TestValidateHourValidHourreturnsNoError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	err := validateHour("2")
 	assert.Nil(t, err)
 }
 
-func Test_validateAction_UnkownAction_ReturnsError(t *testing.T) {
+func TestValidateActionUnkownActionReturnsError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	err := validateAction("unknown")
@@ -155,7 +155,7 @@ func Test_validateAction_UnkownAction_ReturnsError(t *testing.T) {
 	assert.EqualValues(t, 400, err.StatusCode())
 }
 
-func Test_validateAction_CorrectAction_ReturnsNoError(t *testing.T) {
+func TestValidateActionCorrectActionReturnsNoError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	actions := []string{"crawl", "export", "clean", "exporttodisk"}
@@ -165,7 +165,7 @@ func Test_validateAction_CorrectAction_ReturnsNoError(t *testing.T) {
 	}
 }
 
-func Test_ActionExec_NoData_ReturnsError(t *testing.T) {
+func TestActionExecNoDataReturnsError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	router.POST("/actions", uh.ExecAction)
@@ -180,7 +180,7 @@ func Test_ActionExec_NoData_ReturnsError(t *testing.T) {
 	assert.EqualValues(t, "{\"message\":\"unknown action\",\"statuscode\":400,\"causes\":null}", string(data))
 }
 
-func Test_ActionExec_WrongAction_ReturnsError(t *testing.T) {
+func TestActionExecWrongActionReturnsError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	router.POST("/actions", uh.ExecAction)
@@ -198,7 +198,7 @@ func Test_ActionExec_WrongAction_ReturnsError(t *testing.T) {
 	assert.EqualValues(t, "{\"message\":\"unknown action\",\"statuscode\":400,\"causes\":null}", string(data))
 }
 
-func Test_ActionExec_InvalidHour_ReturnsError(t *testing.T) {
+func TestActionExecInvalidHourReturnsError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	router.POST("/actions", uh.ExecAction)
@@ -217,7 +217,7 @@ func Test_ActionExec_InvalidHour_ReturnsError(t *testing.T) {
 	assert.EqualValues(t, "{\"message\":\"hour must be between 00 and 23\",\"statuscode\":400,\"causes\":null}", string(data))
 }
 
-func Test_LogsPage_Returns_Logs(t *testing.T) {
+func TestLogsPageReturnsLogs(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	router.GET("/logs", uh.LogsPage)
@@ -234,7 +234,7 @@ func Test_LogsPage_Returns_Logs(t *testing.T) {
 	assert.True(t, containsTitle)
 }
 
-func Test_EventsPage_Returns_Events(t *testing.T) {
+func TestEventsPageReturnsEvents(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	cfg.CalCms.QueryCalCms = true

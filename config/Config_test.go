@@ -45,7 +45,7 @@ func unsetEnvVars() {
 	os.Unsetenv("SERVER_PORT")
 }
 
-func Test_loadConfig_NoEnvFile_Returns_Error(t *testing.T) {
+func TestLoadConfigNoEnvFileReturnsError(t *testing.T) {
 	err := loadConfig("file_does_not_exist.txt")
 	assert.NotNil(t, err)
 	fmt.Printf("error: %v", err)
@@ -53,7 +53,7 @@ func Test_loadConfig_NoEnvFile_Returns_Error(t *testing.T) {
 	assert.EqualValues(t, "open file_does_not_exist.txt: The system cannot find the file specified.", err.Error())
 }
 
-func Test_loadConfig_WithEnvFile_Returns_NoError(t *testing.T) {
+func TestLoadConfigWithEnvFileReturnsNoError(t *testing.T) {
 	writeTestEnv(testEnvFile)
 	defer deleteEnvFile(testEnvFile)
 	err := loadConfig(testEnvFile)
@@ -64,7 +64,7 @@ func Test_loadConfig_WithEnvFile_Returns_NoError(t *testing.T) {
 	assert.EqualValues(t, "debug", os.Getenv("GIN_MODE"))
 }
 
-func Test_InitConfig_WithEnvFile_SetsValues(t *testing.T) {
+func TestInitConfigWithEnvFileSetsValues(t *testing.T) {
 	writeTestEnv(testEnvFile)
 	defer deleteEnvFile(testEnvFile)
 	err := InitConfig(testEnvFile, &testConfig)
