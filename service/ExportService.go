@@ -374,6 +374,7 @@ func (s DefaultExportService) AppendPlaylist(fileName string) error {
 	defer resp.Body.Close()
 	b, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode == 200 && string(b) == "ok" {
+		logger.Infof("Successfully appended playlist %v to mAirList", fileName)
 		s.Cfg.RunTime.LastMairListState = fmt.Sprintf("Succeeded (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
 		return nil
 	}
