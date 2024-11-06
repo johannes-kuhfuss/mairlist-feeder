@@ -39,7 +39,7 @@ func Test_convertToEntry_TimeError1_ReturnsError(t *testing.T) {
 		EndDatetime:   "CC:DD",
 		EventID:       1,
 	}
-	_, err := calCmsService.convertToEntry(ev)
+	_, err := calCmsService.convertEventToEntry(ev)
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "parsing time \"AA:BB\" as \"2006-01-02T15:04:05\": cannot parse \"AA:BB\" as \"2006\"", err.Error())
 }
@@ -53,7 +53,7 @@ func Test_convertToEntry_TimeError2_ReturnsError(t *testing.T) {
 		EndDatetime:   "CC:DD",
 		EventID:       1,
 	}
-	_, err := calCmsService.convertToEntry(ev)
+	_, err := calCmsService.convertEventToEntry(ev)
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "parsing time \"11:00\" as \"2006-01-02T15:04:05\": cannot parse \"11:00\" as \"2006\"", err.Error())
 }
@@ -67,7 +67,7 @@ func Test_convertToEntry_NoError_ReturnsEntry(t *testing.T) {
 		EndDatetime:   "2024-04-01T12:00:00",
 		EventID:       12345,
 	}
-	res, err := calCmsService.convertToEntry(ev)
+	res, err := calCmsService.convertEventToEntry(ev)
 	assert.Nil(t, err)
 	t1, _ := time.ParseInLocation("2006-01-02T15:04:05", "2024-04-01T11:00:00", time.Local)
 	t2, _ := time.ParseInLocation("2006-01-02T15:04:05", "2024-04-01T12:00:00", time.Local)
@@ -80,7 +80,7 @@ func Test_convertToEntry_NoError_ReturnsEntry(t *testing.T) {
 func Test_GetCalCmsDataForId_Empty_ReturnsEmptyList(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
-	res, err := calCmsService.GetCalCmsDataForId(1)
+	res, err := calCmsService.GetCalCmsEventDataForId(1)
 	assert.Nil(t, err)
 	assert.EqualValues(t, 0, len(res))
 }
@@ -102,7 +102,7 @@ func Test_GetCalCmsDataForId_WrongData_ReturnsError(t *testing.T) {
 	}
 	calCmsService.insertData(data)
 
-	res, err := calCmsService.GetCalCmsDataForId(1)
+	res, err := calCmsService.GetCalCmsEventDataForId(1)
 	assert.NotNil(t, err)
 	assert.EqualValues(t, 0, len(res))
 	assert.EqualValues(t, "parsing time \"CC:DD\" as \"2006-01-02T15:04:05\": cannot parse \"CC:DD\" as \"2006\"", err.Error())
@@ -125,7 +125,7 @@ func Test_GetCalCmsDataForId_WrongId_ReturnsEmpty(t *testing.T) {
 	}
 	calCmsService.insertData(data)
 
-	res, err := calCmsService.GetCalCmsDataForId(1)
+	res, err := calCmsService.GetCalCmsEventDataForId(1)
 	assert.Nil(t, err)
 	assert.EqualValues(t, 0, len(res))
 }
@@ -147,7 +147,7 @@ func Test_GetCalCmsDataForId_OneElement_ReturnsData(t *testing.T) {
 	}
 	calCmsService.insertData(data)
 
-	res, err := calCmsService.GetCalCmsDataForId(1)
+	res, err := calCmsService.GetCalCmsEventDataForId(1)
 	assert.Nil(t, err)
 	assert.EqualValues(t, 1, len(res))
 	assert.EqualValues(t, time.Duration(1*time.Hour), res[0].Duration)
@@ -177,7 +177,7 @@ func Test_GetCalCmsDataForId_TwoElements_ReturnsOne(t *testing.T) {
 	}
 	calCmsService.insertData(data)
 
-	res, err := calCmsService.GetCalCmsDataForId(1)
+	res, err := calCmsService.GetCalCmsEventDataForId(1)
 	assert.Nil(t, err)
 	assert.EqualValues(t, 1, len(res))
 	assert.EqualValues(t, time.Duration(1*time.Hour), res[0].Duration)
@@ -186,7 +186,7 @@ func Test_GetCalCmsDataForId_TwoElements_ReturnsOne(t *testing.T) {
 func Test_GetCalCmsDataForHour_Empty_ReturnsEmptyList(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
-	res, err := calCmsService.GetCalCmsDataForHour("12:00")
+	res, err := calCmsService.GetCalCmsEntriesForHour("12:00")
 	assert.Nil(t, err)
 	assert.EqualValues(t, 0, len(res))
 }
@@ -209,7 +209,7 @@ func Test_GetCalCmsDataForHour_OneElement_ReturnsData(t *testing.T) {
 	}
 	calCmsService.insertData(data)
 
-	res, err := calCmsService.GetCalCmsDataForHour("11")
+	res, err := calCmsService.GetCalCmsEntriesForHour("11")
 	assert.Nil(t, err)
 	assert.EqualValues(t, 1, len(res))
 	assert.EqualValues(t, time.Duration(1*time.Hour), res[0].Duration)
@@ -246,7 +246,7 @@ func Test_checkCalCmsData_WrongData_ReturnsError(t *testing.T) {
 		CalCmsTitle:   "",
 	}
 
-	_, err := calCmsService.checkCalCmsData(fi)
+	_, err := calCmsService.checkCalCmsEventData(fi)
 
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "parsing time \"CC:DD\" as \"2006-01-02T15:04:05\": cannot parse \"CC:DD\" as \"2006\"", err.Error())
@@ -283,7 +283,7 @@ func Test_checkCalCmsData_DifferingDates_ReturnsError(t *testing.T) {
 		CalCmsTitle:   "",
 	}
 
-	_, err := calCmsService.checkCalCmsData(fi)
+	_, err := calCmsService.checkCalCmsEventData(fi)
 
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "file has different date from calCmsData", err.Error())
@@ -323,7 +323,7 @@ func Test_checkCalCmsData_NoMatchingOnSameDayData_ReturnsError(t *testing.T) {
 	calCmsService.Cfg.Misc.TestCrawl = true
 	calCmsService.Cfg.Misc.TestDate = "2024/09/17"
 
-	_, err := calCmsService.checkCalCmsData(fi)
+	_, err := calCmsService.checkCalCmsEventData(fi)
 
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "no such id in calCMS", err.Error())
@@ -370,7 +370,7 @@ func Test_checkCalCmsData_DoubleMatch_ReturnsError(t *testing.T) {
 	calCmsService.Cfg.Misc.TestCrawl = true
 	calCmsService.Cfg.Misc.TestDate = "2024/09/17"
 
-	_, err := calCmsService.checkCalCmsData(fi)
+	_, err := calCmsService.checkCalCmsEventData(fi)
 
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "multiple matches in calCMS", err.Error())
@@ -411,7 +411,7 @@ func Test_checkCalCmsData_IsLive_ReturnsError(t *testing.T) {
 	calCmsService.Cfg.Misc.TestCrawl = true
 	calCmsService.Cfg.Misc.TestDate = "2024/09/17"
 
-	_, err := calCmsService.checkCalCmsData(fi)
+	_, err := calCmsService.checkCalCmsEventData(fi)
 
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "event is live in calCMS", err.Error())
@@ -452,7 +452,7 @@ func Test_checkCalCmsData_DataOk_ReturnsData(t *testing.T) {
 	calCmsService.Cfg.Misc.TestCrawl = true
 	calCmsService.Cfg.Misc.TestDate = "2024/09/17"
 
-	res, err := calCmsService.checkCalCmsData(fi)
+	res, err := calCmsService.checkCalCmsEventData(fi)
 
 	assert.Nil(t, err)
 	assert.EqualValues(t, event.FullTitle, res.Title)
@@ -560,7 +560,7 @@ func Test_getCalCmsData_WrongUrl_Returns_Error(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	cfgCal.CalCms.CmsUrl = "§$%&/()"
-	data, err := calCmsService.getCalCmsData()
+	data, err := calCmsService.getCalCmsEventData()
 	assert.Nil(t, data)
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "parse \"§$%&/()\": invalid URL escape \"%&/\"", err.Error())
@@ -579,7 +579,7 @@ func Test_getCalCmsData_httpRequest_Returns_Data(t *testing.T) {
 	cfgCal.CalCms.CmsUrl = srv.URL
 	cfgCal.Misc.TestCrawl = true
 	cfgCal.Misc.TestDate = "2024/09/24"
-	data, err := calCmsService.getCalCmsData()
+	data, err := calCmsService.getCalCmsEventData()
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
 	assert.EqualValues(t, respData, data)
@@ -596,7 +596,7 @@ func Test_getCalCmsData_httpRequest_Returns_Error(t *testing.T) {
 	cfgCal.CalCms.CmsUrl = srv.URL
 	cfgCal.Misc.TestCrawl = true
 	cfgCal.Misc.TestDate = "2024/09/24"
-	data, err := calCmsService.getCalCmsData()
+	data, err := calCmsService.getCalCmsEventData()
 	assert.NotNil(t, err)
 	assert.Nil(t, data)
 	assert.EqualValues(t, "400 Bad Request", err.Error())

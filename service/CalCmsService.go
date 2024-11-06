@@ -56,7 +56,7 @@ func InitHttpCalClient() {
 	}
 }
 
-// NewCalCmsService creates a new calCms service and injects dependencies
+// NewCalCmsService creates a new calCms service and injects its dependencies
 func NewCalCmsService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository) DefaultCalCmsService {
 	InitHttpCalClient()
 	return DefaultCalCmsService{
@@ -72,18 +72,27 @@ func (s DefaultCalCmsService) insertData(data domain.CalCmsPgmData) {
 	CalCmsPgm.Unlock()
 }
 
-// calcCalCmsEndDate calculates the end date based on a gioven start date used to query events from calCms
+// calcCalCmsEndDate calculates the end date based on a given start date used to query events from calCms
+// this is used to query calCms for the day's events
 func calcCalCmsEndDate(startDate string) (endDate string, e error) {
-	d, err := time.Parse("2006-01-02", startDate)
+	sd, err := time.Parse("2006-01-02", startDate)
 	if err != nil {
 		return "", err
 	}
-	endDate = d.AddDate(0, 0, 1).Format("2006-01-02")
-	return endDate, nil
+	return sd.AddDate(0, 0, 1).Format("2006-01-02"), nil
 }
 
-// getCalCmsData retrieves the today's event information from calCms
-func (s DefaultCalCmsService) getCalCmsData() (data []byte, e error) {
+func (s DefaultCalCmsService) setCalCmsQueryState(success bool) {
+	if success {
+		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
+	} else {
+		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Succeeded (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
+	}
+
+}
+
+// getCalCmsEventData retrieves the today's event information from calCms
+func (s DefaultCalCmsService) getCalCmsEventData() (eventData []byte, e error) {
 	//API doc: https://github.com/rapilodev/racalmas/blob/master/docs/event-api.md
 	//URL old: https://programm.coloradio.org/agenda/events.cgi?date=2024-04-09&template=event.json-p
 	//URL new: https://programm.coloradio.org/agenda/events.cgi?from_date=2024-10-04&from_time=00:00&till_date=2024-10-05&till_time=00:00&template=event.json-p
@@ -109,38 +118,38 @@ func (s DefaultCalCmsService) getCalCmsData() (data []byte, e error) {
 	calUrl.RawQuery = query.Encode()
 	req, err := http.NewRequest("GET", calUrl.String(), nil)
 	if err != nil {
-		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
+		s.setCalCmsQueryState(false)
 		logger.Error("Cannot build calCMS http request", err)
 		return nil, err
 	}
 	resp, err := httpCalClient.Do(req)
 	if err != nil {
-		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
+		s.setCalCmsQueryState(false)
 		logger.Error("Cannot execute calCMS http request", err)
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
+		s.setCalCmsQueryState(false)
 		err := errors.New(resp.Status)
 		logger.Errorf("Received status code %v from calCMS. %v", resp.StatusCode, err)
 		return nil, err
 	}
 	defer resp.Body.Close()
-	data, err = io.ReadAll(resp.Body)
+	eventData, err = io.ReadAll(resp.Body)
 	if err != nil {
-		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
+		s.setCalCmsQueryState(false)
 		logger.Error("Cannot read response data from calCMS http request", err)
 		return nil, err
 	}
-	s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Succeeded (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
-	return data, nil
+	s.setCalCmsQueryState(true)
+	return eventData, nil
 }
 
 // Query orchestrates the process of querying calCms and adding the retrieved information to the file representations in memory
 func (s DefaultCalCmsService) Query() error {
 	if s.Cfg.CalCms.QueryCalCms {
 		logger.Info("Starting to add information from calCMS...")
-		data, err := s.getCalCmsData()
+		data, err := s.getCalCmsEventData()
 		if err != nil {
 			logger.Error("error getting data from calCms", err)
 			return err
@@ -160,7 +169,7 @@ func (s DefaultCalCmsService) Query() error {
 	}
 }
 
-// EnrichFileInformation runs through all file representations and adds information from calCms wherer applicable
+// EnrichFileInformation runs through all file representations and adds information from calCms where applicable
 func (s DefaultCalCmsService) EnrichFileInformation() dto.FileCounts {
 	var (
 		newFile domain.FileInfo
@@ -169,7 +178,7 @@ func (s DefaultCalCmsService) EnrichFileInformation() dto.FileCounts {
 	if files := s.Repo.GetAll(); files != nil {
 		for _, file := range *files {
 			if file.EventId != 0 {
-				info, err := s.checkCalCmsData(file)
+				info, err := s.checkCalCmsEventData(file)
 				if err != nil {
 					continue
 				}
@@ -202,9 +211,9 @@ func (s DefaultCalCmsService) EnrichFileInformation() dto.FileCounts {
 	return fc
 }
 
-// checkCalCmsData evaluates calCms event data on a per file basis and performs some sanity checks
-func (s DefaultCalCmsService) checkCalCmsData(file domain.FileInfo) (*dto.CalCmsEntry, error) {
-	info, err := s.GetCalCmsDataForId(file.EventId)
+// checkCalCmsEventData evaluates calCms event data on a per file basis and performs some sanity checks
+func (s DefaultCalCmsService) checkCalCmsEventData(file domain.FileInfo) (*dto.CalCmsEntry, error) {
+	info, err := s.GetCalCmsEventDataForId(file.EventId)
 	if err != nil {
 		logger.Error("Error retrieving calCMS info: ", err)
 		return nil, err
@@ -228,16 +237,15 @@ func (s DefaultCalCmsService) checkCalCmsData(file domain.FileInfo) (*dto.CalCms
 	return &info[0], nil
 }
 
-// GetCalCmsDataForHour retrieves all event data from the calCms data that start within a given hour
-func (s DefaultCalCmsService) GetCalCmsDataForHour(hour string) ([]dto.CalCmsEntry, error) {
-	var entries []dto.CalCmsEntry
+// GetCalCmsEntriesForHour retrieves all event data from the calCms data that start within a given hour
+func (s DefaultCalCmsService) GetCalCmsEntriesForHour(hour string) (entries []dto.CalCmsEntry, e error) {
 	CalCmsPgm.RLock()
 	events := CalCmsPgm.data.Events
 	CalCmsPgm.RUnlock()
 	if len(events) > 0 {
 		for _, event := range events {
 			if (event.Live == 0) && (strings.HasPrefix(event.StartTimeName, hour)) {
-				entry, err := s.convertToEntry(event)
+				entry, err := s.convertEventToEntry(event)
 				if err == nil {
 					entries = append(entries, entry)
 				}
@@ -247,16 +255,15 @@ func (s DefaultCalCmsService) GetCalCmsDataForHour(hour string) ([]dto.CalCmsEnt
 	return entries, nil
 }
 
-// GetCalCmsDataForId retrieves all event data from the calCms data for a given Event Id
-func (s DefaultCalCmsService) GetCalCmsDataForId(id int) ([]dto.CalCmsEntry, error) {
-	var entries []dto.CalCmsEntry
+// GetCalCmsEventDataForId retrieves all event data from the calCms data for a given Event Id
+func (s DefaultCalCmsService) GetCalCmsEventDataForId(id int) (entries []dto.CalCmsEntry, e error) {
 	CalCmsPgm.RLock()
 	events := CalCmsPgm.data.Events
 	CalCmsPgm.RUnlock()
 	if len(events) > 0 {
 		for _, event := range events {
 			if event.EventID == id {
-				entry, err := s.convertToEntry(event)
+				entry, err := s.convertEventToEntry(event)
 				if err == nil {
 					entries = append(entries, entry)
 				} else {
@@ -268,10 +275,9 @@ func (s DefaultCalCmsService) GetCalCmsDataForId(id int) ([]dto.CalCmsEntry, err
 	return entries, nil
 }
 
-// convertToEntry converts calCms event data to its data transport object
-func (s DefaultCalCmsService) convertToEntry(event domain.CalCmsEvent) (dto.CalCmsEntry, error) {
+// convertEventToEntry converts calCms event data to its data transport object
+func (s DefaultCalCmsService) convertEventToEntry(event domain.CalCmsEvent) (entry dto.CalCmsEntry, e error) {
 	var (
-		entry      dto.CalCmsEntry
 		err1, err2 error
 	)
 	entry.Title = event.FullTitle
@@ -374,7 +380,7 @@ func (s DefaultCalCmsService) GetEvents() ([]dto.Event, error) {
 		calCmsData domain.CalCmsPgmData
 	)
 	if s.Cfg.CalCms.QueryCalCms {
-		data, err := s.getCalCmsData()
+		data, err := s.getCalCmsEventData()
 		if err != nil {
 			logger.Error("error getting data from calCms", err)
 			return nil, err
