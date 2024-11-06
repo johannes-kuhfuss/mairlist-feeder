@@ -17,6 +17,10 @@ var (
 	cfg  config.AppConfig
 )
 
+const (
+	folderDate = "2023-12-31"
+)
+
 func setupTest() {
 	repo = repositories.NewFileRepository(&cfg)
 }
@@ -38,7 +42,7 @@ func TestGetFilesTwoFilesReturnsFileData(t *testing.T) {
 		FromCalCMS:          false,
 		InfoExtracted:       false,
 		ScanTime:            time.Time{},
-		FolderDate:          "2023-12-31",
+		FolderDate:          folderDate,
 		RuleMatched:         "None",
 		EventId:             1,
 		CalCmsTitle:         "",
@@ -53,7 +57,7 @@ func TestGetFilesTwoFilesReturnsFileData(t *testing.T) {
 		FromCalCMS:          false,
 		InfoExtracted:       false,
 		ScanTime:            time.Time{},
-		FolderDate:          "2023-12-31",
+		FolderDate:          folderDate,
 		RuleMatched:         "None",
 		EventId:             0,
 		CalCmsTitle:         "",
@@ -65,8 +69,8 @@ func TestGetFilesTwoFilesReturnsFileData(t *testing.T) {
 	res := GetFiles(&repo, "")
 
 	assert.EqualValues(t, 2, len(res))
-	assert.EqualValues(t, "2023-12-31", res[0].FolderDate)
-	assert.EqualValues(t, "2023-12-31", res[1].FolderDate)
+	assert.EqualValues(t, folderDate, res[0].FolderDate)
+	assert.EqualValues(t, folderDate, res[1].FolderDate)
 }
 
 func TestBuildCalCmsInfoReturnsInfo1(t *testing.T) {
@@ -79,7 +83,7 @@ func TestBuildCalCmsInfoReturnsInfo1(t *testing.T) {
 		FromCalCMS:          true,
 		InfoExtracted:       true,
 		ScanTime:            time.Time{},
-		FolderDate:          "2023-12-31",
+		FolderDate:          folderDate,
 		RuleMatched:         "None",
 		EventId:             1,
 		CalCmsTitle:         "myTitle",
@@ -99,7 +103,7 @@ func TestBuildCalCmsInfoReturnsInfo2(t *testing.T) {
 		FromCalCMS:          false,
 		InfoExtracted:       true,
 		ScanTime:            time.Time{},
-		FolderDate:          "2023-12-31",
+		FolderDate:          folderDate,
 		RuleMatched:         "None",
 		EventId:             1,
 		CalCmsTitle:         "",

@@ -16,6 +16,10 @@ var (
 	repo DefaultFileRepository
 )
 
+const (
+	testFile = "test.dta"
+)
+
 func setupTest() {
 	repo = NewFileRepository(&cfg)
 }
@@ -32,7 +36,7 @@ func TestGetByPathEmptyListReturnsNil(t *testing.T) {
 }
 
 func TestGetAllEmptyListReturnsNil(t *testing.T) {
-    setupTest()
+	setupTest()
 	res := repo.GetAll()
 	assert.Nil(t, res)
 }
@@ -180,16 +184,16 @@ func TestSaveToDiskSavesToDisk(t *testing.T) {
 	repo.Store(fi1)
 	repo.Store(fi2)
 	repo.Store(fi3)
-	err1 := repo.SaveToDisk("test.dta")
+	err1 := repo.SaveToDisk(testFile)
 	repo.DeleteAllData()
 	sizeBefore := repo.Size()
-	err2 := repo.LoadFromDisk("test.dta")
+	err2 := repo.LoadFromDisk(testFile)
 	sizeAfter := repo.Size()
 	assert.Nil(t, err1)
 	assert.Nil(t, err2)
 	assert.EqualValues(t, 0, sizeBefore)
 	assert.EqualValues(t, 3, sizeAfter)
-	os.Remove("test.dta")
+	os.Remove(testFile)
 }
 
 func TestLoadFromDiskNoFileReturnsError(t *testing.T) {
@@ -201,11 +205,11 @@ func TestLoadFromDiskNoFileReturnsError(t *testing.T) {
 
 func TestLoadFromDiskWrongDataReturnsError(t *testing.T) {
 	setupTest()
-	os.WriteFile("test.dta", []byte("someBogusData"), 0666)
-	err := repo.LoadFromDisk("test.dta")
+	os.WriteFile(testFile, []byte("someBogusData"), 0666)
+	err := repo.LoadFromDisk(testFile)
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "invalid character 's' looking for beginning of value", err.Error())
-	os.Remove("test.dta")
+	os.Remove(testFile)
 }
 
 func TestDeleteAllDeletesAllElements(t *testing.T) {

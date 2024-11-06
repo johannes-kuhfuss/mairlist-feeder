@@ -24,6 +24,10 @@ var (
 	calCmsSvc service.DefaultCalCmsService
 )
 
+const (
+	actionPage = "/actions"
+)
+
 func setupUiTest() func() {
 	config.InitConfig("", &cfg)
 	repo = repositories.NewFileRepository(&cfg)
@@ -91,8 +95,8 @@ func TestFileListPageReturnsFileListPage(t *testing.T) {
 func TestActionPageReturnsAction(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
-	router.GET("/actions", uh.ActionPage)
-	request := httptest.NewRequest(http.MethodGet, "/actions", nil)
+	router.GET(actionPage, uh.ActionPage)
+	request := httptest.NewRequest(http.MethodGet, actionPage, nil)
 
 	router.ServeHTTP(recorder, request)
 	res := recorder.Result()
@@ -105,14 +109,14 @@ func TestActionPageReturnsAction(t *testing.T) {
 	assert.True(t, containsTitle)
 }
 
-func TestValidateHourHourEmptyreturnsNoError(t *testing.T) {
+func TestValidateHourHourEmptyReturnsNoError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	err := validateHour("")
 	assert.Nil(t, err)
 }
 
-func TestValidateHourInvalidHourreturnsError(t *testing.T) {
+func TestValidateHourInvalidHourReturnsError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	err := validateHour("A")
@@ -121,7 +125,7 @@ func TestValidateHourInvalidHourreturnsError(t *testing.T) {
 	assert.EqualValues(t, 400, err.StatusCode())
 }
 
-func TestValidateHourHourTooSmallreturnsError(t *testing.T) {
+func TestValidateHourHourTooSmallReturnsError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	err := validateHour("-1")
@@ -130,7 +134,7 @@ func TestValidateHourHourTooSmallreturnsError(t *testing.T) {
 	assert.EqualValues(t, 400, err.StatusCode())
 }
 
-func TestValidateHourHourTooLargereturnsError(t *testing.T) {
+func TestValidateHourHourTooLargeReturnsError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	err := validateHour("50")
@@ -139,7 +143,7 @@ func TestValidateHourHourTooLargereturnsError(t *testing.T) {
 	assert.EqualValues(t, 400, err.StatusCode())
 }
 
-func TestValidateHourValidHourreturnsNoError(t *testing.T) {
+func TestValidateHourValidHourReturnsNoError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	err := validateHour("2")
@@ -168,8 +172,8 @@ func TestValidateActionCorrectActionReturnsNoError(t *testing.T) {
 func TestActionExecNoDataReturnsError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
-	router.POST("/actions", uh.ExecAction)
-	request := httptest.NewRequest(http.MethodPost, "/actions", nil)
+	router.POST(actionPage, uh.ExecAction)
+	request := httptest.NewRequest(http.MethodPost, actionPage, nil)
 
 	router.ServeHTTP(recorder, request)
 	res := recorder.Result()
@@ -183,10 +187,10 @@ func TestActionExecNoDataReturnsError(t *testing.T) {
 func TestActionExecWrongActionReturnsError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
-	router.POST("/actions", uh.ExecAction)
+	router.POST(actionPage, uh.ExecAction)
 	form := url.Values{}
 	form.Add("action", "unknown")
-	request := httptest.NewRequest(http.MethodPost, "/actions", strings.NewReader(form.Encode()))
+	request := httptest.NewRequest(http.MethodPost, actionPage, strings.NewReader(form.Encode()))
 	request.Header.Set("Content-type", "application/x-www-form-urlencoded")
 
 	router.ServeHTTP(recorder, request)
@@ -201,11 +205,11 @@ func TestActionExecWrongActionReturnsError(t *testing.T) {
 func TestActionExecInvalidHourReturnsError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
-	router.POST("/actions", uh.ExecAction)
+	router.POST(actionPage, uh.ExecAction)
 	form := url.Values{}
 	form.Add("action", "crawl")
 	form.Add("hour", "44")
-	request := httptest.NewRequest(http.MethodPost, "/actions", strings.NewReader(form.Encode()))
+	request := httptest.NewRequest(http.MethodPost, actionPage, strings.NewReader(form.Encode()))
 	request.Header.Set("Content-type", "application/x-www-form-urlencoded")
 
 	router.ServeHTTP(recorder, request)
