@@ -21,6 +21,14 @@ var (
 	calCmsService DefaultCalCmsService
 )
 
+const (
+	startDate       = "2024-04-01T11:00:00"
+	endDate         = "2024-04-01T12:00:00"
+	parseDate       = "2006-01-02T15:04:05"
+	folderDateDash  = "2024-09-17"
+	folderDateSlash = "2024/09/17"
+)
+
 func setupTestCal() func() {
 	config.InitConfig(config.EnvFile, &cfgCal)
 	fileRepoCal = repositories.NewFileRepository(&cfgCal)
@@ -63,14 +71,14 @@ func TestConvertToEntryNoErrorReturnsEntry(t *testing.T) {
 	defer teardown()
 	ev := domain.CalCmsEvent{
 		FullTitle:     "Test",
-		StartDatetime: "2024-04-01T11:00:00",
-		EndDatetime:   "2024-04-01T12:00:00",
+		StartDatetime: startDate,
+		EndDatetime:   endDate,
 		EventID:       12345,
 	}
 	res, err := calCmsService.convertEventToEntry(ev)
 	assert.Nil(t, err)
-	t1, _ := time.ParseInLocation("2006-01-02T15:04:05", "2024-04-01T11:00:00", time.Local)
-	t2, _ := time.ParseInLocation("2006-01-02T15:04:05", "2024-04-01T12:00:00", time.Local)
+	t1, _ := time.ParseInLocation(parseDate, startDate, time.Local)
+	t2, _ := time.ParseInLocation(parseDate, endDate, time.Local)
 	assert.EqualValues(t, t1, res.StartTime)
 	assert.EqualValues(t, t2, res.EndTime)
 	assert.EqualValues(t, "Test", res.Title)
@@ -92,7 +100,7 @@ func TestGetCalCmsDataForIdWrongDataReturnsError(t *testing.T) {
 
 	event := domain.CalCmsEvent{
 		FullTitle:     "Test",
-		StartDatetime: "2024-04-01T11:00:00",
+		StartDatetime: startDate,
 		EndDatetime:   "CC:DD",
 		EventID:       1,
 	}
@@ -115,8 +123,8 @@ func TestGetCalCmsDataForIdWrongIdReturnsEmpty(t *testing.T) {
 
 	event := domain.CalCmsEvent{
 		FullTitle:     "Test",
-		StartDatetime: "2024-04-01T11:00:00",
-		EndDatetime:   "2024-04-01T12:00:00",
+		StartDatetime: startDate,
+		EndDatetime:   endDate,
 		EventID:       2,
 	}
 	events = append(events, event)
@@ -137,8 +145,8 @@ func TestGetCalCmsDataForIdOneElementReturnsData(t *testing.T) {
 
 	event := domain.CalCmsEvent{
 		FullTitle:     "Test",
-		StartDatetime: "2024-04-01T11:00:00",
-		EndDatetime:   "2024-04-01T12:00:00",
+		StartDatetime: startDate,
+		EndDatetime:   endDate,
 		EventID:       1,
 	}
 	events = append(events, event)
@@ -160,8 +168,8 @@ func TestGetCalCmsDataForIdTwoElementsReturnsOne(t *testing.T) {
 
 	event1 := domain.CalCmsEvent{
 		FullTitle:     "Test1",
-		StartDatetime: "2024-04-01T11:00:00",
-		EndDatetime:   "2024-04-01T12:00:00",
+		StartDatetime: startDate,
+		EndDatetime:   endDate,
 		EventID:       1,
 	}
 	event2 := domain.CalCmsEvent{
@@ -198,9 +206,9 @@ func TestGetCalCmsDataForHourOneElementReturnsData(t *testing.T) {
 
 	event := domain.CalCmsEvent{
 		FullTitle:     "Test",
-		StartDatetime: "2024-04-01T11:00:00",
+		StartDatetime: startDate,
 		StartTimeName: "11:00",
-		EndDatetime:   "2024-04-01T12:00:00",
+		EndDatetime:   endDate,
 		EventID:       1,
 	}
 	events = append(events, event)
@@ -222,7 +230,7 @@ func TestCheckCalCmsDataWrongDataReturnsError(t *testing.T) {
 
 	event := domain.CalCmsEvent{
 		FullTitle:     "Test",
-		StartDatetime: "2024-04-01T11:00:00",
+		StartDatetime: startDate,
 		EndDatetime:   "CC:DD",
 		EventID:       1,
 	}
@@ -259,8 +267,8 @@ func TestCheckCalCmsDataDifferingDatesReturnsError(t *testing.T) {
 
 	event := domain.CalCmsEvent{
 		FullTitle:     "Test",
-		StartDatetime: "2024-04-01T11:00:00",
-		EndDatetime:   "2024-04-01T12:00:00",
+		StartDatetime: startDate,
+		EndDatetime:   endDate,
 		EventID:       1,
 	}
 	events = append(events, event)
@@ -277,7 +285,7 @@ func TestCheckCalCmsDataDifferingDatesReturnsError(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    "2024-09-17",
+		FolderDate:    folderDateDash,
 		RuleMatched:   "",
 		EventId:       0,
 		CalCmsTitle:   "",
@@ -296,8 +304,8 @@ func TestCheckCalCmsDataNoMatchingOnSameDayDataReturnsError(t *testing.T) {
 
 	event := domain.CalCmsEvent{
 		FullTitle:     "Test",
-		StartDatetime: "2024-04-01T11:00:00",
-		EndDatetime:   "2024-04-01T12:00:00",
+		StartDatetime: startDate,
+		EndDatetime:   endDate,
 		EventID:       1,
 	}
 	events = append(events, event)
@@ -314,14 +322,14 @@ func TestCheckCalCmsDataNoMatchingOnSameDayDataReturnsError(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    "2024-09-17",
+		FolderDate:    folderDateDash,
 		RuleMatched:   "",
 		EventId:       22,
 		CalCmsTitle:   "",
 	}
 
 	calCmsService.Cfg.Misc.TestCrawl = true
-	calCmsService.Cfg.Misc.TestDate = "2024/09/17"
+	calCmsService.Cfg.Misc.TestDate = folderDateSlash
 
 	_, err := calCmsService.checkCalCmsEventData(fi)
 
@@ -336,13 +344,13 @@ func TestCheckCalCmsDataDoubleMatchReturnsError(t *testing.T) {
 
 	event1 := domain.CalCmsEvent{
 		FullTitle:     "Test",
-		StartDatetime: "2024-04-01T11:00:00",
-		EndDatetime:   "2024-04-01T12:00:00",
+		StartDatetime: startDate,
+		EndDatetime:   endDate,
 		EventID:       1,
 	}
 	event2 := domain.CalCmsEvent{
 		FullTitle:     "Test",
-		StartDatetime: "2024-04-01T12:00:00",
+		StartDatetime: endDate,
 		EndDatetime:   "2024-04-01T13:00:00",
 		EventID:       1,
 	}
@@ -361,14 +369,14 @@ func TestCheckCalCmsDataDoubleMatchReturnsError(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    "2024-09-17",
+		FolderDate:    folderDateDash,
 		RuleMatched:   "",
 		EventId:       1,
 		CalCmsTitle:   "",
 	}
 
 	calCmsService.Cfg.Misc.TestCrawl = true
-	calCmsService.Cfg.Misc.TestDate = "2024/09/17"
+	calCmsService.Cfg.Misc.TestDate = folderDateSlash
 
 	_, err := calCmsService.checkCalCmsEventData(fi)
 
@@ -383,8 +391,8 @@ func TestCheckCalCmsDataIsLiveReturnsError(t *testing.T) {
 
 	event := domain.CalCmsEvent{
 		FullTitle:     "Test",
-		StartDatetime: "2024-04-01T11:00:00",
-		EndDatetime:   "2024-04-01T12:00:00",
+		StartDatetime: startDate,
+		EndDatetime:   endDate,
 		EventID:       1,
 		Live:          1,
 	}
@@ -402,14 +410,14 @@ func TestCheckCalCmsDataIsLiveReturnsError(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    "2024-09-17",
+		FolderDate:    folderDateDash,
 		RuleMatched:   "",
 		EventId:       1,
 		CalCmsTitle:   "",
 	}
 
 	calCmsService.Cfg.Misc.TestCrawl = true
-	calCmsService.Cfg.Misc.TestDate = "2024/09/17"
+	calCmsService.Cfg.Misc.TestDate = folderDateSlash
 
 	_, err := calCmsService.checkCalCmsEventData(fi)
 
@@ -424,8 +432,8 @@ func TestCheckCalCmsDataDataOkReturnsData(t *testing.T) {
 
 	event := domain.CalCmsEvent{
 		FullTitle:     "Test",
-		StartDatetime: "2024-04-01T11:00:00",
-		EndDatetime:   "2024-04-01T12:00:00",
+		StartDatetime: startDate,
+		EndDatetime:   endDate,
 		EventID:       1,
 	}
 	events = append(events, event)
@@ -443,21 +451,21 @@ func TestCheckCalCmsDataDataOkReturnsData(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    "2024-09-17",
+		FolderDate:    folderDateDash,
 		RuleMatched:   "",
 		EventId:       1,
 		CalCmsTitle:   "",
 	}
 
 	calCmsService.Cfg.Misc.TestCrawl = true
-	calCmsService.Cfg.Misc.TestDate = "2024/09/17"
+	calCmsService.Cfg.Misc.TestDate = folderDateSlash
 
 	res, err := calCmsService.checkCalCmsEventData(fi)
 
 	assert.Nil(t, err)
 	assert.EqualValues(t, event.FullTitle, res.Title)
-	st1, _ := time.ParseInLocation("2006-01-02T15:04:05", event.StartDatetime, time.Local)
-	st2, _ := time.ParseInLocation("2006-01-02T15:04:05", event.EndDatetime, time.Local)
+	st1, _ := time.ParseInLocation(parseDate, event.StartDatetime, time.Local)
+	st2, _ := time.ParseInLocation(parseDate, event.EndDatetime, time.Local)
 	assert.EqualValues(t, fmt.Sprintf("%02d:%02d", st1.Hour(), st1.Minute()), res.StartTime.Format("15:04"))
 	assert.EqualValues(t, fmt.Sprintf("%02d:%02d", st2.Hour(), st2.Minute()), res.EndTime.Format("15:04"))
 }
@@ -476,8 +484,8 @@ func TestEnrichFileInformationOneFileReturnsEnriched(t *testing.T) {
 
 	event := domain.CalCmsEvent{
 		FullTitle:     "Test",
-		StartDatetime: "2024-04-01T11:00:00",
-		EndDatetime:   "2024-04-01T12:00:00",
+		StartDatetime: startDate,
+		EndDatetime:   endDate,
 		EventID:       1234,
 	}
 	events = append(events, event)
@@ -494,7 +502,7 @@ func TestEnrichFileInformationOneFileReturnsEnriched(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    "2024-09-17",
+		FolderDate:    folderDateDash,
 		RuleMatched:   "",
 		EventId:       1234,
 		CalCmsTitle:   "",
@@ -503,7 +511,7 @@ func TestEnrichFileInformationOneFileReturnsEnriched(t *testing.T) {
 	fileRepoCal.Store(fi)
 
 	calCmsService.Cfg.Misc.TestCrawl = true
-	calCmsService.Cfg.Misc.TestDate = "2024/09/17"
+	calCmsService.Cfg.Misc.TestDate = folderDateSlash
 
 	n := calCmsService.EnrichFileInformation()
 
@@ -519,8 +527,8 @@ func TestEnrichFileInformationOneStreamReturnsEnriched(t *testing.T) {
 
 	event := domain.CalCmsEvent{
 		FullTitle:     "Test",
-		StartDatetime: "2024-04-01T11:00:00",
-		EndDatetime:   "2024-04-01T12:00:00",
+		StartDatetime: startDate,
+		EndDatetime:   endDate,
 		EventID:       1234,
 	}
 	events = append(events, event)
@@ -537,7 +545,7 @@ func TestEnrichFileInformationOneStreamReturnsEnriched(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    "2024-09-17",
+		FolderDate:    folderDateDash,
 		RuleMatched:   "",
 		EventId:       1234,
 		CalCmsTitle:   "",
@@ -547,7 +555,7 @@ func TestEnrichFileInformationOneStreamReturnsEnriched(t *testing.T) {
 	fileRepoCal.Store(fi)
 
 	calCmsService.Cfg.Misc.TestCrawl = true
-	calCmsService.Cfg.Misc.TestDate = "2024/09/17"
+	calCmsService.Cfg.Misc.TestDate = folderDateSlash
 
 	n := calCmsService.EnrichFileInformation()
 
@@ -656,8 +664,7 @@ func TestCalcCalCmsEndDateWrongDateReturnsErros(t *testing.T) {
 }
 
 func TestCalcCalCmsEndDateDateReturnsNextDay(t *testing.T) {
-	startDate := "2024-09-17"
-	endDate, err := calcCalCmsEndDate(startDate)
+	endDate, err := calcCalCmsEndDate(folderDateDash)
 	assert.Nil(t, err)
 	assert.EqualValues(t, "2024-09-18", endDate)
 }
