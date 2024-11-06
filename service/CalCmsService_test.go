@@ -30,7 +30,7 @@ func setupTestCal() func() {
 	}
 }
 
-func Test_convertToEntry_TimeError1_ReturnsError(t *testing.T) {
+func TestConvertToEntryTimeError1ReturnsError(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	ev := domain.CalCmsEvent{
@@ -44,7 +44,7 @@ func Test_convertToEntry_TimeError1_ReturnsError(t *testing.T) {
 	assert.EqualValues(t, "parsing time \"AA:BB\" as \"2006-01-02T15:04:05\": cannot parse \"AA:BB\" as \"2006\"", err.Error())
 }
 
-func Test_convertToEntry_TimeError2_ReturnsError(t *testing.T) {
+func TestConvertToEntryTimeError2ReturnsError(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	ev := domain.CalCmsEvent{
@@ -58,7 +58,7 @@ func Test_convertToEntry_TimeError2_ReturnsError(t *testing.T) {
 	assert.EqualValues(t, "parsing time \"11:00\" as \"2006-01-02T15:04:05\": cannot parse \"11:00\" as \"2006\"", err.Error())
 }
 
-func Test_convertToEntry_NoError_ReturnsEntry(t *testing.T) {
+func TestConvertToEntryNoErrorReturnsEntry(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	ev := domain.CalCmsEvent{
@@ -77,7 +77,7 @@ func Test_convertToEntry_NoError_ReturnsEntry(t *testing.T) {
 	assert.EqualValues(t, 12345, res.EventId)
 }
 
-func Test_GetCalCmsDataForId_Empty_ReturnsEmptyList(t *testing.T) {
+func TestGetCalCmsDataForIdEmptyReturnsEmptyList(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	res, err := calCmsService.GetCalCmsEventDataForId(1)
@@ -85,7 +85,7 @@ func Test_GetCalCmsDataForId_Empty_ReturnsEmptyList(t *testing.T) {
 	assert.EqualValues(t, 0, len(res))
 }
 
-func Test_GetCalCmsDataForId_WrongData_ReturnsError(t *testing.T) {
+func TestGetCalCmsDataForIdWrongDataReturnsError(t *testing.T) {
 	var events []domain.CalCmsEvent
 	teardown := setupTestCal()
 	defer teardown()
@@ -108,7 +108,7 @@ func Test_GetCalCmsDataForId_WrongData_ReturnsError(t *testing.T) {
 	assert.EqualValues(t, "parsing time \"CC:DD\" as \"2006-01-02T15:04:05\": cannot parse \"CC:DD\" as \"2006\"", err.Error())
 }
 
-func Test_GetCalCmsDataForId_WrongId_ReturnsEmpty(t *testing.T) {
+func TestGetCalCmsDataForIdWrongIdReturnsEmpty(t *testing.T) {
 	var events []domain.CalCmsEvent
 	teardown := setupTestCal()
 	defer teardown()
@@ -130,7 +130,7 @@ func Test_GetCalCmsDataForId_WrongId_ReturnsEmpty(t *testing.T) {
 	assert.EqualValues(t, 0, len(res))
 }
 
-func Test_GetCalCmsDataForId_OneElement_ReturnsData(t *testing.T) {
+func TestGetCalCmsDataForIdOneElementReturnsData(t *testing.T) {
 	var events []domain.CalCmsEvent
 	teardown := setupTestCal()
 	defer teardown()
@@ -153,7 +153,7 @@ func Test_GetCalCmsDataForId_OneElement_ReturnsData(t *testing.T) {
 	assert.EqualValues(t, time.Duration(1*time.Hour), res[0].Duration)
 }
 
-func Test_GetCalCmsDataForId_TwoElements_ReturnsOne(t *testing.T) {
+func TestGetCalCmsDataForIdTwoElementsReturnsOne(t *testing.T) {
 	var events []domain.CalCmsEvent
 	teardown := setupTestCal()
 	defer teardown()
@@ -183,7 +183,7 @@ func Test_GetCalCmsDataForId_TwoElements_ReturnsOne(t *testing.T) {
 	assert.EqualValues(t, time.Duration(1*time.Hour), res[0].Duration)
 }
 
-func Test_GetCalCmsDataForHour_Empty_ReturnsEmptyList(t *testing.T) {
+func TestGetCalCmsDataForHourEmptyReturnsEmptyList(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	res, err := calCmsService.GetCalCmsEntriesForHour("12:00")
@@ -191,7 +191,7 @@ func Test_GetCalCmsDataForHour_Empty_ReturnsEmptyList(t *testing.T) {
 	assert.EqualValues(t, 0, len(res))
 }
 
-func Test_GetCalCmsDataForHour_OneElement_ReturnsData(t *testing.T) {
+func TestGetCalCmsDataForHourOneElementReturnsData(t *testing.T) {
 	var events []domain.CalCmsEvent
 	teardown := setupTestCal()
 	defer teardown()
@@ -215,7 +215,7 @@ func Test_GetCalCmsDataForHour_OneElement_ReturnsData(t *testing.T) {
 	assert.EqualValues(t, time.Duration(1*time.Hour), res[0].Duration)
 }
 
-func Test_checkCalCmsData_WrongData_ReturnsError(t *testing.T) {
+func TestCheckCalCmsDataWrongDataReturnsError(t *testing.T) {
 	var events []domain.CalCmsEvent
 	teardown := setupTestCal()
 	defer teardown()
@@ -252,7 +252,7 @@ func Test_checkCalCmsData_WrongData_ReturnsError(t *testing.T) {
 	assert.EqualValues(t, "parsing time \"CC:DD\" as \"2006-01-02T15:04:05\": cannot parse \"CC:DD\" as \"2006\"", err.Error())
 }
 
-func Test_checkCalCmsData_DifferingDates_ReturnsError(t *testing.T) {
+func TestCheckCalCmsDataDifferingDatesReturnsError(t *testing.T) {
 	var events []domain.CalCmsEvent
 	teardown := setupTestCal()
 	defer teardown()
@@ -289,7 +289,7 @@ func Test_checkCalCmsData_DifferingDates_ReturnsError(t *testing.T) {
 	assert.EqualValues(t, "file has different date from calCmsData", err.Error())
 }
 
-func Test_checkCalCmsData_NoMatchingOnSameDayData_ReturnsError(t *testing.T) {
+func TestCheckCalCmsDataNoMatchingOnSameDayDataReturnsError(t *testing.T) {
 	var events []domain.CalCmsEvent
 	teardown := setupTestCal()
 	defer teardown()
@@ -329,7 +329,7 @@ func Test_checkCalCmsData_NoMatchingOnSameDayData_ReturnsError(t *testing.T) {
 	assert.EqualValues(t, "no such id in calCMS", err.Error())
 }
 
-func Test_checkCalCmsData_DoubleMatch_ReturnsError(t *testing.T) {
+func TestCheckCalCmsDataDoubleMatchReturnsError(t *testing.T) {
 	var events []domain.CalCmsEvent
 	teardown := setupTestCal()
 	defer teardown()
@@ -376,7 +376,7 @@ func Test_checkCalCmsData_DoubleMatch_ReturnsError(t *testing.T) {
 	assert.EqualValues(t, "multiple matches in calCMS", err.Error())
 }
 
-func Test_checkCalCmsData_IsLive_ReturnsError(t *testing.T) {
+func TestCheckCalCmsDataIsLiveReturnsError(t *testing.T) {
 	var events []domain.CalCmsEvent
 	teardown := setupTestCal()
 	defer teardown()
@@ -417,7 +417,7 @@ func Test_checkCalCmsData_IsLive_ReturnsError(t *testing.T) {
 	assert.EqualValues(t, "event is live in calCMS", err.Error())
 }
 
-func Test_checkCalCmsData_DataOk_ReturnsData(t *testing.T) {
+func TestCheckCalCmsDataDataOkReturnsData(t *testing.T) {
 	var events []domain.CalCmsEvent
 	teardown := setupTestCal()
 	defer teardown()
@@ -462,14 +462,14 @@ func Test_checkCalCmsData_DataOk_ReturnsData(t *testing.T) {
 	assert.EqualValues(t, fmt.Sprintf("%02d:%02d", st2.Hour(), st2.Minute()), res.EndTime.Format("15:04"))
 }
 
-func Test_EnrichFileInformation_NoFiles_Returns_Zero(t *testing.T) {
+func TestEnrichFileInformationNoFilesReturnsZero(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	n := calCmsService.EnrichFileInformation()
 	assert.EqualValues(t, 0, n.TotalCount)
 }
 
-func Test_EnrichFileInformation_OneFile_Returns_Enriched(t *testing.T) {
+func TestEnrichFileInformationOneFileReturnsEnriched(t *testing.T) {
 	var events []domain.CalCmsEvent
 	teardown := setupTestCal()
 	defer teardown()
@@ -512,7 +512,7 @@ func Test_EnrichFileInformation_OneFile_Returns_Enriched(t *testing.T) {
 	assert.EqualValues(t, 0, n.StreamCount)
 }
 
-func Test_EnrichFileInformation_OneStream_Returns_Enriched(t *testing.T) {
+func TestEnrichFileInformationOneStreamReturnsEnriched(t *testing.T) {
 	var events []domain.CalCmsEvent
 	teardown := setupTestCal()
 	defer teardown()
@@ -556,7 +556,7 @@ func Test_EnrichFileInformation_OneStream_Returns_Enriched(t *testing.T) {
 	assert.EqualValues(t, 0, n.AudioCount)
 }
 
-func Test_getCalCmsData_WrongUrl_Returns_Error(t *testing.T) {
+func TestGetCalCmsDataWrongUrlReturnsError(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	cfgCal.CalCms.CmsUrl = "§$%&/()"
@@ -566,7 +566,7 @@ func Test_getCalCmsData_WrongUrl_Returns_Error(t *testing.T) {
 	assert.EqualValues(t, "parse \"§$%&/()\": invalid URL escape \"%&/\"", err.Error())
 }
 
-func Test_getCalCmsData_httpRequest_Returns_Data(t *testing.T) {
+func TestGetCalCmsDatahttpRequestReturnsData(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	respData, _ := os.ReadFile("../samples/calCMS-response.json")
@@ -585,7 +585,7 @@ func Test_getCalCmsData_httpRequest_Returns_Data(t *testing.T) {
 	assert.EqualValues(t, respData, data)
 }
 
-func Test_getCalCmsData_httpRequest_Returns_Error(t *testing.T) {
+func TestGetCalCmsDatahttpRequestReturnsError(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -602,7 +602,7 @@ func Test_getCalCmsData_httpRequest_Returns_Error(t *testing.T) {
 	assert.EqualValues(t, "400 Bad Request", err.Error())
 }
 
-func Test_Query_Returns_NoError(t *testing.T) {
+func TestQueryReturnsNoError(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	respData, _ := os.ReadFile("../samples/calCMS-response.json")
@@ -620,7 +620,7 @@ func Test_Query_Returns_NoError(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func Test_Query_Returns_Error(t *testing.T) {
+func TestQueryReturnsError(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	respData, _ := os.ReadFile("../samples/calCMS-response_error.json")
@@ -639,7 +639,7 @@ func Test_Query_Returns_Error(t *testing.T) {
 	assert.EqualValues(t, "invalid character ':' after object key:value pair", err.Error())
 }
 
-func Test_Query_NoQuery_Returns_NoError(t *testing.T) {
+func TestQueryNoQueryReturnsNoError(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	cfgCal.CalCms.QueryCalCms = false
@@ -647,7 +647,7 @@ func Test_Query_NoQuery_Returns_NoError(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func Test_calcCalCmsEndDate_WrongDate_Returns_Erros(t *testing.T) {
+func TestCalcCalCmsEndDateWrongDateReturnsErros(t *testing.T) {
 	startDate := "sdf"
 	endDate, err := calcCalCmsEndDate(startDate)
 	assert.NotNil(t, err)
@@ -655,20 +655,20 @@ func Test_calcCalCmsEndDate_WrongDate_Returns_Erros(t *testing.T) {
 	assert.EqualValues(t, "parsing time \"sdf\" as \"2006-01-02\": cannot parse \"sdf\" as \"2006\"", err.Error())
 }
 
-func Test_calcCalCmsEndDate_Date_Returns_NextDay(t *testing.T) {
+func TestCalcCalCmsEndDateDateReturnsNextDay(t *testing.T) {
 	startDate := "2024-09-17"
 	endDate, err := calcCalCmsEndDate(startDate)
 	assert.Nil(t, err)
 	assert.EqualValues(t, "2024-09-18", endDate)
 }
 
-func Test_parseDuration_Returns_Duration(t *testing.T) {
+func TestParseDurationReturnsDuration(t *testing.T) {
 	dur := parseDuration("05:00:02")
 	assert.EqualValues(t, "300.0", dur)
 
 }
 
-func Test_GetEvents_Returns_data(t *testing.T) {
+func TestGetEventsReturnsdata(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	respData, _ := os.ReadFile("../samples/calCMS-response.json")

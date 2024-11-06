@@ -25,7 +25,7 @@ func setupTestClean() func() {
 	}
 }
 
-func Test_isYesterdayOrOlder_IsOlder_ReturnsTrue(t *testing.T) {
+func TestIsYesterdayOrOlderIsOlderReturnsTrue(t *testing.T) {
 	testDate := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC).AddDate(0, 0, -1)
 	testDateStr := testDate.Format("2006-01-02")
 	b, e := isYesterdayOrOlder(testDateStr)
@@ -33,7 +33,7 @@ func Test_isYesterdayOrOlder_IsOlder_ReturnsTrue(t *testing.T) {
 	assert.EqualValues(t, true, b)
 }
 
-func Test_isYesterdayOrOlder_IsWayOlder_ReturnsTrue(t *testing.T) {
+func TestIsYesterdayOrOlderIsWayOlderReturnsTrue(t *testing.T) {
 	testDate := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC).AddDate(0, -1, 0)
 	testDateStr := testDate.Format("2006-01-02")
 	b, e := isYesterdayOrOlder(testDateStr)
@@ -41,7 +41,7 @@ func Test_isYesterdayOrOlder_IsWayOlder_ReturnsTrue(t *testing.T) {
 	assert.EqualValues(t, true, b)
 }
 
-func Test_isYesterdayOrOlder_IsNotOlder_ReturnsFalse(t *testing.T) {
+func TestIsYesterdayOrOlderIsNotOlderReturnsFalse(t *testing.T) {
 	testDate := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC)
 	testDateStr := testDate.Format("2006-01-02")
 	b, e := isYesterdayOrOlder(testDateStr)
@@ -49,14 +49,14 @@ func Test_isYesterdayOrOlder_IsNotOlder_ReturnsFalse(t *testing.T) {
 	assert.EqualValues(t, false, b)
 }
 
-func Test_isYesterdayOrOlder_WrongDate_ReturnsFalse(t *testing.T) {
+func TestIsYesterdayOrOlderWrongDateReturnsFalse(t *testing.T) {
 	testDateStr := "asdf"
 	b, e := isYesterdayOrOlder(testDateStr)
 	assert.NotNil(t, e)
 	assert.EqualValues(t, false, b)
 }
 
-func Test_runClean_NoFiles_Returns_Zero(t *testing.T) {
+func TestRunCleanNoFilesReturnsZero(t *testing.T) {
 	teardown := setupTestClean()
 	defer teardown()
 	n, e := cleanSvc.CleanRun()
@@ -64,7 +64,7 @@ func Test_runClean_NoFiles_Returns_Zero(t *testing.T) {
 	assert.EqualValues(t, 0, n)
 }
 
-func Test_runClean_OneCurrentFile_Returns_Zero(t *testing.T) {
+func TestRunCleanOneCurrentFileReturnsZero(t *testing.T) {
 	teardown := setupTestClean()
 	defer teardown()
 	fi1 := domain.FileInfo{
@@ -79,7 +79,7 @@ func Test_runClean_OneCurrentFile_Returns_Zero(t *testing.T) {
 	assert.EqualValues(t, 1, f)
 }
 
-func Test_runClean_OneOldFile_Returns_One(t *testing.T) {
+func TestRunCleanOneOldFileReturnsOne(t *testing.T) {
 	teardown := setupTestClean()
 	defer teardown()
 	fi1 := domain.FileInfo{
@@ -96,7 +96,7 @@ func Test_runClean_OneOldFile_Returns_One(t *testing.T) {
 	assert.EqualValues(t, 0, f2)
 }
 
-func Test_runClean_FileWrongDate_Returns_Error(t *testing.T) {
+func TestRunCleanFileWrongDateReturnsError(t *testing.T) {
 	teardown := setupTestClean()
 	defer teardown()
 	fi1 := domain.FileInfo{
@@ -111,14 +111,14 @@ func Test_runClean_FileWrongDate_Returns_Error(t *testing.T) {
 	assert.EqualValues(t, 1, f)
 }
 
-func Test_Clean_NoFiles_Returns_Zero(t *testing.T) {
+func TestCleanNoFilesReturnsZero(t *testing.T) {
 	teardown := setupTestClean()
 	defer teardown()
 	cleanSvc.Clean()
 	assert.EqualValues(t, 0, cleanSvc.Cfg.RunTime.FilesCleaned)
 }
 
-func Test_Clean_OneFile_Returns_One(t *testing.T) {
+func TestCleanOneFileReturnsOne(t *testing.T) {
 	teardown := setupTestClean()
 	defer teardown()
 	fi1 := domain.FileInfo{
