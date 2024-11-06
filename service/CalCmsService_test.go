@@ -22,11 +22,12 @@ var (
 )
 
 const (
-	startDate       = "2024-04-01T11:00:00"
-	endDate         = "2024-04-01T12:00:00"
-	parseDate       = "2006-01-02T15:04:05"
-	folderDateDash  = "2024-09-17"
-	folderDateSlash = "2024/09/17"
+	startDate          = "2024-04-01T11:00:00"
+	endDate            = "2024-04-01T12:00:00"
+	parseDate          = "2006-01-02T15:04:05"
+	folderDateDash     = "2024-09-17"
+	folderDateSlash    = "2024/09/17"
+	calCmsResponseFile = "../samples/calCMS-response.json"
 )
 
 func setupTestCal() func() {
@@ -577,7 +578,7 @@ func TestGetCalCmsDataWrongUrlReturnsError(t *testing.T) {
 func TestGetCalCmsDatahttpRequestReturnsData(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
-	respData, _ := os.ReadFile("../samples/calCMS-response.json")
+	respData, _ := os.ReadFile(calCmsResponseFile)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Add("Content-Type", "application/json")
@@ -586,7 +587,7 @@ func TestGetCalCmsDatahttpRequestReturnsData(t *testing.T) {
 	defer srv.Close()
 	cfgCal.CalCms.CmsUrl = srv.URL
 	cfgCal.Misc.TestCrawl = true
-	cfgCal.Misc.TestDate = "2024/09/24"
+	cfgCal.Misc.TestDate = folderDateSlash
 	data, err := calCmsService.getCalCmsEventData()
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
@@ -603,7 +604,7 @@ func TestGetCalCmsDatahttpRequestReturnsError(t *testing.T) {
 	defer srv.Close()
 	cfgCal.CalCms.CmsUrl = srv.URL
 	cfgCal.Misc.TestCrawl = true
-	cfgCal.Misc.TestDate = "2024/09/24"
+	cfgCal.Misc.TestDate = folderDateSlash
 	data, err := calCmsService.getCalCmsEventData()
 	assert.NotNil(t, err)
 	assert.Nil(t, data)
@@ -613,7 +614,7 @@ func TestGetCalCmsDatahttpRequestReturnsError(t *testing.T) {
 func TestQueryReturnsNoError(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
-	respData, _ := os.ReadFile("../samples/calCMS-response.json")
+	respData, _ := os.ReadFile(calCmsResponseFile)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Add("Content-Type", "application/json")
@@ -622,7 +623,7 @@ func TestQueryReturnsNoError(t *testing.T) {
 	defer srv.Close()
 	cfgCal.CalCms.CmsUrl = srv.URL
 	cfgCal.Misc.TestCrawl = true
-	cfgCal.Misc.TestDate = "2024/09/24"
+	cfgCal.Misc.TestDate = folderDateSlash
 	cfgCal.CalCms.QueryCalCms = true
 	err := calCmsService.Query()
 	assert.Nil(t, err)
@@ -640,7 +641,7 @@ func TestQueryReturnsError(t *testing.T) {
 	defer srv.Close()
 	cfgCal.CalCms.CmsUrl = srv.URL
 	cfgCal.Misc.TestCrawl = true
-	cfgCal.Misc.TestDate = "2024/09/24"
+	cfgCal.Misc.TestDate = folderDateSlash
 	cfgCal.CalCms.QueryCalCms = true
 	err := calCmsService.Query()
 	assert.NotNil(t, err)
@@ -678,7 +679,7 @@ func TestParseDurationReturnsDuration(t *testing.T) {
 func TestGetEventsReturnsdata(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
-	respData, _ := os.ReadFile("../samples/calCMS-response.json")
+	respData, _ := os.ReadFile(calCmsResponseFile)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Add("Content-Type", "application/json")

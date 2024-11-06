@@ -32,6 +32,10 @@ var (
 	exmu sync.Mutex
 )
 
+const (
+	dateFormat = "2006-01-02 15:04:05 -0700 MST"
+)
+
 // The export service handles the export of information to mAirList
 type DefaultExportService struct {
 	Cfg  *config.AppConfig
@@ -358,16 +362,16 @@ func (s DefaultExportService) AppendPlaylist(fileName string) error {
 	// command = PLAYLIST 1 APPEND <filename>
 	req, err := s.buildHttpRequest(fileName)
 	if err != nil {
-		s.Cfg.RunTime.LastMairListState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
+		s.Cfg.RunTime.LastMairListState = fmt.Sprintf("Failed (%v)", time.Now().Format(dateFormat))
 		return err
 	}
 	resp, err := httpExClient.Do(req)
 	if err != nil {
-		s.Cfg.RunTime.LastMairListState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
+		s.Cfg.RunTime.LastMairListState = fmt.Sprintf("Failed (%v)", time.Now().Format(dateFormat))
 		return err
 	}
 	if resp.StatusCode == 404 {
-		s.Cfg.RunTime.LastMairListState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
+		s.Cfg.RunTime.LastMairListState = fmt.Sprintf("Failed (%v)", time.Now().Format(dateFormat))
 		err := errors.New("url not found")
 		return err
 	}
@@ -375,10 +379,10 @@ func (s DefaultExportService) AppendPlaylist(fileName string) error {
 	b, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode == 200 && string(b) == "ok" {
 		logger.Infof("Successfully appended playlist %v to mAirList", fileName)
-		s.Cfg.RunTime.LastMairListState = fmt.Sprintf("Succeeded (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
+		s.Cfg.RunTime.LastMairListState = fmt.Sprintf("Succeeded (%v)", time.Now().Format(dateFormat))
 		return nil
 	}
-	s.Cfg.RunTime.LastMairListState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
+	s.Cfg.RunTime.LastMairListState = fmt.Sprintf("Failed (%v)", time.Now().Format(dateFormat))
 	return errors.New(string(b))
 }
 

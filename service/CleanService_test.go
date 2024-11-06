@@ -16,6 +16,10 @@ var (
 	cleanRepo repositories.DefaultFileRepository
 )
 
+const (
+	dateFormatDash = "2006-01-02"
+)
+
 func setupTestClean() func() {
 	config.InitConfig(config.EnvFile, &cfgClean)
 	crawlRepo = repositories.NewFileRepository(&cfgClean)
@@ -27,7 +31,7 @@ func setupTestClean() func() {
 
 func TestIsYesterdayOrOlderIsOlderReturnsTrue(t *testing.T) {
 	testDate := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC).AddDate(0, 0, -1)
-	testDateStr := testDate.Format("2006-01-02")
+	testDateStr := testDate.Format(dateFormatDash)
 	b, e := isYesterdayOrOlder(testDateStr)
 	assert.Nil(t, e)
 	assert.EqualValues(t, true, b)
@@ -35,7 +39,7 @@ func TestIsYesterdayOrOlderIsOlderReturnsTrue(t *testing.T) {
 
 func TestIsYesterdayOrOlderIsWayOlderReturnsTrue(t *testing.T) {
 	testDate := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC).AddDate(0, -1, 0)
-	testDateStr := testDate.Format("2006-01-02")
+	testDateStr := testDate.Format(dateFormatDash)
 	b, e := isYesterdayOrOlder(testDateStr)
 	assert.Nil(t, e)
 	assert.EqualValues(t, true, b)
@@ -43,7 +47,7 @@ func TestIsYesterdayOrOlderIsWayOlderReturnsTrue(t *testing.T) {
 
 func TestIsYesterdayOrOlderIsNotOlderReturnsFalse(t *testing.T) {
 	testDate := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC)
-	testDateStr := testDate.Format("2006-01-02")
+	testDateStr := testDate.Format(dateFormatDash)
 	b, e := isYesterdayOrOlder(testDateStr)
 	assert.Nil(t, e)
 	assert.EqualValues(t, false, b)
@@ -69,7 +73,7 @@ func TestRunCleanOneCurrentFileReturnsZero(t *testing.T) {
 	defer teardown()
 	fi1 := domain.FileInfo{
 		Path:       "A",
-		FolderDate: time.Now().Format("2006-01-02"),
+		FolderDate: time.Now().Format(dateFormatDash),
 	}
 	cleanRepo.Store(fi1)
 	n, e := cleanSvc.CleanRun()
@@ -84,7 +88,7 @@ func TestRunCleanOneOldFileReturnsOne(t *testing.T) {
 	defer teardown()
 	fi1 := domain.FileInfo{
 		Path:       "A",
-		FolderDate: time.Now().AddDate(0, 0, -1).Format("2006-01-02"),
+		FolderDate: time.Now().AddDate(0, 0, -1).Format(dateFormatDash),
 	}
 	cleanRepo.Store(fi1)
 	f1 := cleanRepo.Size()
@@ -123,7 +127,7 @@ func TestCleanOneFileReturnsOne(t *testing.T) {
 	defer teardown()
 	fi1 := domain.FileInfo{
 		Path:       "A",
-		FolderDate: time.Now().AddDate(0, 0, -2).Format("2006-01-02"),
+		FolderDate: time.Now().AddDate(0, 0, -2).Format(dateFormatDash),
 	}
 	cleanRepo.Store(fi1)
 	cleanSvc.Clean()

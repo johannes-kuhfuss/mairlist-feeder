@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
@@ -37,37 +38,36 @@ type FileCounts struct {
 	StreamCount int
 }
 
+func formatTime(t1 time.Time) string {
+	if t1.IsZero() {
+		return "N/A"
+	}
+	return t1.Format("15:04")
+}
+
+func formatEventLink(id int) bool {
+	return id != 0
+}
+
 // GetFiles retrives all files maintained in the repository and formats them for display purposes
 func GetFiles(repo *repositories.DefaultFileRepository, CmsUrl string) (fileDta []FileResp) {
 	if files := repo.GetAll(); files != nil {
 		for _, file := range *files {
 			dta := FileResp{
-				Path:          file.Path,
-				ModTime:       file.ModTime.Format("2006-01-02 15:04:05"),
-				Duration:      strconv.FormatFloat(math.Round(file.Duration/60), 'f', 1, 64),
-				InfoExtracted: strconv.FormatBool(file.InfoExtracted),
-				ScanTime:      file.ScanTime.Format("2006-01-02 15:04:05"),
-				FolderDate:    file.FolderDate,
-				RuleMatched:   file.RuleMatched,
-				EventId:       strconv.Itoa(file.EventId),
-				EventIdLink:   buildEventIdLink(CmsUrl, file.EventId),
-				CalCmsInfo:    buildCalCmsInfo(file),
-				TechMd:        buildTechMd(file),
-			}
-			if file.StartTime.IsZero() {
-				dta.StartTime = "N/A"
-			} else {
-				dta.StartTime = file.StartTime.Format("15:04")
-			}
-			if file.EndTime.IsZero() {
-				dta.EndTime = "N/A"
-			} else {
-				dta.EndTime = file.EndTime.Format("15:04")
-			}
-			if file.EventId == 0 {
-				dta.EventLinkAvail = false
-			} else {
-				dta.EventLinkAvail = true
+				Path:           file.Path,
+				ModTime:        file.ModTime.Format("2006-01-02 15:04:05"),
+				Duration:       strconv.FormatFloat(math.Round(file.Duration/60), 'f', 1, 64),
+				InfoExtracted:  strconv.FormatBool(file.InfoExtracted),
+				ScanTime:       file.ScanTime.Format("2006-01-02 15:04:05"),
+				FolderDate:     file.FolderDate,
+				RuleMatched:    file.RuleMatched,
+				EventId:        strconv.Itoa(file.EventId),
+				EventIdLink:    buildEventIdLink(CmsUrl, file.EventId),
+				CalCmsInfo:     buildCalCmsInfo(file),
+				TechMd:         buildTechMd(file),
+				StartTime:      formatTime(file.StartTime),
+				EndTime:        formatTime(file.EndTime),
+				EventLinkAvail: formatEventLink(file.EventId),
 			}
 			fileDta = append(fileDta, dta)
 		}

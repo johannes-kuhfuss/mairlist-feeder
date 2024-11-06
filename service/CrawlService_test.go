@@ -17,6 +17,11 @@ var (
 	crawlRepo repositories.DefaultFileRepository
 )
 
+const (
+	folderDate      = "2024-09-22"
+	audioSampleFile = "../samples/1600-1700_sine1k.mp3"
+)
+
 func setupTestCrawl() func() {
 	config.InitConfig(config.EnvFile, &cfgCrawl)
 	crawlRepo = repositories.NewFileRepository(&cfgCrawl)
@@ -62,7 +67,7 @@ func TestExtractFileInfoFileCalCmsReturnsData(t *testing.T) {
 	defer teardown()
 	fi1 := domain.FileInfo{
 		Path:       "Z:\\sendungen\\2024\\09\\22\\21-00\\test.mp3",
-		FolderDate: "2024-09-22",
+		FolderDate: folderDate,
 	}
 	crawlRepo.Store(fi1)
 	n, e := crawlSvc.extractFileInfo()
@@ -79,7 +84,7 @@ func TestExtractFileInfoFileNamingConventionReturnsData(t *testing.T) {
 	defer teardown()
 	fi1 := domain.FileInfo{
 		Path:       "Z:\\sendungen\\2024\\09\\22\\2000-2100_sendung-xyz.mp3",
-		FolderDate: "2024-09-22",
+		FolderDate: folderDate,
 	}
 	crawlRepo.Store(fi1)
 	n, e := crawlSvc.extractFileInfo()
@@ -97,7 +102,7 @@ func TestExtractFileInfoUploadtoolReturnsData(t *testing.T) {
 	defer teardown()
 	fi1 := domain.FileInfo{
 		Path:       "Z:\\sendungen\\2024\\09\\22\\UL__1800-1900__sendung-xyz.mp3",
-		FolderDate: "2024-09-22",
+		FolderDate: folderDate,
 	}
 	crawlRepo.Store(fi1)
 	n, e := crawlSvc.extractFileInfo()
@@ -115,7 +120,7 @@ func TestExtractFileInfoAnyFileReturnsData(t *testing.T) {
 	defer teardown()
 	fi1 := domain.FileInfo{
 		Path:       "Z:\\sendungen\\2024\\09\\22\\2100_sendung-xyz.mp3",
-		FolderDate: "2024-09-22",
+		FolderDate: folderDate,
 	}
 	crawlRepo.Store(fi1)
 	n, e := crawlSvc.extractFileInfo()
@@ -131,8 +136,8 @@ func TestExtractFileInfoRealFileReturnsData(t *testing.T) {
 	defer teardown()
 	cfgCrawl.Crawl.FfprobePath = "../prog/ffprobe.exe"
 	fi1 := domain.FileInfo{
-		Path:       "../samples/1600-1700_sine1k.mp3",
-		FolderDate: "2024-09-22",
+		Path:       audioSampleFile,
+		FolderDate: folderDate,
 	}
 	crawlRepo.Store(fi1)
 	n, e := crawlSvc.extractFileInfo()
@@ -155,7 +160,7 @@ func TestExtractFileInfoStreamReturnsData(t *testing.T) {
 	file := "./temp.stream"
 	fi1 := domain.FileInfo{
 		Path:       file,
-		FolderDate: "2024-09-22",
+		FolderDate: folderDate,
 	}
 	crawlRepo.Store(fi1)
 	crawlSvc.Cfg.Crawl.StreamMap["test"] = 222
@@ -230,7 +235,7 @@ func TestAnalyzeTechMdWrongFfprobePathReturnsError(t *testing.T) {
 }
 
 func TestAnalyzeTechMdSampleFileReturnsTechMd(t *testing.T) {
-	d, e := analyzeTechMd("../samples/1600-1700_sine1k.mp3", 5, "../prog/ffprobe.exe")
+	d, e := analyzeTechMd(audioSampleFile, 5, "../prog/ffprobe.exe")
 	assert.Nil(t, e)
 	assert.NotNil(t, d)
 	assert.EqualValues(t, 5.041633, d.DurationSec)
@@ -323,7 +328,7 @@ func TestGenerateHashNoFileReturnsError(t *testing.T) {
 }
 
 func TestGenerateHashSampleFileReturnsHash(t *testing.T) {
-	hash, err := generateHash("../samples/1600-1700_sine1k.mp3")
+	hash, err := generateHash(audioSampleFile)
 	assert.Nil(t, err)
 	assert.EqualValues(t, "50c2fcde004eea6790580b01c7032f1d", hash)
 }

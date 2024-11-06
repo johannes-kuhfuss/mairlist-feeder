@@ -25,6 +25,16 @@ var (
 	exportService DefaultExportService
 )
 
+const (
+	slotNa             = "Slot: N/A"
+	slot30             = "Slot: 30min"
+	slot45             = "Slot: 45min"
+	slot60             = "Slot: 60min"
+	slot90             = "Slot: 90min"
+	slot120            = "Slot: 120min"
+	appendListFileName = "yfile.txt"
+)
+
 func setupTestEx() func() {
 	config.InitConfig(config.EnvFile, &cfg)
 	fileRepo = repositories.NewFileRepository(&cfg)
@@ -77,33 +87,33 @@ func TestCheckTimeNoEndTime(t *testing.T) {
 		slot string
 	}
 	timesToCheck := map[float64]checkData{
-		60.0:   {false, "Slot: N/A"},   // 1 min
-		300.0:  {false, "Slot: N/A"},   // 5 min
-		1680.0: {false, "Slot: N/A"},   // 28 min
-		1740.0: {true, "Slot: 30min"},  // 29 min
-		1800.0: {true, "Slot: 30min"},  // 30 min
-		1860.0: {true, "Slot: 30min"},  // 31 min
-		1920.0: {false, "Slot: N/A"},   // 32 min
-		2580.0: {false, "Slot: N/A"},   // 43 min
-		2640.0: {true, "Slot: 45min"},  // 44 min
-		2700.0: {true, "Slot: 45min"},  // 45 min
-		2760.0: {true, "Slot: 45min"},  // 46 min
-		2820.0: {false, "Slot: N/A"},   // 47 min
-		3480.0: {false, "Slot: N/A"},   // 58 min
-		3540.0: {true, "Slot: 60min"},  // 59 min
-		3600.0: {true, "Slot: 60min"},  // 60 min
-		3660.0: {true, "Slot: 60min"},  // 61 min
-		3720.0: {false, "Slot: N/A"},   // 62 min
-		5280.0: {false, "Slot: N/A"},   // 88 min
-		5340.0: {true, "Slot: 90min"},  // 89 min
-		5400.0: {true, "Slot: 90min"},  // 90 min
-		5460.0: {true, "Slot: 90min"},  // 91 min
-		5520.0: {false, "Slot: N/A"},   // 92 min
-		7080.0: {false, "Slot: N/A"},   // 118 min
-		7140.0: {true, "Slot: 120min"}, // 119 min
-		7200.0: {true, "Slot: 120min"}, // 120 min
-		7260.0: {true, "Slot: 120min"}, // 121 min
-		7320.0: {false, "Slot: N/A"},   // 122 min
+		60.0:   {false, slotNa}, // 1 min
+		300.0:  {false, slotNa}, // 5 min
+		1680.0: {false, slotNa}, // 28 min
+		1740.0: {true, slot30},  // 29 min
+		1800.0: {true, slot30},  // 30 min
+		1860.0: {true, slot30},  // 31 min
+		1920.0: {false, slotNa}, // 32 min
+		2580.0: {false, slotNa}, // 43 min
+		2640.0: {true, slot45},  // 44 min
+		2700.0: {true, slot45},  // 45 min
+		2760.0: {true, slot45},  // 46 min
+		2820.0: {false, slotNa}, // 47 min
+		3480.0: {false, slotNa}, // 58 min
+		3540.0: {true, slot60},  // 59 min
+		3600.0: {true, slot60},  // 60 min
+		3660.0: {true, slot60},  // 61 min
+		3720.0: {false, slotNa}, // 62 min
+		5280.0: {false, slotNa}, // 88 min
+		5340.0: {true, slot90},  // 89 min
+		5400.0: {true, slot90},  // 90 min
+		5460.0: {true, slot90},  // 91 min
+		5520.0: {false, slotNa}, // 92 min
+		7080.0: {false, slotNa}, // 118 min
+		7140.0: {true, slot120}, // 119 min
+		7200.0: {true, slot120}, // 120 min
+		7260.0: {true, slot120}, // 121 min
+		7320.0: {false, slotNa}, // 122 min
 	}
 	for length, data := range timesToCheck {
 		fi := domain.FileInfo{
@@ -166,7 +176,7 @@ func TestAppendPlaylistUrlNotFoundReturnsError(t *testing.T) {
 	}))
 	defer srv.Close()
 	exportService.Cfg.Export.MairListUrl = srv.URL
-	err := exportService.AppendPlaylist("yfile.txt")
+	err := exportService.AppendPlaylist(appendListFileName)
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "url not found", err.Error())
 }
@@ -180,7 +190,7 @@ func TestAppendPlaylistMairListErrorReturnsError(t *testing.T) {
 	}))
 	defer srv.Close()
 	exportService.Cfg.Export.MairListUrl = srv.URL
-	err := exportService.AppendPlaylist("yfile.txt")
+	err := exportService.AppendPlaylist(appendListFileName)
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "nok", err.Error())
 }
@@ -194,7 +204,7 @@ func TestAppendPlaylistMairListOkReturnsNil(t *testing.T) {
 	}))
 	defer srv.Close()
 	exportService.Cfg.Export.MairListUrl = srv.URL
-	err := exportService.AppendPlaylist("yfile.txt")
+	err := exportService.AppendPlaylist(appendListFileName)
 	assert.Nil(t, err)
 }
 
