@@ -35,7 +35,7 @@ func setupTestEx() func() {
 	}
 }
 
-func Test_buildHttpRequest_EmptyUrl_ReturnsError(t *testing.T) {
+func TestBuildHttpRequestEmptyUrlReturnsError(t *testing.T) {
 	tearDown := setupTestEx()
 	defer tearDown()
 	cfg.Export.MairListUrl = ""
@@ -47,7 +47,7 @@ func Test_buildHttpRequest_EmptyUrl_ReturnsError(t *testing.T) {
 	assert.EqualValues(t, "url cannot be empty", err.Error())
 }
 
-func Test_buildHttpRequest_WithUrl_ReturnsRequest(t *testing.T) {
+func TestBuildHttpRequestWithUrlReturnsRequest(t *testing.T) {
 	tearDown := setupTestEx()
 	defer tearDown()
 	cfg.Export.MairListUrl = "http://localhost:9300/"
@@ -65,13 +65,13 @@ func Test_buildHttpRequest_WithUrl_ReturnsRequest(t *testing.T) {
 	assert.EqualValues(t, "command=PLAYLIST+1+APPEND+test", string(b))
 }
 
-func Test_getNextHour_returnsNextHour(t *testing.T) {
+func TestGetNextHourreturnsNextHour(t *testing.T) {
 	next := (time.Now().Hour()) + 1
 	test := getNextHour()
 	assert.EqualValues(t, fmt.Sprintf("%02d", next), test)
 }
 
-func Test_checkTime_noEndTime(t *testing.T) {
+func TestCheckTimeNoEndTime(t *testing.T) {
 	type checkData struct {
 		ok   bool
 		slot string
@@ -116,7 +116,7 @@ func Test_checkTime_noEndTime(t *testing.T) {
 	}
 }
 
-func Test_checkTime_withEndTime(t *testing.T) {
+func TestCheckTimeWithEndTime(t *testing.T) {
 	fi := domain.FileInfo{
 		Duration:  3600,
 		StartTime: helper.TimeFromHourAndMinute(14, 0),
@@ -128,7 +128,7 @@ func Test_checkTime_withEndTime(t *testing.T) {
 	assert.EqualValues(t, "Rounded actual duration: 60 min, Slot: 60min, Delta to slot: 0, planned duration: 60, delta to planned duration: 0", detail)
 }
 
-func Test_setStartTime_OneTimeValue(t *testing.T) {
+func TestSetStartTimeOneTimeValue(t *testing.T) {
 	var st time.Time
 
 	st = setStartTime(st, "14:00")
@@ -137,7 +137,7 @@ func Test_setStartTime_OneTimeValue(t *testing.T) {
 	assert.EqualValues(t, st, tt)
 }
 
-func Test_setStartTime_TwoTimeValues_ReturnsEarlier1(t *testing.T) {
+func TestSetStartTimeTwoTimeValuesReturnsEarlier1(t *testing.T) {
 	var st time.Time
 
 	st = setStartTime(st, "14:00")
@@ -147,7 +147,7 @@ func Test_setStartTime_TwoTimeValues_ReturnsEarlier1(t *testing.T) {
 	assert.EqualValues(t, st, tt)
 }
 
-func Test_setStartTime_TwoTimeValues_ReturnsEarlier2(t *testing.T) {
+func TestSetStartTimeTwoTimeValuesReturnsEarlier2(t *testing.T) {
 	var st time.Time
 
 	st = setStartTime(st, "14:30")
@@ -157,7 +157,7 @@ func Test_setStartTime_TwoTimeValues_ReturnsEarlier2(t *testing.T) {
 	assert.EqualValues(t, st, tt)
 }
 
-func Test_AppendPlaylist_UrlNotFound_Returns_Error(t *testing.T) {
+func TestAppendPlaylistUrlNotFoundReturnsError(t *testing.T) {
 	tearDown := setupTestEx()
 	defer tearDown()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -171,7 +171,7 @@ func Test_AppendPlaylist_UrlNotFound_Returns_Error(t *testing.T) {
 	assert.EqualValues(t, "url not found", err.Error())
 }
 
-func Test_AppendPlaylist_MairListError_Returns_Error(t *testing.T) {
+func TestAppendPlaylistMairListErrorReturnsError(t *testing.T) {
 	tearDown := setupTestEx()
 	defer tearDown()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -185,7 +185,7 @@ func Test_AppendPlaylist_MairListError_Returns_Error(t *testing.T) {
 	assert.EqualValues(t, "nok", err.Error())
 }
 
-func Test_AppendPlaylist_MairListOk_Returns_Nil(t *testing.T) {
+func TestAppendPlaylistMairListOkReturnsNil(t *testing.T) {
 	tearDown := setupTestEx()
 	defer tearDown()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -198,7 +198,7 @@ func Test_AppendPlaylist_MairListOk_Returns_Nil(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func Test_setExportPath_Test_Returns_Test(t *testing.T) {
+func TestSetExportPathTestReturnsTest(t *testing.T) {
 	tearDown := setupTestEx()
 	defer tearDown()
 	exportService.Cfg.Misc.TestCrawl = true
@@ -207,7 +207,7 @@ func Test_setExportPath_Test_Returns_Test(t *testing.T) {
 	assert.EqualValues(t, "C:\\TEMP\\Test_13.tpi", s)
 }
 
-func Test_setExportPath_Regular_Returns_Path(t *testing.T) {
+func TestSetExportPathRegularReturnsPath(t *testing.T) {
 	tearDown := setupTestEx()
 	defer tearDown()
 	hour := "13"
@@ -219,7 +219,7 @@ func Test_setExportPath_Regular_Returns_Path(t *testing.T) {
 	assert.EqualValues(t, strings.Replace(tp, "/", "\\", -1), s)
 }
 
-func Test_checkTimeAndLenghth_OneFile(t *testing.T) {
+func TestCheckTimeAndLenghthOneFile(t *testing.T) {
 	var files domain.FileList
 	tearDown := setupTestEx()
 	defer tearDown()
@@ -234,7 +234,7 @@ func Test_checkTimeAndLenghth_OneFile(t *testing.T) {
 	assert.EqualValues(t, 1, len(fileExportList.Files))
 }
 
-func Test_checkTimeAndLenghth_OneFileSame(t *testing.T) {
+func TestCheckTimeAndLenghthOneFileSame(t *testing.T) {
 	var files domain.FileList
 	tearDown := setupTestEx()
 	defer tearDown()
@@ -253,7 +253,7 @@ func Test_checkTimeAndLenghth_OneFileSame(t *testing.T) {
 	assert.EqualValues(t, "A", fileExportList.Files["14:00"].Path)
 }
 
-func Test_checkTimeAndLenghth_OneFileNewer(t *testing.T) {
+func TestCheckTimeAndLenghthOneFileNewer(t *testing.T) {
 	var files domain.FileList
 	tearDown := setupTestEx()
 	defer tearDown()
@@ -281,7 +281,7 @@ func Test_checkTimeAndLenghth_OneFileNewer(t *testing.T) {
 	assert.EqualValues(t, "A", fileExportList.Files["14:00"].Path)
 }
 
-func Test_ExportToPlayout_NoFiles_NoExport(t *testing.T) {
+func TestExportToPlayoutNoFilesNoExport(t *testing.T) {
 	tearDown := setupTestEx()
 	defer tearDown()
 	file, err := exportService.ExportToPlayout("13")
@@ -289,7 +289,7 @@ func Test_ExportToPlayout_NoFiles_NoExport(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func Test_ExportToPlayout_OneFiles_Export(t *testing.T) {
+func TestExportToPlayoutOneFilesExport(t *testing.T) {
 	var fileLines []string
 	tearDown := setupTestEx()
 	defer tearDown()
