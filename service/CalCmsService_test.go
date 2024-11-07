@@ -695,3 +695,130 @@ func TestGetEventsReturnsdata(t *testing.T) {
 	assert.EqualValues(t, 8, len(ev))
 	assert.EqualValues(t, "Morgenmagazin - der Freien Radios", ev[0].Title)
 }
+
+func TestCheckHashNoFilesReturnsFalse(t *testing.T) {
+	files := domain.FileList{}
+	i, h := checkHash(&files)
+	assert.EqualValues(t, false, i)
+	assert.EqualValues(t, false, h)
+}
+
+func TestCheckHashOneFileReturnsFalse(t *testing.T) {
+	files := domain.FileList{}
+	fi1 := domain.FileInfo{}
+	files = append(files, fi1)
+	i, h := checkHash(&files)
+	assert.EqualValues(t, false, i)
+	assert.EqualValues(t, false, h)
+}
+
+func TestCheckHashTwoFilesNoChecksumReturnsFalse(t *testing.T) {
+	files := domain.FileList{}
+	fi1 := domain.FileInfo{}
+	fi2 := domain.FileInfo{}
+	files = append(files, fi1)
+	files = append(files, fi2)
+	i, h := checkHash(&files)
+	assert.EqualValues(t, false, i)
+	assert.EqualValues(t, false, h)
+}
+
+func TestCheckHashTwoFilesDifferentChecksumReturnsFalse(t *testing.T) {
+	files := domain.FileList{}
+	fi1 := domain.FileInfo{
+		Checksum: "A",
+	}
+	fi2 := domain.FileInfo{
+		Checksum: "B",
+	}
+	files = append(files, fi1)
+	files = append(files, fi2)
+	i, h := checkHash(&files)
+	assert.EqualValues(t, false, i)
+	assert.EqualValues(t, true, h)
+}
+
+func TestCheckHashTwoFilesSameChecksumReturnsTrue(t *testing.T) {
+	files := domain.FileList{}
+	fi1 := domain.FileInfo{
+		Checksum: "A",
+	}
+	fi2 := domain.FileInfo{
+		Checksum: "A",
+	}
+	files = append(files, fi1)
+	files = append(files, fi2)
+	i, h := checkHash(&files)
+	assert.EqualValues(t, true, i)
+	assert.EqualValues(t, true, h)
+}
+
+func TestExtractFileInfoNoFilesReturnsNA(t *testing.T) {
+	files := domain.FileList{}
+	s, d := extractFileInfo(&files, false)
+	assert.EqualValues(t, "N/A", s)
+	assert.EqualValues(t, "N/A", d)
+}
+
+func TestExtractFileInfoOneFilesNoHashReturnsDuration(t *testing.T) {
+	files := domain.FileList{}
+	fi1 := domain.FileInfo{
+		Checksum: "A",
+		Duration: 60.0,
+	}
+	files = append(files, fi1)
+	s, d := extractFileInfo(&files, false)
+	assert.EqualValues(t, "Present", s)
+	assert.EqualValues(t, "1.0", d)
+}
+
+func TestExtractFileInfoTwoFilesNoHashReturnsNoDuration(t *testing.T) {
+	files := domain.FileList{}
+	fi1 := domain.FileInfo{
+		Checksum: "A",
+		Duration: 60.0,
+	}
+	fi2 := domain.FileInfo{
+		Checksum: "B",
+		Duration: 60.0,
+	}
+	files = append(files, fi1)
+	files = append(files, fi2)
+	s, d := extractFileInfo(&files, false)
+	assert.EqualValues(t, "Multiple", s)
+	assert.EqualValues(t, "N/A", d)
+}
+
+func TestExtractFileInfoTwoDifferentFilesWithHashReturnsDifferent(t *testing.T) {
+	files := domain.FileList{}
+	fi1 := domain.FileInfo{
+		Checksum: "A",
+		Duration: 60.0,
+	}
+	fi2 := domain.FileInfo{
+		Checksum: "B",
+		Duration: 60.0,
+	}
+	files = append(files, fi1)
+	files = append(files, fi2)
+	s, d := extractFileInfo(&files, true)
+	assert.EqualValues(t, "Multiple (different)", s)
+	assert.EqualValues(t, "N/A", d)
+}
+
+func TestExtractFileInfoTwoIdenticalFilesWithHashReturnsSame(t *testing.T) {
+	files := domain.FileList{}
+	fi1 := domain.FileInfo{
+		Checksum: "A",
+		Duration: 60.0,
+	}
+	fi2 := domain.FileInfo{
+		Checksum: "A",
+		Duration: 60.0,
+	}
+	files = append(files, fi1)
+	files = append(files, fi2)
+	s, d := extractFileInfo(&files, true)
+	assert.EqualValues(t, "Multiple (identical)", s)
+	assert.EqualValues(t, "1.0", d)
+}

@@ -309,35 +309,47 @@ func parseDuration(dur string) string {
 
 // extractFileInfo is a helper function that returns file status and file duration as strings
 func extractFileInfo(files *domain.FileList, hashEnabled bool) (fileStatus string, duration string) {
-	var (
-		filesIdentical bool
-		hash           string
-	)
+	if len(*files) == 0 {
+		return "N/A", "N/A"
+	}
 	if len(*files) == 1 {
 		return "Present", strconv.FormatFloat(math.Round((*files)[0].Duration/60), 'f', 1, 64)
 	}
 	if hashEnabled {
-		filesIdentical = true
-		for _, file := range *files {
-			if file.Checksum == "" {
-				return "Multiple", "N/A"
+		filesIdentical, checksumAvail := checkHash(files)
+		switch {
+		case checksumAvail && filesIdentical:
+			return "Multiple (identical)", strconv.FormatFloat(math.Round((*files)[0].Duration/60), 'f', 1, 64)
+		case checksumAvail && !filesIdentical:
+			return "Multiple (different)", "N/A"
+		default:
+			return "Multiple", "N/A"
+		}
+	}
+	return "Multiple", "N/A"
+}
+
+// checkHash compares the has of all files and returns true, if the hash values of all files are identical
+func checkHash(files *domain.FileList) (filesIdentical bool, checksumAvail bool) {
+	var (
+		hash string
+	)
+	if len(*files) < 2 {
+		return false, false
+	}
+	filesIdentical = true
+	for _, file := range *files {
+		if file.Checksum == "" {
+			return false, false
+		} else {
+			if hash == "" {
+				hash = file.Checksum
 			} else {
-				if hash == "" {
-					hash = file.Checksum
-				} else {
-					filesIdentical = (hash == file.Checksum)
-				}
+				filesIdentical = (hash == file.Checksum)
 			}
 		}
-		if filesIdentical {
-			return "Multiple (identical)", strconv.FormatFloat(math.Round((*files)[0].Duration/60), 'f', 1, 64)
-		} else {
-			return "Multiple (different)", "N/A"
-		}
-	} else {
-		return "Multiple", "N/A"
 	}
-
+	return filesIdentical, true
 }
 
 // convertEvent is a helper function that converts calCms data into the event representation
