@@ -172,37 +172,18 @@ func (s DefaultCalCmsService) Query() error {
 // EnrichFileInformation runs through all file representations and adds information from calCms where applicable
 func (s DefaultCalCmsService) EnrichFileInformation() dto.FileCounts {
 	var (
-		newFile domain.FileInfo
 		fc      dto.FileCounts
+		newFile domain.FileInfo
 	)
 	if files := s.Repo.GetAll(); files != nil {
 		for _, file := range *files {
 			if file.EventId != 0 {
-				info, err := s.checkCalCmsEventData(file)
+				calCmsInfo, err := s.checkCalCmsEventData(file)
 				if err != nil {
-					logger.Error("Error while checking calCms", err)
+					logger.Error("Error while checking calCms event data for file", err)
 					continue
 				}
-				newFile = file
-				if !file.FromCalCMS {
-					logger.Warn("File not designated as \"From CalCMS\". This should not happen.")
-					newFile.FromCalCMS = true
-				}
-				if !file.StartTime.Equal(info.StartTime) {
-					logger.Warnf("Start times differ. File: %v, calCMS: %v. Updating to value from calCMS.", file.StartTime, info.StartTime)
-					newFile.StartTime = info.StartTime
-				}
-				newFile.EndTime = info.EndTime
-				newFile.CalCmsTitle = info.Title
-				newFile.CalCmsInfoExtracted = true
-				if file.FileType == "Audio" {
-					fc.AudioCount++
-				}
-				if (file.FileType == "Stream") && (file.StreamId != 0) {
-					newFile.Duration = float64(info.Duration.Seconds())
-					fc.StreamCount++
-				}
-				fc.TotalCount++
+				newFile, fc = mergeInfo(file, *calCmsInfo)
 				if err := s.Repo.Store(newFile); err != nil {
 					logger.Error("Error updating information in file repository", err)
 				}
@@ -210,6 +191,31 @@ func (s DefaultCalCmsService) EnrichFileInformation() dto.FileCounts {
 		}
 	}
 	return fc
+}
+
+// mergeInfo combines the information from the existing file entry and data from calCms inot the new file entry
+func mergeInfo(oldFileInfo domain.FileInfo, calCmsInfo dto.CalCmsEntry) (newFileInfo domain.FileInfo, fc dto.FileCounts) {
+	newFileInfo = oldFileInfo
+	if !oldFileInfo.FromCalCMS {
+		logger.Warn("File not designated as \"From CalCMS\". This should not happen.")
+		newFileInfo.FromCalCMS = true
+	}
+	if !oldFileInfo.StartTime.Equal(calCmsInfo.StartTime) {
+		logger.Warnf("Start times differ. File: %v, calCMS: %v. Updating to value from calCMS.", oldFileInfo.StartTime, calCmsInfo.StartTime)
+		newFileInfo.StartTime = calCmsInfo.StartTime
+	}
+	newFileInfo.EndTime = calCmsInfo.EndTime
+	newFileInfo.CalCmsTitle = calCmsInfo.Title
+	newFileInfo.CalCmsInfoExtracted = true
+	if oldFileInfo.FileType == "Audio" {
+		fc.AudioCount++
+	}
+	if (oldFileInfo.FileType == "Stream") && (oldFileInfo.StreamId != 0) {
+		newFileInfo.Duration = float64(calCmsInfo.Duration.Seconds())
+		fc.StreamCount++
+	}
+	fc.TotalCount++
+	return
 }
 
 // checkCalCmsEventData evaluates calCms event data on a per file basis and performs some sanity checks
