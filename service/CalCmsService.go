@@ -180,6 +180,7 @@ func (s DefaultCalCmsService) EnrichFileInformation() dto.FileCounts {
 			if file.EventId != 0 {
 				info, err := s.checkCalCmsEventData(file)
 				if err != nil {
+					logger.Error("Error while checking calCms", err)
 					continue
 				}
 				newFile = file
