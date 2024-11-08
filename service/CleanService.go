@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
+	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/johannes-kuhfuss/services_utils/logger"
 )
@@ -67,22 +68,7 @@ func (s DefaultCleanService) CleanRun() (filesCleaned int, e error) {
 	s.Cfg.RunTime.CleanRunning = true
 	s.Cfg.RunTime.LastCleanDate = time.Now()
 	if files := s.Repo.GetAll(); files != nil {
-		for _, file := range *files {
-			fromYesterday, err := isYesterdayOrOlder(file.FolderDate)
-			if err != nil {
-				errorCounter++
-				logger.Error("Error converting date", err)
-			}
-			if fromYesterday {
-				logger.Infof("Removing entry for expired file %v", file.Path)
-				if err := s.Repo.Delete(file.Path); err != nil {
-					errorCounter++
-					logger.Error("Could not remove entry: ", err)
-				} else {
-					filesCleaned++
-				}
-			}
-		}
+		filesCleaned, errorCounter = s.checkAndClean(files)
 	}
 	s.Cfg.RunTime.CleanRunning = false
 	if errorCounter == 0 {
@@ -90,4 +76,25 @@ func (s DefaultCleanService) CleanRun() (filesCleaned int, e error) {
 	} else {
 		return filesCleaned, errors.New("error cleaning")
 	}
+}
+
+// checkAndClean checks the folder date of each file and, if older than today, removes the file from the in-memory store
+func (s DefaultCleanService) checkAndClean(files *domain.FileList) (fileCount int, errorCount int) {
+	for _, file := range *files {
+		fromYesterday, err := isYesterdayOrOlder(file.FolderDate)
+		if err != nil {
+			errorCount++
+			logger.Error("Error converting date", err)
+		}
+		if fromYesterday {
+			logger.Infof("Removing entry for expired file %v", file.Path)
+			if err := s.Repo.Delete(file.Path); err != nil {
+				errorCount++
+				logger.Error("Could not remove entry: ", err)
+			} else {
+				fileCount++
+			}
+		}
+	}
+	return
 }
