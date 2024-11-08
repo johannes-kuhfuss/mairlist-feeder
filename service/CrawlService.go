@@ -216,9 +216,6 @@ func generateHash(path string) (hash string, e error) {
 // It also initiates the data extraction for technical metadata and streaming information
 // The extracted information is stored in the file list in-memory
 func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
-	var (
-		startTimeDisplay string
-	)
 	if files := s.Repo.GetAll(); files != nil {
 		for _, file := range *files {
 			if !file.InfoExtracted {
@@ -238,18 +235,7 @@ func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
 				if err := s.Repo.Store(newInfo); err != nil {
 					logger.Error("Error while storing data: ", err)
 				}
-				if newInfo.StartTime.IsZero() {
-					startTimeDisplay = "N/A"
-				} else {
-					startTimeDisplay = newInfo.StartTime.Format("15:04")
-				}
-				switch newInfo.FileType {
-				case "Stream":
-					logger.Infof("Time Slot: % v, File: %v (Stream Description)", startTimeDisplay, file.Path)
-				default:
-					roundedDurationMin := math.Round(newInfo.Duration / 60)
-					logger.Infof("Time Slot: % v, File: %v - Length (min): %v", startTimeDisplay, file.Path, roundedDurationMin)
-				}
+				logExtractResult(file)
 			}
 		}
 	}
@@ -321,6 +307,26 @@ func matchFolderName(oldInfo domain.FileInfo) (newInfo domain.FileInfo) {
 		}
 	}
 	return
+}
+
+// setStartIimeDisplay formats the start stime for display purposes
+func logExtractResult(fi domain.FileInfo) {
+	var (
+		startTimeDisplay string
+	)
+	if fi.StartTime.IsZero() {
+		startTimeDisplay = "N/A"
+	} else {
+		startTimeDisplay = fi.StartTime.Format("15:04")
+	}
+	switch fi.FileType {
+	case "Stream":
+		logger.Infof("Time Slot: % v, File: %v (Stream Description)", startTimeDisplay, fi.Path)
+	default:
+		roundedDurationMin := math.Round(fi.Duration / 60)
+		logger.Infof("Time Slot: % v, File: %v - Length (min): %v", startTimeDisplay, fi.Path, roundedDurationMin)
+	}
+
 }
 
 // convertTime is a helper function to convert time information extracted from the file names into a time.Time
