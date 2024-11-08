@@ -77,15 +77,15 @@ func (s DefaultCrawlService) GenHashes() (hashCount int) {
 				hash, err := generateHash(file.Path)
 				if err != nil {
 					logger.Errorf("Error when creating hash for %v. %v", file.Path, err)
-				} else {
-					file.Checksum = hash
-					if err := s.Repo.Store(file); err != nil {
-						logger.Error("Error storing file", err)
-					} else {
-						hashCount++
-						logger.Infof("Added hash for file %v", file.Path)
-					}
+					return
 				}
+				file.Checksum = hash
+				if err := s.Repo.Store(file); err != nil {
+					logger.Error("Error storing file", err)
+					return
+				}
+				hashCount++
+				logger.Infof("Added hash for file %v", file.Path)
 			}
 		}
 	}
@@ -140,9 +140,6 @@ func (s DefaultCrawlService) CrawlRun() {
 
 // crawlFolder examines the files on disk and adds an entry in the in-memory representation
 func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []string) (fileCount int, e error) {
-	var (
-		fi domain.FileInfo
-	)
 	today := helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate)
 	err := filepath.WalkDir(path.Join(rootFolder, today),
 		func(srcPath string, info fs.DirEntry, err error) error {
@@ -157,14 +154,7 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []st
 						return nil
 					}
 				}
-				fi.ModTime = newFile.ModTime()
-				fi.Path = srcPath
-				fi.FromCalCMS = false
-				fi.ScanTime = time.Now()
-				rawFolder := strings.Trim(filepath.Dir(srcPath), rootFolder)[0:10]
-				fi.FolderDate = strings.Replace(rawFolder, "\\", "-", -1)
-				fi.InfoExtracted = false
-				fi.EventId = s.parseEventId(srcPath)
+				fi := s.setNewFileData(newFile, srcPath, rootFolder)
 				fileCount++
 				s.Repo.Store(fi)
 				if s.Cfg.Misc.TestCrawl {
@@ -178,6 +168,18 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []st
 	} else {
 		return fileCount, nil
 	}
+}
+
+func (s DefaultCrawlService) setNewFileData(newFile fs.FileInfo, srcPath string, rootFolder string) (fileInfo domain.FileInfo) {
+	fileInfo.ModTime = newFile.ModTime()
+	fileInfo.Path = srcPath
+	fileInfo.FromCalCMS = false
+	fileInfo.ScanTime = time.Now()
+	rawFolder := strings.Trim(filepath.Dir(srcPath), rootFolder)[0:10]
+	fileInfo.FolderDate = strings.Replace(rawFolder, "\\", "-", -1)
+	fileInfo.InfoExtracted = false
+	fileInfo.EventId = s.parseEventId(srcPath)
+	return
 }
 
 // parseEventId is a helper function that determines the calCms event id from a file's file name
