@@ -74,10 +74,7 @@ func (s DefaultCrawlService) GenHashes() (hashCount int) {
 		files := s.Repo.GetAll()
 		for _, file := range *files {
 			if file.Checksum == "" {
-				t1 := time.Now()
 				hash, err := generateHash(file.Path)
-				t2 := time.Now()
-				dur := t2.Sub(t1)
 				if err != nil {
 					logger.Errorf("Error when creating hash for %v. %v", file.Path, err)
 				} else {
@@ -86,7 +83,7 @@ func (s DefaultCrawlService) GenHashes() (hashCount int) {
 						logger.Error("Error storing file", err)
 					} else {
 						hashCount++
-						logger.Infof("Added hash for file %v in %v seconds", file.Path, dur.Seconds())
+						logger.Infof("Added hash for file %v", file.Path)
 					}
 				}
 			}

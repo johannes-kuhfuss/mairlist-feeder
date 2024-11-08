@@ -332,3 +332,21 @@ func TestGenerateHashSampleFileReturnsHash(t *testing.T) {
 	assert.Nil(t, err)
 	assert.EqualValues(t, "50c2fcde004eea6790580b01c7032f1d", hash)
 }
+
+func TestGenHashesNoFilesReturnsZero(t *testing.T) {
+	teardown := setupTestCrawl()
+	defer teardown()
+	hc := crawlSvc.GenHashes()
+	assert.EqualValues(t, 0, hc)
+}
+
+func TestGenHashesOneFileReturnsOne(t *testing.T) {
+	teardown := setupTestCrawl()
+	defer teardown()
+	fi1 := domain.FileInfo{
+		Path: audioSampleFile,
+	}
+	crawlRepo.Store(fi1)
+	hc := crawlSvc.GenHashes()
+	assert.EqualValues(t, 1, hc)
+}
