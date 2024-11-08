@@ -184,21 +184,26 @@ func TestActionExecNoDataReturnsError(t *testing.T) {
 	assert.EqualValues(t, "{\"message\":\"unknown action\",\"statuscode\":400,\"causes\":null}", string(data))
 }
 
+func runRequest(form url.Values) (data []byte, statusCode int) {
+	request := httptest.NewRequest(http.MethodPost, actionPage, strings.NewReader(form.Encode()))
+	request.Header.Set("Content-type", "application/x-www-form-urlencoded")
+	router.ServeHTTP(recorder, request)
+	res := recorder.Result()
+	defer res.Body.Close()
+	data, _ = io.ReadAll(res.Body)
+	return data, res.StatusCode
+}
+
 func TestActionExecWrongActionReturnsError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
 	router.POST(actionPage, uh.ExecAction)
 	form := url.Values{}
 	form.Add("action", "unknown")
-	request := httptest.NewRequest(http.MethodPost, actionPage, strings.NewReader(form.Encode()))
-	request.Header.Set("Content-type", "application/x-www-form-urlencoded")
 
-	router.ServeHTTP(recorder, request)
-	res := recorder.Result()
-	defer res.Body.Close()
-	data, _ := io.ReadAll(res.Body)
+	data, statusCode := runRequest(form)
 
-	assert.EqualValues(t, http.StatusBadRequest, res.StatusCode)
+	assert.EqualValues(t, http.StatusBadRequest, statusCode)
 	assert.EqualValues(t, "{\"message\":\"unknown action\",\"statuscode\":400,\"causes\":null}", string(data))
 }
 
@@ -209,15 +214,10 @@ func TestActionExecInvalidHourReturnsError(t *testing.T) {
 	form := url.Values{}
 	form.Add("action", "crawl")
 	form.Add("hour", "44")
-	request := httptest.NewRequest(http.MethodPost, actionPage, strings.NewReader(form.Encode()))
-	request.Header.Set("Content-type", "application/x-www-form-urlencoded")
 
-	router.ServeHTTP(recorder, request)
-	res := recorder.Result()
-	defer res.Body.Close()
-	data, _ := io.ReadAll(res.Body)
+	data, statusCode := runRequest(form)
 
-	assert.EqualValues(t, http.StatusBadRequest, res.StatusCode)
+	assert.EqualValues(t, http.StatusBadRequest, statusCode)
 	assert.EqualValues(t, "{\"message\":\"hour must be between 00 and 23\",\"statuscode\":400,\"causes\":null}", string(data))
 }
 
