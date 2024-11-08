@@ -97,24 +97,6 @@ func TestExtractFileInfoFileNamingConventionReturnsData(t *testing.T) {
 	assert.EqualValues(t, time.Date(2024, time.September, 22, 21, 0, 0, 0, time.Local), fires.EndTime)
 }
 
-func TestExtractFileInfoUploadtoolReturnsData(t *testing.T) {
-	teardown := setupTestCrawl()
-	defer teardown()
-	fi1 := domain.FileInfo{
-		Path:       "Z:\\sendungen\\2024\\09\\22\\UL__1800-1900__sendung-xyz.mp3",
-		FolderDate: folderDate,
-	}
-	crawlRepo.Store(fi1)
-	n, e := crawlSvc.extractFileInfo()
-	fires := crawlRepo.GetByPath(fi1.Path)
-	assert.Nil(t, e)
-	assert.EqualValues(t, 1, n.TotalCount)
-	assert.EqualValues(t, false, fires.FromCalCMS)
-	assert.EqualValues(t, "Upload Tool", fires.RuleMatched)
-	assert.EqualValues(t, time.Date(2024, time.September, 22, 18, 0, 0, 0, time.Local), fires.StartTime)
-	assert.EqualValues(t, time.Date(2024, time.September, 22, 19, 0, 0, 0, time.Local), fires.EndTime)
-}
-
 func TestExtractFileInfoAnyFileReturnsData(t *testing.T) {
 	teardown := setupTestCrawl()
 	defer teardown()

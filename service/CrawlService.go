@@ -169,6 +169,7 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []st
 	}
 }
 
+// setNewFileData updates the file data with newly extracted values
 func (s DefaultCrawlService) setNewFileData(newFile fs.FileInfo, srcPath string, rootFolder string) (fileInfo domain.FileInfo) {
 	fileInfo.ModTime = newFile.ModTime()
 	fileInfo.Path = srcPath
@@ -216,78 +217,22 @@ func generateHash(path string) (hash string, e error) {
 // The extracted information is stored in the file list in-memory
 func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
 	var (
-		startTimeDisplay   string
-		roundedDurationMin float64
+		startTimeDisplay string
 	)
-	// /HH-MM (calCMS)
-	folder1Exp := regexp.MustCompile(`[\\/]+([01][0-9]|2[0-3])-(0[0-9]|[1-5][0-9])`)
-	// HHMM-HHMM
-	file1Exp := regexp.MustCompile(`^([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])\s?-\s?([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])[_ -]`)
-	// UL__HHMM-HHMM__ (upload tool)
-	file2Exp := regexp.MustCompile(`^UL__([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])-([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])__`)
 	if files := s.Repo.GetAll(); files != nil {
 		for _, file := range *files {
 			if !file.InfoExtracted {
-				var timeData string
-				var newInfo domain.FileInfo = file
+				var newInfo domain.FileInfo
 
 				if helper.IsAudioFile(s.Cfg, file.Path) {
-					newInfo.FileType = "Audio"
-					techMd, err := analyzeTechMd(file.Path, s.Cfg.Crawl.FfProbeTimeOut, s.Cfg.Crawl.FfprobePath)
-					if err != nil {
-						logger.Error("Could not analyze file length: ", err)
-					} else {
-						newInfo.Duration = techMd.DurationSec
-						newInfo.BitRate = techMd.BitRate
-						newInfo.FormatName = techMd.FormatName
-						roundedDurationMin = math.Round(techMd.DurationSec / 60)
-						fc.AudioCount++
-					}
+					newInfo = s.extractAudioInfo(file)
+					fc.AudioCount++
 				}
 				if helper.IsStreamingFile(s.Cfg, file.Path) {
-					newInfo.FileType = "Stream"
-					name, id, err := analyzeStreamData(file.Path, s.Cfg.Crawl.StreamMap)
-					if err != nil {
-						logger.Error("Could not analyze stream data", err)
-					} else {
-						newInfo.StreamName = name
-						newInfo.StreamId = id
-						fc.StreamCount++
-					}
+					newInfo = s.extractStreamInfo(file)
+					fc.StreamCount++
 				}
-				folderName := filepath.Dir(file.Path)
-				fileName := filepath.Base(file.Path)
-				switch {
-				// Condition: only start time is encoded in folder name: "/HH-MM" (calCMS)
-				case folder1Exp.MatchString(folderName):
-					{
-						timeData = folder1Exp.FindString(folderName)
-						newInfo.FromCalCMS = true
-						newInfo.StartTime, _ = convertTime(timeData[1:3], timeData[4:6], file.FolderDate)
-						newInfo.RuleMatched = "folder HH-MM (calCMS)"
-					}
-				// Condition: start time and end time is encoded in file name in the form "HHMM-HHMM_"
-				case file1Exp.MatchString(fileName):
-					{
-						timeData = file1Exp.FindString(fileName)
-						timeData = strings.Replace(timeData, " ", "", -1)
-						newInfo.StartTime, _ = convertTime(timeData[0:2], timeData[2:4], file.FolderDate)
-						newInfo.EndTime, _ = convertTime(timeData[5:7], timeData[7:9], file.FolderDate)
-						newInfo.RuleMatched = "file HHMM-HHMM"
-					}
-				// Condition start time and end time is encoded in file name in the form "UL__HHMM-HHMM__" (upload tool)
-				case file2Exp.MatchString(fileName):
-					{
-						timeData = file2Exp.FindString(fileName)
-						newInfo.StartTime, _ = convertTime(timeData[4:6], timeData[6:8], file.FolderDate)
-						newInfo.EndTime, _ = convertTime(timeData[9:11], timeData[11:13], file.FolderDate)
-						newInfo.RuleMatched = "Upload Tool"
-					}
-				default:
-					{
-						newInfo.RuleMatched = "None"
-					}
-				}
+				newInfo = matchFolderName(newInfo)
 				newInfo.InfoExtracted = true
 				fc.TotalCount++
 				if err := s.Repo.Store(newInfo); err != nil {
@@ -302,12 +247,80 @@ func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
 				case "Stream":
 					logger.Infof("Time Slot: % v, File: %v (Stream Description)", startTimeDisplay, file.Path)
 				default:
+					roundedDurationMin := math.Round(newInfo.Duration / 60)
 					logger.Infof("Time Slot: % v, File: %v - Length (min): %v", startTimeDisplay, file.Path, roundedDurationMin)
 				}
 			}
 		}
 	}
 	return fc, nil
+}
+
+// extractAudioInfo enriches the file information with audio file specific metadata
+func (s DefaultCrawlService) extractAudioInfo(oldInfo domain.FileInfo) (newInfo domain.FileInfo) {
+	newInfo = oldInfo
+	newInfo.FileType = "Audio"
+	techMd, err := analyzeTechMd(oldInfo.Path, s.Cfg.Crawl.FfProbeTimeOut, s.Cfg.Crawl.FfprobePath)
+	if err != nil {
+		logger.Error("Could not analyze file length: ", err)
+	} else {
+		newInfo.Duration = techMd.DurationSec
+		newInfo.BitRate = techMd.BitRate
+		newInfo.FormatName = techMd.FormatName
+	}
+	return
+}
+
+// extractStreamInfo enriches the file information with stream file specific metadata
+func (s DefaultCrawlService) extractStreamInfo(oldInfo domain.FileInfo) (newInfo domain.FileInfo) {
+	newInfo = oldInfo
+	newInfo.FileType = "Stream"
+	name, id, err := analyzeStreamData(oldInfo.Path, s.Cfg.Crawl.StreamMap)
+	if err != nil {
+		logger.Error("Could not analyze stream data", err)
+	} else {
+		newInfo.StreamName = name
+		newInfo.StreamId = id
+	}
+	return
+}
+
+// matchFolderName determines the source of the file, eitehr calCms or naming convention
+func matchFolderName(oldInfo domain.FileInfo) (newInfo domain.FileInfo) {
+	var (
+		timeData string
+	)
+	// /HH-MM (calCMS)
+	folder1Exp := regexp.MustCompile(`[\\/]+([01][0-9]|2[0-3])-(0[0-9]|[1-5][0-9])`)
+	// HHMM-HHMM
+	file1Exp := regexp.MustCompile(`^([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])\s?-\s?([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])[_ -]`)
+	newInfo = oldInfo
+	folderName := filepath.Dir(oldInfo.Path)
+	fileName := filepath.Base(oldInfo.Path)
+	switch {
+	// Condition: only start time is encoded in folder name: "/HH-MM" (calCMS)
+	case folder1Exp.MatchString(folderName):
+		{
+			timeData = folder1Exp.FindString(folderName)
+			newInfo.FromCalCMS = true
+			newInfo.StartTime, _ = convertTime(timeData[1:3], timeData[4:6], oldInfo.FolderDate)
+			newInfo.RuleMatched = "folder HH-MM (calCMS)"
+		}
+	// Condition: start time and end time is encoded in file name in the form "HHMM-HHMM_"
+	case file1Exp.MatchString(fileName):
+		{
+			timeData = file1Exp.FindString(fileName)
+			timeData = strings.Replace(timeData, " ", "", -1)
+			newInfo.StartTime, _ = convertTime(timeData[0:2], timeData[2:4], oldInfo.FolderDate)
+			newInfo.EndTime, _ = convertTime(timeData[5:7], timeData[7:9], oldInfo.FolderDate)
+			newInfo.RuleMatched = "file HHMM-HHMM"
+		}
+	default:
+		{
+			newInfo.RuleMatched = "None"
+		}
+	}
+	return
 }
 
 // convertTime is a helper function to convert time information extracted from the file names into a time.Time
