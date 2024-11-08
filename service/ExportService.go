@@ -236,12 +236,6 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 	/// 3 - line type = F (file), I (database item)
 	/// 4 - Line data = full path file name, database Id
 	/// 5 - Optional values = omitted here
-	var (
-		totalLength float64
-		startTime   time.Time
-		line        string
-	)
-
 	if size := len(fileExportList.Files); size > 0 {
 		logger.Infof("Exporting %v elements to mAirList for slot %v:00", size, hour)
 		exportPath, err := s.setExportPath(hour)
@@ -249,46 +243,56 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 			logger.Error("Error when setting export path", err)
 			return "", err
 		}
-		exportFile, err := os.OpenFile(exportPath, os.O_CREATE, 0644)
-		dataWriter := bufio.NewWriter(exportFile)
-		if err != nil {
-			logger.Error("Error when creating playlist file for mAirlist: ", err)
-			return "", err
-		} else {
-			defer exportFile.Close()
-			s.writeStartComment(dataWriter)
-			for time, file := range fileExportList.Files {
-				startTime = setStartTime(startTime, time)
-				if file.FromCalCMS && !file.EndTime.IsZero() {
-					plannedDur := file.EndTime.Sub(file.StartTime).Minutes()
-					totalLength = totalLength + plannedDur
-				} else {
-					totalLength = totalLength + file.SlotLength
-				}
-				listTime := time + ":00"
-				switch file.FileType {
-				case "Stream":
-					line = fmt.Sprintf("%v\tH\tI\t%v\n", listTime, file.StreamId)
-				default:
-					line = fmt.Sprintf("%v\tH\tF\t%v\n", listTime, file.Path)
-				}
-				if err := s.writeLine(dataWriter, line); err == nil {
-					delete(fileExportList.Files, createIndexFromTime(file.StartTime))
-				}
-			}
-			if s.Cfg.Export.TerminateAfterDuration {
-				s.WriteStopper(dataWriter, startTime, totalLength)
-			}
-			s.writeEndComment(dataWriter)
-			dataWriter.Flush()
+		if err := s.WritePlaylist(exportPath); err == nil {
 			s.Cfg.RunTime.LastExportFileName = exportPath
 			s.Cfg.RunTime.LastExportedFileDate = time.Now()
 			return exportPath, nil
 		}
-	} else {
-		logger.Infof("No elements to export for slot %v:00.", hour)
-		return "", nil
+		return "", err
 	}
+	logger.Infof("No elements to export for slot %v:00.", hour)
+	return "", nil
+}
+
+func (s DefaultExportService) WritePlaylist(exportPath string) error {
+	var (
+		totalLength float64
+		startTime   time.Time
+		line        string
+	)
+	exportFile, err := os.OpenFile(exportPath, os.O_CREATE, 0644)
+	dataWriter := bufio.NewWriter(exportFile)
+	if err != nil {
+		logger.Error("Error when creating playlist file for mAirlist: ", err)
+		return err
+	}
+	defer exportFile.Close()
+	s.writeStartComment(dataWriter)
+	for time, file := range fileExportList.Files {
+		startTime = setStartTime(startTime, time)
+		if file.FromCalCMS && !file.EndTime.IsZero() {
+			plannedDur := file.EndTime.Sub(file.StartTime).Minutes()
+			totalLength = totalLength + plannedDur
+		} else {
+			totalLength = totalLength + file.SlotLength
+		}
+		listTime := time + ":00"
+		switch file.FileType {
+		case "Stream":
+			line = fmt.Sprintf("%v\tH\tI\t%v\n", listTime, file.StreamId)
+		default:
+			line = fmt.Sprintf("%v\tH\tF\t%v\n", listTime, file.Path)
+		}
+		if err := s.writeLine(dataWriter, line); err == nil {
+			delete(fileExportList.Files, createIndexFromTime(file.StartTime))
+		}
+	}
+	if s.Cfg.Export.TerminateAfterDuration {
+		s.WriteStopper(dataWriter, startTime, totalLength)
+	}
+	s.writeEndComment(dataWriter)
+	dataWriter.Flush()
+	return nil
 }
 
 // setStartTime is a helper function that determines the correct start time value for a playlist element
