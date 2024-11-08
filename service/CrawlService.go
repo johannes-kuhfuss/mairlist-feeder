@@ -156,9 +156,8 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []st
 				}
 				fi := s.setNewFileData(newFile, srcPath, rootFolder)
 				fileCount++
-				s.Repo.Store(fi)
-				if s.Cfg.Misc.TestCrawl {
-					logger.Infof("File %v added", srcPath)
+				if err := s.Repo.Store(fi); err != nil {
+					logger.Error("Error while storing file", err)
 				}
 			}
 			return nil
