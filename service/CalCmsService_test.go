@@ -19,6 +19,20 @@ var (
 	cfgCal        config.AppConfig
 	fileRepoCal   repositories.DefaultFileRepository
 	calCmsService DefaultCalCmsService
+	fi1           domain.FileInfo = domain.FileInfo{
+		Path:          "",
+		ModTime:       time.Time{},
+		Duration:      0,
+		StartTime:     time.Time{},
+		EndTime:       time.Time{},
+		FromCalCMS:    false,
+		InfoExtracted: false,
+		ScanTime:      time.Time{},
+		FolderDate:    folderDateDash,
+		RuleMatched:   "",
+		EventId:       0,
+		CalCmsTitle:   "",
+	}
 )
 
 const (
@@ -261,11 +275,8 @@ func TestCheckCalCmsDataWrongDataReturnsError(t *testing.T) {
 	assert.EqualValues(t, "parsing time \"CC:DD\" as \"2006-01-02T15:04:05\": cannot parse \"CC:DD\" as \"2006\"", err.Error())
 }
 
-func TestCheckCalCmsDataDifferingDatesReturnsError(t *testing.T) {
+func setupEvents() {
 	var events []domain.CalCmsEvent
-	teardown := setupTestCal()
-	defer teardown()
-
 	event := domain.CalCmsEvent{
 		FullTitle:     "Test",
 		StartDatetime: startDate,
@@ -277,62 +288,28 @@ func TestCheckCalCmsDataDifferingDatesReturnsError(t *testing.T) {
 		Events: events,
 	}
 	calCmsService.insertData(data)
-	fi := domain.FileInfo{
-		Path:          "",
-		ModTime:       time.Time{},
-		Duration:      0,
-		StartTime:     time.Time{},
-		EndTime:       time.Time{},
-		FromCalCMS:    false,
-		InfoExtracted: false,
-		ScanTime:      time.Time{},
-		FolderDate:    folderDateDash,
-		RuleMatched:   "",
-		EventId:       0,
-		CalCmsTitle:   "",
-	}
+}
 
-	_, err := calCmsService.checkCalCmsEventData(fi)
+func TestCheckCalCmsDataDifferingDatesReturnsError(t *testing.T) {
+	teardown := setupTestCal()
+	defer teardown()
+	setupEvents()
+
+	_, err := calCmsService.checkCalCmsEventData(fi1)
 
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "file has different date from calCmsData", err.Error())
 }
 
 func TestCheckCalCmsDataNoMatchingOnSameDayDataReturnsError(t *testing.T) {
-	var events []domain.CalCmsEvent
 	teardown := setupTestCal()
 	defer teardown()
-
-	event := domain.CalCmsEvent{
-		FullTitle:     "Test",
-		StartDatetime: startDate,
-		EndDatetime:   endDate,
-		EventID:       1,
-	}
-	events = append(events, event)
-	data := domain.CalCmsPgmData{
-		Events: events,
-	}
-	calCmsService.insertData(data)
-	fi := domain.FileInfo{
-		Path:          "",
-		ModTime:       time.Time{},
-		Duration:      0,
-		StartTime:     time.Time{},
-		EndTime:       time.Time{},
-		FromCalCMS:    false,
-		InfoExtracted: false,
-		ScanTime:      time.Time{},
-		FolderDate:    folderDateDash,
-		RuleMatched:   "",
-		EventId:       22,
-		CalCmsTitle:   "",
-	}
+	setupEvents()
 
 	calCmsService.Cfg.Misc.TestCrawl = true
 	calCmsService.Cfg.Misc.TestDate = folderDateSlash
 
-	_, err := calCmsService.checkCalCmsEventData(fi)
+	_, err := calCmsService.checkCalCmsEventData(fi1)
 
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "no such id in calCMS", err.Error())
