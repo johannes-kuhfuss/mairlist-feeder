@@ -84,9 +84,9 @@ func calcCalCmsEndDate(startDate string) (endDate string, e error) {
 
 func (s DefaultCalCmsService) setCalCmsQueryState(success bool) {
 	if success {
-		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
-	} else {
 		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Succeeded (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
+	} else {
+		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
 	}
 
 }
