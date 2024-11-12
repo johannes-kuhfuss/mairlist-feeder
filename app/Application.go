@@ -56,7 +56,6 @@ func StartApp() {
 	scheduleBgJobs()
 	go startServer()
 	crawlService.Crawl()
-	logger.Info("Application started")
 
 	<-appEnd
 	cleanUp()

@@ -121,18 +121,18 @@ func (s DefaultCrawlService) CrawlRun() {
 		logger.Errorf("Error crawling folder %v: . %v", s.Cfg.Crawl.RootFolder, err)
 	}
 	s.Cfg.RunTime.FilesInList = s.Repo.Size()
-	logger.Infof("Finished crawl run #%v. Removed %v orphaned files. Added %v new files. %v files in list total.", s.Cfg.RunTime.CrawlRunNumber, filesRemoved, fileCount, s.Cfg.RunTime.FilesInList)
+	logger.Infof("Finished crawl run #%v. Removed %v orphaned file(s). Added %v new file(s). %v file(s) in list total.", s.Cfg.RunTime.CrawlRunNumber, filesRemoved, fileCount, s.Cfg.RunTime.FilesInList)
 	if s.Repo.NewFiles() {
 		logger.Info("Starting to extract file data...")
 		fc, _ := s.extractFileInfo()
-		logger.Infof("Extracted file data for %v files. %v audio files, %v stream files", fc.TotalCount, fc.AudioCount, fc.StreamCount)
+		logger.Infof("Extracted file data for %v file(s). %v audio file(s), %v stream file(s)", fc.TotalCount, fc.AudioCount, fc.StreamCount)
 		if s.Cfg.Crawl.GenerateHash {
 			logger.Info("Starting to add hashes for new files...")
 			hc := s.GenHashes()
-			logger.Infof("Added hashes for %v new files.", hc)
+			logger.Infof("Added hashes for %v new file(s)", hc)
 		}
 	} else {
-		logger.Info("No (new) files in file list. No extraction needed.")
+		logger.Info("No (new) file(s) in file list. No extraction needed.")
 	}
 	s.Cfg.RunTime.AudioFilesInList = s.Repo.AudioSize()
 	s.Cfg.RunTime.StreamFilesInList = s.Repo.StreamSize()

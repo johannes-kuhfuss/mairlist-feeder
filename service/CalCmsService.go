@@ -161,7 +161,7 @@ func (s DefaultCalCmsService) Query() error {
 		}
 		CalCmsPgm.Unlock()
 		fc := s.EnrichFileInformation()
-		logger.Infof("Added or updated information from calCMS for %v files, audio: %v, stream: %v", fc.TotalCount, fc.AudioCount, fc.StreamCount)
+		logger.Infof("Added or updated information from calCMS for %v file(s), audio: %v, stream: %v", fc.TotalCount, fc.AudioCount, fc.StreamCount)
 		return nil
 	}
 	logger.Warn("calCMS query not enabled in configuration. Not querying.")
