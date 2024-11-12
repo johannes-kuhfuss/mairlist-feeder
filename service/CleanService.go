@@ -52,10 +52,10 @@ func (s DefaultCleanService) Clean() {
 	logger.Info("Starting file list clean-up...")
 	filesCleaned, err := s.CleanRun()
 	if err != nil {
-		logger.Error("Error while clean repository", err)
+		logger.Error("Error while cleaning repository", err)
 	}
 	s.Cfg.RunTime.FilesCleaned = filesCleaned
-	logger.Infof("File list clean-up done. Cleaned %v entries.", filesCleaned)
+	logger.Infof("File list cleaned-up. Removed %v entries.", filesCleaned)
 }
 
 // CleanRun performs the clean-up of expired file list entries

@@ -138,7 +138,7 @@ func (s DefaultCalCmsService) getCalCmsEventData() (eventData []byte, e error) {
 	eventData, err = io.ReadAll(resp.Body)
 	if err != nil {
 		s.setCalCmsQueryState(false)
-		logger.Error("Cannot read response data from calCMS http request", err)
+		logger.Error("Cannot read response data from calCMS", err)
 		return nil, err
 	}
 	s.setCalCmsQueryState(true)
@@ -164,15 +164,14 @@ func (s DefaultCalCmsService) Query() error {
 		logger.Infof("Added or updated information from calCMS for %v file(s), audio: %v, stream: %v", fc.TotalCount, fc.AudioCount, fc.StreamCount)
 		return nil
 	}
-	logger.Warn("calCMS query not enabled in configuration. Not querying.")
+	logger.Warn("calCMS query not enabled in configuration. Not querying")
 	return nil
 
 }
 
 // EnrichFileInformation runs through all file representations and adds information from calCms where applicable
-func (s DefaultCalCmsService) EnrichFileInformation() dto.FileCounts {
+func (s DefaultCalCmsService) EnrichFileInformation() (fc dto.FileCounts) {
 	var (
-		fc      dto.FileCounts
 		newFile domain.FileInfo
 	)
 	if files := s.Repo.GetAll(); files != nil {
@@ -222,7 +221,7 @@ func mergeInfo(oldFileInfo domain.FileInfo, calCmsInfo dto.CalCmsEntry) (newFile
 func (s DefaultCalCmsService) checkCalCmsEventData(file domain.FileInfo) (*dto.CalCmsEntry, error) {
 	info, err := s.GetCalCmsEventDataForId(file.EventId)
 	if err != nil {
-		logger.Error("Error retrieving calCMS info: ", err)
+		logger.Error("Error retrieving calCMS info", err)
 		return nil, err
 	}
 	calCmsDate := strings.ReplaceAll(helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate), "/", "-")
@@ -239,7 +238,7 @@ func (s DefaultCalCmsService) checkCalCmsEventData(file domain.FileInfo) (*dto.C
 		return nil, errors.New("event is live in calCMS")
 	}
 	if calCmsDate != file.FolderDate {
-		return nil, errors.New("file has different date from calCmsData")
+		return nil, errors.New("file has different date than calCms data")
 	}
 	return &info[0], nil
 }

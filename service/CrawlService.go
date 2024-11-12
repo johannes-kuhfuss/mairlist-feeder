@@ -81,7 +81,7 @@ func (s DefaultCrawlService) GenHashes() (hashCount int) {
 				}
 				file.Checksum = hash
 				if err := s.Repo.Store(file); err != nil {
-					logger.Error("Error storing file", err)
+					logger.Error("Error storing file in repository", err)
 					return
 				}
 				hashCount++
@@ -157,7 +157,7 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []st
 				fi := s.setNewFileData(newFile, srcPath, rootFolder)
 				fileCount++
 				if err := s.Repo.Store(fi); err != nil {
-					logger.Error("Error while storing file", err)
+					logger.Error("Error while storing file in repository", err)
 				}
 			}
 			return nil
@@ -233,7 +233,7 @@ func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
 				newInfo.InfoExtracted = true
 				fc.TotalCount++
 				if err := s.Repo.Store(newInfo); err != nil {
-					logger.Error("Error while storing data: ", err)
+					logger.Error("Error while storing file in repository: ", err)
 				}
 				logExtractResult(newInfo)
 			}
