@@ -235,7 +235,7 @@ func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
 				if err := s.Repo.Store(newInfo); err != nil {
 					logger.Error("Error while storing data: ", err)
 				}
-				logExtractResult(file)
+				logExtractResult(newInfo)
 			}
 		}
 	}
@@ -271,7 +271,7 @@ func (s DefaultCrawlService) extractStreamInfo(oldInfo domain.FileInfo) (newInfo
 	return
 }
 
-// matchFolderName determines the source of the file, eitehr calCms or naming convention
+// matchFolderName determines the source of the file, either calCms or naming convention
 func matchFolderName(oldInfo domain.FileInfo) (newInfo domain.FileInfo) {
 	var (
 		timeData string
