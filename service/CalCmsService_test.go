@@ -298,7 +298,7 @@ func TestCheckCalCmsDataDifferingDatesReturnsError(t *testing.T) {
 	_, err := calCmsService.checkCalCmsEventData(fi1)
 
 	assert.NotNil(t, err)
-	assert.EqualValues(t, "file has different date from calCmsData", err.Error())
+	assert.EqualValues(t, "file has different date than calCms data", err.Error())
 }
 
 func TestCheckCalCmsDataNoMatchingOnSameDayDataReturnsError(t *testing.T) {
