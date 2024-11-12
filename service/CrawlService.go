@@ -114,7 +114,7 @@ func (s DefaultCrawlService) checkForOrphanFiles() (filesRemoved int) {
 func (s DefaultCrawlService) CrawlRun() {
 	s.Cfg.RunTime.CrawlRunNumber++
 	s.Cfg.RunTime.LastCrawlDate = time.Now()
-	logger.Infof("Root folder: %v. Starting crawl #%v.", s.Cfg.Crawl.RootFolder, s.Cfg.RunTime.CrawlRunNumber)
+	logger.Infof("Starting crawl run #%v (Root Folder: %v).", s.Cfg.RunTime.CrawlRunNumber, s.Cfg.Crawl.RootFolder)
 	filesRemoved := s.checkForOrphanFiles()
 	fileCount, err := s.crawlFolder(s.Cfg.Crawl.RootFolder, s.Cfg.Crawl.CrawlExtensions)
 	if err != nil {
@@ -125,11 +125,11 @@ func (s DefaultCrawlService) CrawlRun() {
 	if s.Repo.NewFiles() {
 		logger.Info("Starting to extract file data...")
 		fc, _ := s.extractFileInfo()
-		logger.Infof("Finished extracting file data for %v files. %v audio files, %v stream files", fc.TotalCount, fc.AudioCount, fc.StreamCount)
+		logger.Infof("Extracted file data for %v files. %v audio files, %v stream files", fc.TotalCount, fc.AudioCount, fc.StreamCount)
 		if s.Cfg.Crawl.GenerateHash {
 			logger.Info("Starting to add hashes for new files...")
 			hc := s.GenHashes()
-			logger.Infof("Done adding hashes for %v new files.", hc)
+			logger.Infof("Added hashes for %v new files.", hc)
 		}
 	} else {
 		logger.Info("No (new) files in file list. No extraction needed.")

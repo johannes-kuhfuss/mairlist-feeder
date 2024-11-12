@@ -41,7 +41,7 @@ var (
 
 // StartApp orchestrates the startup of the application
 func StartApp() {
-	logger.Info("Starting application")
+	logger.Info("Starting application...")
 
 	getCmdLine()
 	err := config.InitConfig(config.EnvFile, &cfg)
@@ -56,6 +56,7 @@ func StartApp() {
 	scheduleBgJobs()
 	go startServer()
 	crawlService.Crawl()
+	logger.Info("Application started")
 
 	<-appEnd
 	cleanUp()
@@ -189,10 +190,10 @@ func scheduleBgJobs() {
 	if cfg.CalCms.ExportDayEvents {
 		eventId, eventErr := cfg.RunTime.BgJobs.AddFunc("15 23 * * *", ExportDayEventsRun)
 		if eventErr != nil {
-			logger.Errorf("Error when scheduling job %v for event state. %v", eventId, eventErr)
+			logger.Errorf("Error when scheduling job %v for recording day's events state. %v", eventId, eventErr)
 		} else {
 			cfg.RunTime.EventJobId = int(eventId)
-			logger.Infof("Day Event Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(eventId).Job, cfg.RunTime.BgJobs.Entry(eventId).Next.String())
+			logger.Infof("Recording Day's Events Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(eventId).Job, cfg.RunTime.BgJobs.Entry(eventId).Next.String())
 		}
 	}
 	logger.Info("Jobs scheduled")
