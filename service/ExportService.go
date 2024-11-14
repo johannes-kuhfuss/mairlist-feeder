@@ -3,6 +3,7 @@ package service
 
 import (
 	"bufio"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
+	"github.com/johannes-kuhfuss/mairlist-feeder/dto"
 	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/johannes-kuhfuss/services_utils/logger"
@@ -112,7 +114,11 @@ func (s DefaultExportService) ExportForHour(hour string) {
 		s.checkTimeAndLenghth(files)
 		exportPath, err := s.ExportToPlayout(hour)
 		if s.Cfg.Export.AppendPlaylist && exportPath != "" && err == nil {
-			err := s.AppendPlaylist(exportPath)
+			req := dto.MairListRequest{
+				ReqType:  "appendpl",
+				FileName: exportPath,
+			}
+			err := s.ExecuteMairListRequest(req)
 			if err != nil {
 				logger.Error("Error appending playlist", err)
 			}
@@ -359,40 +365,67 @@ func (s DefaultExportService) writeLine(w *bufio.Writer, line string) error {
 	return nil
 }
 
+func (s DefaultExportService) ExecuteMairListRequest(req dto.MairListRequest) error {
+	// ReqType = appendpl, getpl
+	switch req.ReqType {
+	case "appendpl":
+		err := s.AppendPlaylist(req.FileName)
+		if err != nil {
+			return err
+		}
+	case "getpl":
+		return errors.New("not implemented")
+	default:
+		return errors.New("not implemented")
+	}
+	return nil
+}
+
 // AppendPlaylist appends the playlist written to the ".tpi" file to the current playlist in mAirList using the API
 func (s DefaultExportService) AppendPlaylist(fileName string) error {
 	// POST to http://<server>:9300/execute
 	// Basic Auth
 	// Body is Form URL encoded
 	// command = PLAYLIST 1 APPEND <filename>
-	req, err := s.buildHttpRequest(fileName)
+	req, err := s.buildAppendRequest(fileName)
 	if err != nil {
-		s.Cfg.RunTime.LastMairListState = fmt.Sprintf(failedMsg, time.Now().Format(dateFormat))
 		return err
 	}
-	resp, err := httpExClient.Do(req)
+	data, statusCode, err := s.execRequest(req)
 	if err != nil {
-		s.Cfg.RunTime.LastMairListState = fmt.Sprintf(failedMsg, time.Now().Format(dateFormat))
 		return err
 	}
-	if resp.StatusCode == 404 {
-		s.Cfg.RunTime.LastMairListState = fmt.Sprintf(failedMsg, time.Now().Format(dateFormat))
-		err := errors.New("url not found")
-		return err
-	}
-	defer resp.Body.Close()
-	b, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode == 200 && string(b) == "ok" {
+	if statusCode == 200 && string(data) == "ok" {
 		logger.Infof("Successfully appended playlist %v to mAirList", fileName)
-		s.Cfg.RunTime.LastMairListState = fmt.Sprintf("Succeeded (%v)", time.Now().Format(dateFormat))
 		return nil
 	}
-	s.Cfg.RunTime.LastMairListState = fmt.Sprintf(failedMsg, time.Now().Format(dateFormat))
-	return errors.New(string(b))
+	return errors.New(string(data))
 }
 
-// buildHttpRequest is a helper function constructing the mAirList API request to append the playlist
-func (s DefaultExportService) buildHttpRequest(fileName string) (req *http.Request, e error) {
+// execRequest executes the request against mAirList and returns the data
+func (s DefaultExportService) execRequest(req *http.Request) (respData []byte, respStatus int, err error) {
+	resp, err := httpExClient.Do(req)
+	if err != nil {
+		s.Cfg.RunTime.LastMairListCommState = fmt.Sprintf(failedMsg, time.Now().Format(dateFormat))
+		return nil, 0, err
+	}
+	if resp.StatusCode == 404 {
+		s.Cfg.RunTime.LastMairListCommState = fmt.Sprintf(failedMsg, time.Now().Format(dateFormat))
+		err := errors.New("url not found")
+		return nil, resp.StatusCode, err
+	}
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		s.Cfg.RunTime.LastMairListCommState = fmt.Sprintf(failedMsg, time.Now().Format(dateFormat))
+		return nil, resp.StatusCode, err
+	}
+	s.Cfg.RunTime.LastMairListCommState = fmt.Sprintf("Succeeded (%v)", time.Now().Format(dateFormat))
+	return b, resp.StatusCode, nil
+}
+
+// buildAppendRequest is a helper function constructing the mAirList API request to append the playlist
+func (s DefaultExportService) buildAppendRequest(fileName string) (req *http.Request, e error) {
 	if s.Cfg.Export.MairListUrl == "" {
 		return nil, errors.New("url cannot be empty")
 	}
@@ -407,4 +440,67 @@ func (s DefaultExportService) buildHttpRequest(fileName string) (req *http.Reque
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.SetBasicAuth(s.Cfg.Export.MairListUser, s.Cfg.Export.MairListPassword)
 	return req, nil
+}
+
+// buildGetPlaylistRequest is a helper function constructing the mAirList API request the current playlist
+func (s DefaultExportService) buildGetPlaylistRequest() (req *http.Request, e error) {
+	if s.Cfg.Export.MairListUrl == "" {
+		return nil, errors.New("url cannot be empty")
+	}
+	mairListUrl, err := url.Parse(s.Cfg.Export.MairListUrl)
+	if err != nil {
+		return nil, err
+	}
+	mairListUrl.Path = path.Join(mairListUrl.Path, "/playlist/0/content")
+	req, _ = http.NewRequest("GET", mairListUrl.String(), nil)
+	req.SetBasicAuth(s.Cfg.Export.MairListUser, s.Cfg.Export.MairListPassword)
+	return req, nil
+}
+
+func (s DefaultExportService) GetPlaylist() error {
+	// GET to http://<server>:9300/playlist/0/content
+	// Basic Auth
+	// Returns the current playlist as XML
+	req, err := s.buildGetPlaylistRequest()
+	if err != nil {
+		return err
+	}
+	data, statusCode, err := s.execRequest(req)
+	if err != nil {
+		return err
+	}
+	if statusCode == 200 {
+		p, err := parseMairListPlaylist(data)
+		if err != nil {
+			return err
+		}
+		s.Cfg.RunTime.MairListPlaying = p
+		return nil
+	}
+	logger.Error("could not get mAirList playlist", err)
+	return err
+}
+
+func parseMairListPlaylist(playlistData []byte) (playing bool, e error) {
+	var (
+		playList domain.MairListPlaylist
+	)
+	err := xml.Unmarshal(playlistData, &playList)
+	if err != nil {
+		logger.Error("Error converting mAirList playlist data into playlist", err)
+		return false, err
+	}
+	for _, item := range playList.PlaylistItem {
+		if item.State == "playing" {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (s DefaultExportService) QueryStatus() {
+	for {
+		s.GetPlaylist()
+		time.Sleep(time.Duration(s.Cfg.Export.StatusQueryCycleSec) * time.Second)
+	}
 }

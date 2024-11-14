@@ -54,6 +54,8 @@ type AppConfig struct {
 		AppendPlaylist         bool    `envconfig:"APPEND_PLAYLIST" default:"false"`
 		TerminateAfterDuration bool    `envconfig:"TERM_AFTER_DUR" default:"true"`
 		LimitTime              bool    `envconfig:"LIMIT_TIME" default:"false"`
+		QueryMairListStatus    bool    `envconfig:"QUERY_MAIRLIST_STATUS" default:"false"`
+		StatusQueryCycleSec    int     `envconfig:"QUERY_STATUS_CYCLE_SEC" default:"5"`
 	}
 	CalCms struct {
 		QueryCalCms     bool     `envconfig:"QUERY_CALCMS" default:"false"`
@@ -63,29 +65,30 @@ type AppConfig struct {
 		ExportDayEvents bool     `envconfig:"EXPORT_DAY_EVENTS" default:"false"`
 	}
 	RunTime struct {
-		Router               *gin.Engine
-		BgJobs               *cron.Cron
-		ListenAddr           string
-		StartDate            time.Time
-		CrawlRunNumber       int
-		LastCrawlDate        time.Time
-		FilesInList          int
-		AudioFilesInList     int
-		StreamFilesInList    int
-		LastExportRunDate    time.Time
-		LastExportedFileDate time.Time
-		LastExportFileName   string
-		CrawlRunning         bool
-		ExportRunning        bool
-		CleanRunning         bool
-		LastCleanDate        time.Time
-		FilesCleaned         int
-		CrawlJobId           int
-		ExportJobId          int
-		CleanJobId           int
-		EventJobId           int
-		LastCalCmsState      string
-		LastMairListState    string
+		Router                *gin.Engine
+		BgJobs                *cron.Cron
+		ListenAddr            string
+		StartDate             time.Time
+		CrawlRunNumber        int
+		LastCrawlDate         time.Time
+		FilesInList           int
+		AudioFilesInList      int
+		StreamFilesInList     int
+		LastExportRunDate     time.Time
+		LastExportedFileDate  time.Time
+		LastExportFileName    string
+		CrawlRunning          bool
+		ExportRunning         bool
+		CleanRunning          bool
+		LastCleanDate         time.Time
+		FilesCleaned          int
+		CrawlJobId            int
+		ExportJobId           int
+		CleanJobId            int
+		EventJobId            int
+		LastCalCmsState       string
+		LastMairListCommState string
+		MairListPlaying       bool
 	}
 }
 
@@ -110,7 +113,7 @@ func InitConfig(file string, config *AppConfig) error {
 // setDefaults sets defaults for some configurations items
 func setDefaults(config *AppConfig) {
 	config.RunTime.LastCalCmsState = "N/A"
-	config.RunTime.LastMairListState = "N/A"
+	config.RunTime.LastMairListCommState = "N/A"
 	if len(config.Crawl.StreamMap) == 0 {
 		config.Crawl.StreamMap = make(map[string]int)
 	}

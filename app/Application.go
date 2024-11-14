@@ -55,6 +55,9 @@ func StartApp() {
 	RegisterForOsSignals()
 	scheduleBgJobs()
 	go startServer()
+	if cfg.Export.QueryMairListStatus {
+		go exportService.QueryStatus()
+	}
 	crawlService.Crawl()
 
 	<-appEnd

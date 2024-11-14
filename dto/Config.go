@@ -50,8 +50,9 @@ type ConfigResp struct {
 	FilesCleaned               string
 	GenHashes                  string
 	LastCalCmsState            string
-	LastMairListState          string
+	LastMairListCommState      string
 	ExportDayEvents            string
+	MairListPlayingState       string
 }
 
 // convertDate converts a date to its display format
@@ -111,8 +112,9 @@ func GetConfig(cfg *config.AppConfig) (resp ConfigResp) {
 		FilesCleaned:               strconv.Itoa(cfg.RunTime.FilesCleaned),
 		GenHashes:                  strconv.FormatBool(cfg.Crawl.GenerateHash),
 		LastCalCmsState:            cfg.RunTime.LastCalCmsState,
-		LastMairListState:          cfg.RunTime.LastMairListState,
+		LastMairListCommState:      cfg.RunTime.LastMairListCommState,
 		ExportDayEvents:            strconv.FormatBool(cfg.CalCms.ExportDayEvents),
+		MairListPlayingState:       strconv.FormatBool(cfg.RunTime.MairListPlaying),
 	}
 	resp.LastCrawlDate = convertDate(cfg.RunTime.LastCrawlDate)
 	resp.LastExportDate = convertDate(cfg.RunTime.LastExportRunDate)

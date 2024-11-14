@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?><Playlist Version="177">
+  <PlaylistItem Class="File" Version="177" State="playing" Time="00:00:00" Player="0" PlaybackPosition="2.224" PlaybackEnd="19.576" DisplayEnd="19.576">
+    <Filename>C:\mAirListDB\Jingles\coloRadio Station ID Long.mp3</Filename>
+    <Title>coloRadio Station ID Long</Title>
+    <Artist>JKU</Artist>
+    <Type>Jingle</Type>
+    <Duration>20.460</Duration>
+    <Database>mAirListDB:{A025465C-723E-4FE5-A18C-468FD1E03383}</Database>
+    <DatabaseID>916</DatabaseID>
+    <Attributes>
+      <Item>
+        <Name>Jahr</Name>
+        <Value>2004</Value>
+      </Item>
+      <Item>
+        <Name>Album</Name>
+        <Value>Jingles</Value>
+      </Item>
+    </Attributes>
+    <Markers>
+      <Marker Type="FadeOut" Position="19.576"/>
+      <Marker Type="CueOut" Position="20.460"/>
+    </Markers>
+  </PlaylistItem>
+  <PlaylistItem Class="File" Version="177" State="buffered" Time="08:49:35" Player="1" PlaybackPosition="0.000" PlaybackEnd="21.116" DisplayEnd="21.116">
+    <Filename>C:\mAirListDB\Jingles\dschingel_20thcentury_kind (1).mp3</Filename>
+    <Amplification>5</Amplification>
+    <Title>dschingel_20thcentury_kind</Title>
+    <Type>Jingle</Type>
+    <Duration>21.608</Duration>
+    <Database>mAirListDB:{A025465C-723E-4FE5-A18C-468FD1E03383}</Database>
+    <DatabaseID>886</DatabaseID>
+    <Markers>
+      <Marker Type="FadeOut" Position="21.116"/>
+      <Marker Type="CueOut" Position="21.608"/>
+    </Markers>
+  </PlaylistItem>
+  <PlaylistItem Class="File" Version="177" State="none" Time="08:49:56">
+    <Filename>C:\mAirListDB\Jingles\Coloradio-Jingle - gefährliche Typen, wir sind hier, um dir zu helfen (1).mp3</Filename>
+    <Amplification>5,97169828414917</Amplification>
+    <Title>gefährliche Typen, wir sind hier, um dir zu helfen</Title>
+    <Artist>coloRadio Jingle</Artist>
+    <Type>Jingle</Type>
+    <Duration>25.349</Duration>
+    <Database>mAirListDB:{A025465C-723E-4FE5-A18C-468FD1E03383}</Database>
+    <DatabaseID>885</DatabaseID>
+    <Markers>
+      <Marker Type="FadeOut" Position="25.116"/>
+      <Marker Type="CueOut" Position="25.349"/>
+    </Markers>
+  </PlaylistItem>
+</Playlist>

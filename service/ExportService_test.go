@@ -50,7 +50,7 @@ func TestBuildHttpRequestEmptyUrlReturnsError(t *testing.T) {
 	defer tearDown()
 	cfg.Export.MairListUrl = ""
 
-	req, err := exportService.buildHttpRequest("test")
+	req, err := exportService.buildAppendRequest("test")
 
 	assert.Nil(t, req)
 	assert.NotNil(t, err)
@@ -64,7 +64,7 @@ func TestBuildHttpRequestWithUrlReturnsRequest(t *testing.T) {
 	cfg.Export.MairListUser = "test"
 	cfg.Export.MairListPassword = "test"
 
-	req, err := exportService.buildHttpRequest("test")
+	req, err := exportService.buildAppendRequest("test")
 
 	assert.NotNil(t, req)
 	assert.Nil(t, err)
@@ -327,4 +327,32 @@ func TestExportToPlayoutOneFilesExport(t *testing.T) {
 	os.Remove(file)
 	assert.EqualValues(t, file, exportService.Cfg.RunTime.LastExportFileName)
 	assert.GreaterOrEqual(t, time.Now(), exportService.Cfg.RunTime.LastExportedFileDate)
+}
+
+func TestParseMairListPlaylistWrongXMLReturnsError(t *testing.T) {
+	plfile, _ := os.Open("../samples/mairlist_playlist_error.xml")
+	defer plfile.Close()
+	pldata, _ := io.ReadAll(plfile)
+	playing, err := parseMairListPlaylist(pldata)
+	assert.False(t, playing)
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "XML syntax error on line 8: element <Database> closed by </Databas>", err.Error())
+}
+
+func TestParseMairListPlaylistNotPlayingReturnsFalse(t *testing.T) {
+	plfile, _ := os.Open("../samples/mairlist_playlist_notplaying.xml")
+	defer plfile.Close()
+	pldata, _ := io.ReadAll(plfile)
+	playing, err := parseMairListPlaylist(pldata)
+	assert.False(t, playing)
+	assert.Nil(t, err)
+}
+
+func TestParseMairListPlaylistPlayingReturnsTrue(t *testing.T) {
+	plfile, _ := os.Open("../samples/mairlist_playlist_playing.xml")
+	defer plfile.Close()
+	pldata, _ := io.ReadAll(plfile)
+	playing, err := parseMairListPlaylist(pldata)
+	assert.True(t, playing)
+	assert.Nil(t, err)
 }

@@ -1,0 +1,3 @@
+Query mAirList status: OnAir, playlist w/ active item: https://community.mairlist.com/t/aktuell-ausgespielte-s-item-per-rest-api/15210
+Expose various data as Prometheus metrics
+On all error messages, remove ":"
