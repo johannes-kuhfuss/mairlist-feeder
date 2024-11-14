@@ -20,6 +20,7 @@ var (
 const (
 	folderDate      = "2024-09-22"
 	audioSampleFile = "../samples/1600-1700_sine1k.mp3"
+	sampleFolder    = "../samples/"
 )
 
 func setupTestCrawl() func() {
@@ -230,7 +231,7 @@ func TestCrawlFolderNoFilesReturnsZero(t *testing.T) {
 	cfgCrawl.Misc.TestCrawl = true
 	cfgCrawl.Misc.TestDate = "2024/09/22"
 
-	n, e := crawlSvc.crawlFolder("../samples/", []string{".mp3"})
+	n, e := crawlSvc.crawlFolder(sampleFolder, []string{".mp3"})
 
 	assert.Nil(t, e)
 	assert.EqualValues(t, 0, n)
@@ -243,7 +244,7 @@ func TestCrawlFolderOneFilesReturnsOne(t *testing.T) {
 	cfgCrawl.Misc.TestCrawl = true
 	cfgCrawl.Misc.TestDate = "2024/09/23"
 
-	n, e := crawlSvc.crawlFolder("../samples/", []string{".mp3"})
+	n, e := crawlSvc.crawlFolder(sampleFolder, []string{".mp3"})
 
 	assert.Nil(t, e)
 	assert.EqualValues(t, 1, n)
@@ -257,9 +258,9 @@ func TestCrawlFolderSecondCrawl(t *testing.T) {
 	cfgCrawl.Misc.TestCrawl = true
 	cfgCrawl.Misc.TestDate = "2024/09/23"
 
-	n1, e1 := crawlSvc.crawlFolder("../samples/", []string{".mp3"})
+	n1, e1 := crawlSvc.crawlFolder(sampleFolder, []string{".mp3"})
 	s1 := crawlRepo.Size()
-	n2, e2 := crawlSvc.crawlFolder("../samples/", []string{".mp3"})
+	n2, e2 := crawlSvc.crawlFolder(sampleFolder, []string{".mp3"})
 	s2 := crawlRepo.Size()
 
 	assert.Nil(t, e1)

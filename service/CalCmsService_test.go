@@ -43,6 +43,7 @@ const (
 	folderDateDash     = "2024-09-17"
 	folderDateSlash    = "2024/09/17"
 	calCmsResponseFile = "../samples/calCMS-response.json"
+	title              = "my title"
 )
 
 func setupTestCal() func() {
@@ -870,7 +871,7 @@ func TestMergeInfoAudio(t *testing.T) {
 	}
 	oi.StartTime = time.Date(2024, 11, 11, 1, 2, 3, 0, time.Local)
 	ci := dto.CalCmsEntry{
-		Title:     "new title",
+		Title:     title,
 		StartTime: time.Date(2024, 11, 11, 1, 2, 3, 0, time.Local),
 		EndTime:   time.Date(2024, 11, 11, 2, 2, 3, 0, time.Local),
 		Duration:  0,
@@ -883,7 +884,7 @@ func TestMergeInfoAudio(t *testing.T) {
 	assert.EqualValues(t, 0, ct.StreamCount)
 	assert.EqualValues(t, time.Date(2024, 11, 11, 1, 2, 3, 0, time.Local), ni.StartTime)
 	assert.EqualValues(t, time.Date(2024, 11, 11, 2, 2, 3, 0, time.Local), ni.EndTime)
-	assert.EqualValues(t, "new title", ni.CalCmsTitle)
+	assert.EqualValues(t, title, ni.CalCmsTitle)
 }
 
 func TestMergeInfoStream(t *testing.T) {
@@ -894,7 +895,7 @@ func TestMergeInfoStream(t *testing.T) {
 	}
 	oi.StartTime = time.Date(2024, 11, 11, 1, 2, 3, 0, time.Local)
 	ci := dto.CalCmsEntry{
-		Title:     "new title",
+		Title:     title,
 		StartTime: time.Date(2024, 11, 11, 1, 2, 3, 0, time.Local),
 		EndTime:   time.Date(2024, 11, 11, 2, 2, 3, 0, time.Local),
 		Duration:  time.Duration(60 * time.Second),

@@ -15,6 +15,28 @@ import (
 var (
 	repo repositories.DefaultFileRepository
 	cfg  config.AppConfig
+	fis  = domain.FileInfo{
+		Path:                "",
+		ModTime:             time.Time{},
+		Duration:            0,
+		StartTime:           time.Time{},
+		EndTime:             time.Time{},
+		FromCalCMS:          false,
+		InfoExtracted:       false,
+		ScanTime:            time.Time{},
+		FolderDate:          folderDate,
+		RuleMatched:         "",
+		EventId:             0,
+		CalCmsTitle:         "",
+		CalCmsInfoExtracted: false,
+		BitRate:             123,
+		FormatName:          "MyFormat",
+		SlotLength:          0,
+		FileType:            "",
+		StreamId:            0,
+		StreamName:          "",
+		Checksum:            "",
+	}
 )
 
 const (
@@ -114,82 +136,23 @@ func TestBuildCalCmsInfoReturnsInfo2(t *testing.T) {
 }
 
 func TestBuildTechMdDefault(t *testing.T) {
-	fi1 := domain.FileInfo{
-		Path:                "",
-		ModTime:             time.Time{},
-		Duration:            0,
-		StartTime:           time.Time{},
-		EndTime:             time.Time{},
-		FromCalCMS:          false,
-		InfoExtracted:       false,
-		ScanTime:            time.Time{},
-		FolderDate:          folderDate,
-		RuleMatched:         "",
-		EventId:             0,
-		CalCmsTitle:         "",
-		CalCmsInfoExtracted: false,
-		BitRate:             123,
-		FormatName:          "MyFormat",
-		SlotLength:          0,
-		FileType:            "",
-		StreamId:            0,
-		StreamName:          "",
-		Checksum:            "",
-	}
-	info := buildTechMd(fi1)
+	info := buildTechMd(fis)
 	assert.EqualValues(t, "N/A", info)
 }
 
 func TestBuildTechMdAudioChecksum(t *testing.T) {
-	fi1 := domain.FileInfo{
-		Path:                "",
-		ModTime:             time.Time{},
-		Duration:            0,
-		StartTime:           time.Time{},
-		EndTime:             time.Time{},
-		FromCalCMS:          false,
-		InfoExtracted:       false,
-		ScanTime:            time.Time{},
-		FolderDate:          folderDate,
-		RuleMatched:         "",
-		EventId:             0,
-		CalCmsTitle:         "",
-		CalCmsInfoExtracted: false,
-		BitRate:             123,
-		FormatName:          "MyFormat",
-		SlotLength:          0,
-		FileType:            "Audio",
-		StreamId:            0,
-		StreamName:          "",
-		Checksum:            "ABC",
-	}
-	info := buildTechMd(fi1)
+	fis.FormatName = "MyFormat"
+	fis.BitRate = 123
+	fis.FileType = "Audio"
+	fis.Checksum = "ABC"
+	info := buildTechMd(fis)
 	assert.EqualValues(t, "MyFormat @ 123kbps [ABC]", info)
 }
 
 func TestBuildTechMdStream(t *testing.T) {
-	fi1 := domain.FileInfo{
-		Path:                "",
-		ModTime:             time.Time{},
-		Duration:            0,
-		StartTime:           time.Time{},
-		EndTime:             time.Time{},
-		FromCalCMS:          false,
-		InfoExtracted:       false,
-		ScanTime:            time.Time{},
-		FolderDate:          folderDate,
-		RuleMatched:         "",
-		EventId:             0,
-		CalCmsTitle:         "",
-		CalCmsInfoExtracted: false,
-		BitRate:             0,
-		FormatName:          "",
-		SlotLength:          0,
-		FileType:            "Stream",
-		StreamId:            123,
-		StreamName:          "MyStream",
-		Checksum:            "",
-	}
-	info := buildTechMd(fi1)
+	fis.FileType = "Stream"
+	fis.StreamId = 123
+	fis.StreamName = "MyStream"
+	info := buildTechMd(fis)
 	assert.EqualValues(t, "Stream MyStream with Id 123", info)
 }
