@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/robfig/cron/v3"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
@@ -50,6 +51,7 @@ func StartApp() {
 	}
 	initRouter()
 	initServer()
+	initMetrics()
 	wireApp()
 	mapUrls()
 	RegisterForOsSignals()
@@ -58,6 +60,7 @@ func StartApp() {
 	if cfg.Export.QueryMairListStatus {
 		go exportService.QueryStatus()
 	}
+	go updateMetrics()
 	crawlService.Crawl()
 
 	<-appEnd
@@ -149,6 +152,7 @@ func mapUrls() {
 	cfg.RunTime.Router.POST("/actions", statsUiHandler.ExecAction)
 	cfg.RunTime.Router.GET("/logs", statsUiHandler.LogsPage)
 	cfg.RunTime.Router.GET("/about", statsUiHandler.AboutPage)
+	cfg.RunTime.Router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 }
 
 // RegisterForOsSignals listens for OS signals terminating the program and sends an internal signal to start cleanup

@@ -9,6 +9,7 @@ import (
 	"github.com/johannes-kuhfuss/services_utils/logger"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/robfig/cron/v3"
 )
 
@@ -63,6 +64,10 @@ type AppConfig struct {
 		Template        string   `envconfig:"CALCMS_TEMPLATE" default:"event.json-p"`
 		EventExclusion  []string `envconfig:"EVENT_EXCLUSION"`
 		ExportDayEvents bool     `envconfig:"EXPORT_DAY_EVENTS" default:"false"`
+	}
+	Metrics struct {
+		FileNumber      prometheus.GaugeVec
+		MairListPlaying prometheus.GaugeVec
 	}
 	RunTime struct {
 		Router                *gin.Engine
