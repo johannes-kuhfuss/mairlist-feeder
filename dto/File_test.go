@@ -153,6 +153,7 @@ func TestBuildTechMdStream(t *testing.T) {
 	fis.FileType = "Stream"
 	fis.StreamId = 123
 	fis.StreamName = "MyStream"
+	fis.Checksum = ""
 	info := buildTechMd(fis)
 	assert.EqualValues(t, "Stream MyStream with Id 123", info)
 }
