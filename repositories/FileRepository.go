@@ -182,11 +182,11 @@ func (fr DefaultFileRepository) SaveToDisk(fileName string) error {
 	defer fileList.RUnlock()
 	b, err := json.Marshal(fileList.Files)
 	if err != nil {
-		logger.Error("Error while converting file list to JSON: ", err)
+		logger.Error("Error while converting file list to JSON", err)
 		return err
 	}
 	if err := os.WriteFile(fileName, b, 0644); err != nil {
-		logger.Error("Error while writing files data to disk: ", err)
+		logger.Error("Error while writing files data to disk", err)
 		return err
 	}
 	logger.Infof("Saved files data to disk (%v items)", len(fileList.Files))
@@ -199,11 +199,11 @@ func (fr DefaultFileRepository) LoadFromDisk(fileName string) error {
 	fileDta := make(map[string]domain.FileInfo)
 	b, err := os.ReadFile(fileName)
 	if err != nil {
-		logger.Error("Error while reading files data from disk: ", err)
+		logger.Error("Error while reading files data from disk", err)
 		return err
 	}
 	if err := json.Unmarshal(b, &fileDta); err != nil {
-		logger.Error("Error while converting files data to json: ", err)
+		logger.Error("Error while converting files data to json", err)
 		return err
 	}
 	fileList.Lock()

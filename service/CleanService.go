@@ -39,7 +39,7 @@ func isYesterdayOrOlder(folderDate string) (bool, error) {
 	const dateLayout = "2006-01-02"
 	fileDate, err := time.Parse(dateLayout, folderDate)
 	if err != nil {
-		logger.Error("Could not convert date: ", err)
+		logger.Error("Could not convert date", err)
 		return false, err
 	}
 	today := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC)
@@ -90,7 +90,7 @@ func (s DefaultCleanService) checkAndClean(files *domain.FileList) (fileCount in
 			logger.Infof("Removing entry for expired file %v", file.Path)
 			if err := s.Repo.Delete(file.Path); err != nil {
 				errorCount++
-				logger.Error("Could not remove entry: ", err)
+				logger.Error("Could not remove entry", err)
 			} else {
 				fileCount++
 			}

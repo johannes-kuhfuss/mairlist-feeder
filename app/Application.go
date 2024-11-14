@@ -202,6 +202,15 @@ func scheduleBgJobs() {
 			logger.Infof("Recording Day's Events Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(eventId).Job, cfg.RunTime.BgJobs.Entry(eventId).Next.String())
 		}
 	}
+	if cfg.CalCms.QueryCalCms {
+		calCmsId, calCmsErr := cfg.RunTime.BgJobs.AddFunc("@every 1m", calCmsService.CountRun)
+		if calCmsErr != nil {
+			logger.Errorf("Error when scheduling job %v for CalCMS event counting. %v", calCmsId, calCmsErr)
+		} else {
+			cfg.RunTime.CalCmsJobId = int(calCmsId)
+			logger.Infof("CalCMS Event Counting Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(calCmsId).Job, cfg.RunTime.BgJobs.Entry(calCmsId).Next.String())
+		}
+	}
 	logger.Info("Jobs scheduled")
 }
 

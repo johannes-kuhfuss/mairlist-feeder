@@ -45,7 +45,7 @@ func setupTestEx() func() {
 	}
 }
 
-func TestBuildHttpRequestEmptyUrlReturnsError(t *testing.T) {
+func TestBuildAppendRequestEmptyUrlReturnsError(t *testing.T) {
 	tearDown := setupTestEx()
 	defer tearDown()
 	cfg.Export.MairListUrl = ""
@@ -57,7 +57,7 @@ func TestBuildHttpRequestEmptyUrlReturnsError(t *testing.T) {
 	assert.EqualValues(t, "url cannot be empty", err.Error())
 }
 
-func TestBuildHttpRequestWithUrlReturnsRequest(t *testing.T) {
+func TestBuildAppendRequestWithUrlReturnsRequest(t *testing.T) {
 	tearDown := setupTestEx()
 	defer tearDown()
 	cfg.Export.MairListUrl = "http://localhost:9300/"
@@ -73,6 +73,33 @@ func TestBuildHttpRequestWithUrlReturnsRequest(t *testing.T) {
 	assert.EqualValues(t, "Basic dGVzdDp0ZXN0", req.Header.Get("Authorization"))
 	b, _ := io.ReadAll(req.Body)
 	assert.EqualValues(t, "command=PLAYLIST+1+APPEND+test", string(b))
+}
+
+func TestBuildGetPlaylistRequestEmptyUrlReturnsError(t *testing.T) {
+	tearDown := setupTestEx()
+	defer tearDown()
+	cfg.Export.MairListUrl = ""
+
+	req, err := exportService.buildGetPlaylistRequest()
+
+	assert.Nil(t, req)
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "url cannot be empty", err.Error())
+}
+
+func TestBuildGetPlaylistRequestWithUrlReturnsRequest(t *testing.T) {
+	tearDown := setupTestEx()
+	defer tearDown()
+	cfg.Export.MairListUrl = "http://localhost:9300/"
+	cfg.Export.MairListUser = "test"
+	cfg.Export.MairListPassword = "test"
+
+	req, err := exportService.buildGetPlaylistRequest()
+
+	assert.NotNil(t, req)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "http://localhost:9300/playlist/0/content", req.URL.String())
+	assert.EqualValues(t, "Basic dGVzdDp0ZXN0", req.Header.Get("Authorization"))
 }
 
 func TestGetNextHourreturnsNextHour(t *testing.T) {
@@ -355,4 +382,58 @@ func TestParseMairListPlaylistPlayingReturnsTrue(t *testing.T) {
 	playing, err := parseMairListPlaylist(pldata)
 	assert.True(t, playing)
 	assert.Nil(t, err)
+}
+
+func TestGetPlaylistBuildRequestFails(t *testing.T) {
+	tearDown := setupTestEx()
+	defer tearDown()
+	err := exportService.GetPlaylist()
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "Get \"http://localhost:9300/playlist/0/content\": dial tcp [::1]:9300: connectex: No connection could be made because the target machine actively refused it.", err.Error())
+}
+
+func TestGetPlaylistExecRequestFails(t *testing.T) {
+	tearDown := setupTestEx()
+	defer tearDown()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+	exportService.Cfg.Export.MairListUrl = srv.URL
+	err := exportService.GetPlaylist()
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "url not found", err.Error())
+}
+
+func TestGetPlaylistParseFails(t *testing.T) {
+	tearDown := setupTestEx()
+	defer tearDown()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("no xml"))
+
+	}))
+	defer srv.Close()
+	exportService.Cfg.Export.MairListUrl = srv.URL
+	err := exportService.GetPlaylist()
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "EOF", err.Error())
+}
+
+func TestGetPlaylistPlaying(t *testing.T) {
+	tearDown := setupTestEx()
+	defer tearDown()
+	plfile, _ := os.Open("../samples/mairlist_playlist_playing.xml")
+	defer plfile.Close()
+	pldata, _ := io.ReadAll(plfile)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write(pldata)
+
+	}))
+	defer srv.Close()
+	exportService.Cfg.Export.MairListUrl = srv.URL
+	err := exportService.GetPlaylist()
+	assert.Nil(t, err)
+	assert.True(t, exportService.Cfg.RunTime.MairListPlaying)
 }

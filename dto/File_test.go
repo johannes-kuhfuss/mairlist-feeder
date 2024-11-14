@@ -112,3 +112,84 @@ func TestBuildCalCmsInfoReturnsInfo2(t *testing.T) {
 	s := buildCalCmsInfo(fi1)
 	assert.EqualValues(t, "No, No, None", s)
 }
+
+func TestBuildTechMdDefault(t *testing.T) {
+	fi1 := domain.FileInfo{
+		Path:                "",
+		ModTime:             time.Time{},
+		Duration:            0,
+		StartTime:           time.Time{},
+		EndTime:             time.Time{},
+		FromCalCMS:          false,
+		InfoExtracted:       false,
+		ScanTime:            time.Time{},
+		FolderDate:          folderDate,
+		RuleMatched:         "",
+		EventId:             0,
+		CalCmsTitle:         "",
+		CalCmsInfoExtracted: false,
+		BitRate:             123,
+		FormatName:          "MyFormat",
+		SlotLength:          0,
+		FileType:            "",
+		StreamId:            0,
+		StreamName:          "",
+		Checksum:            "",
+	}
+	info := buildTechMd(fi1)
+	assert.EqualValues(t, "N/A", info)
+}
+
+func TestBuildTechMdAudioChecksum(t *testing.T) {
+	fi1 := domain.FileInfo{
+		Path:                "",
+		ModTime:             time.Time{},
+		Duration:            0,
+		StartTime:           time.Time{},
+		EndTime:             time.Time{},
+		FromCalCMS:          false,
+		InfoExtracted:       false,
+		ScanTime:            time.Time{},
+		FolderDate:          folderDate,
+		RuleMatched:         "",
+		EventId:             0,
+		CalCmsTitle:         "",
+		CalCmsInfoExtracted: false,
+		BitRate:             123,
+		FormatName:          "MyFormat",
+		SlotLength:          0,
+		FileType:            "Audio",
+		StreamId:            0,
+		StreamName:          "",
+		Checksum:            "ABC",
+	}
+	info := buildTechMd(fi1)
+	assert.EqualValues(t, "MyFormat @ 123kbps [ABC]", info)
+}
+
+func TestBuildTechMdStream(t *testing.T) {
+	fi1 := domain.FileInfo{
+		Path:                "",
+		ModTime:             time.Time{},
+		Duration:            0,
+		StartTime:           time.Time{},
+		EndTime:             time.Time{},
+		FromCalCMS:          false,
+		InfoExtracted:       false,
+		ScanTime:            time.Time{},
+		FolderDate:          folderDate,
+		RuleMatched:         "",
+		EventId:             0,
+		CalCmsTitle:         "",
+		CalCmsInfoExtracted: false,
+		BitRate:             0,
+		FormatName:          "",
+		SlotLength:          0,
+		FileType:            "Stream",
+		StreamId:            123,
+		StreamName:          "MyStream",
+		Checksum:            "",
+	}
+	info := buildTechMd(fi1)
+	assert.EqualValues(t, "Stream MyStream with Id 123", info)
+}

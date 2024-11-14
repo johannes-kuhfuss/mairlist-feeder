@@ -10,6 +10,7 @@ import (
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
+	"github.com/johannes-kuhfuss/mairlist-feeder/dto"
 	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/stretchr/testify/assert"
@@ -53,7 +54,7 @@ func setupTestCal() func() {
 	}
 }
 
-func TestConvertToEntryTimeError1ReturnsError(t *testing.T) {
+func TestConvertEventTimeError1ReturnsError(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	ev := domain.CalCmsEvent{
@@ -67,7 +68,7 @@ func TestConvertToEntryTimeError1ReturnsError(t *testing.T) {
 	assert.EqualValues(t, "parsing time \"AA:BB\" as \"2006-01-02T15:04:05\": cannot parse \"AA:BB\" as \"2006\"", err.Error())
 }
 
-func TestConvertToEntryTimeError2ReturnsError(t *testing.T) {
+func TestConvertEventTimeError2ReturnsError(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	ev := domain.CalCmsEvent{
@@ -81,7 +82,7 @@ func TestConvertToEntryTimeError2ReturnsError(t *testing.T) {
 	assert.EqualValues(t, "parsing time \"11:00\" as \"2006-01-02T15:04:05\": cannot parse \"11:00\" as \"2006\"", err.Error())
 }
 
-func TestConvertToEntryNoErrorReturnsEntry(t *testing.T) {
+func TestConvertEventNoErrorReturnsEntry(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	ev := domain.CalCmsEvent{
@@ -650,7 +651,16 @@ func TestCalcCalCmsEndDateDateReturnsNextDay(t *testing.T) {
 func TestParseDurationReturnsDuration(t *testing.T) {
 	dur := parseDuration("05:00:02")
 	assert.EqualValues(t, "300.0", dur)
+}
 
+func TestParseDurationShortReturnsNA(t *testing.T) {
+	dur := parseDuration("abc")
+	assert.EqualValues(t, "N/A", dur)
+}
+
+func TestParseDurationNoDurationReturnsNA(t *testing.T) {
+	dur := parseDuration("ab:cd:ef")
+	assert.EqualValues(t, "N/A", dur)
 }
 
 func TestGetEventsReturnsdata(t *testing.T) {
@@ -766,6 +776,21 @@ func TestExtractFileInfoTwoFilesNoHashReturnsNoDuration(t *testing.T) {
 	assert.EqualValues(t, "N/A", d)
 }
 
+func TestExtractFileInfoTwoFilesHashMissingReturnsNoDuration(t *testing.T) {
+	files := domain.FileList{}
+	fi1 := domain.FileInfo{
+		Duration: 60.0,
+	}
+	fi2 := domain.FileInfo{
+		Duration: 60.0,
+	}
+	files = append(files, fi1)
+	files = append(files, fi2)
+	s, d := extractFileInfo(&files, true)
+	assert.EqualValues(t, "Multiple", s)
+	assert.EqualValues(t, "N/A", d)
+}
+
 func TestExtractFileInfoTwoDifferentFilesWithHashReturnsDifferent(t *testing.T) {
 	files := domain.FileList{}
 	fi1 := domain.FileInfo{
@@ -798,4 +823,87 @@ func TestExtractFileInfoTwoIdenticalFilesWithHashReturnsSame(t *testing.T) {
 	s, d := extractFileInfo(&files, true)
 	assert.EqualValues(t, "Multiple (identical)", s)
 	assert.EqualValues(t, "1.0", d)
+}
+
+func TestSetCalCmsQueryStateSuccess(t *testing.T) {
+	teardown := setupTestCal()
+	defer teardown()
+	calCmsService.setCalCmsQueryState(true)
+	assert.Contains(t, calCmsService.Cfg.RunTime.LastCalCmsState, "Succeeded")
+}
+
+func TestSetCalCmsQueryStateFailure(t *testing.T) {
+	teardown := setupTestCal()
+	defer teardown()
+	calCmsService.setCalCmsQueryState(false)
+	assert.Contains(t, calCmsService.Cfg.RunTime.LastCalCmsState, "Failed")
+}
+
+func TestMergeInfoNotFromCalCms(t *testing.T) {
+	oi := domain.FileInfo{
+		FromCalCMS: false,
+	}
+	ci := dto.CalCmsEntry{}
+	ni, ct := mergeInfo(oi, ci)
+	assert.EqualValues(t, 1, ct.TotalCount)
+	assert.EqualValues(t, true, ni.FromCalCMS)
+	assert.EqualValues(t, true, ni.CalCmsInfoExtracted)
+}
+
+func TestMergeInfoStartTimesDiffer(t *testing.T) {
+	oi := domain.FileInfo{
+		FromCalCMS: true,
+		StartTime:  time.Date(2024, 11, 11, 1, 2, 3, 0, time.Local),
+	}
+	ci := dto.CalCmsEntry{
+		StartTime: time.Date(2024, 11, 11, 1, 2, 4, 0, time.Local),
+	}
+	ni, ct := mergeInfo(oi, ci)
+	assert.EqualValues(t, 1, ct.TotalCount)
+	assert.EqualValues(t, time.Date(2024, 11, 11, 1, 2, 4, 0, time.Local), ni.StartTime)
+}
+
+func TestMergeInfoAudio(t *testing.T) {
+	oi := domain.FileInfo{
+		FromCalCMS: true,
+		FileType:   "Audio",
+	}
+	oi.StartTime = time.Date(2024, 11, 11, 1, 2, 3, 0, time.Local)
+	ci := dto.CalCmsEntry{
+		Title:     "new title",
+		StartTime: time.Date(2024, 11, 11, 1, 2, 3, 0, time.Local),
+		EndTime:   time.Date(2024, 11, 11, 2, 2, 3, 0, time.Local),
+		Duration:  0,
+		EventId:   0,
+		Live:      0,
+	}
+	ni, ct := mergeInfo(oi, ci)
+	assert.EqualValues(t, 1, ct.TotalCount)
+	assert.EqualValues(t, 1, ct.AudioCount)
+	assert.EqualValues(t, 0, ct.StreamCount)
+	assert.EqualValues(t, time.Date(2024, 11, 11, 1, 2, 3, 0, time.Local), ni.StartTime)
+	assert.EqualValues(t, time.Date(2024, 11, 11, 2, 2, 3, 0, time.Local), ni.EndTime)
+	assert.EqualValues(t, "new title", ni.CalCmsTitle)
+}
+
+func TestMergeInfoStream(t *testing.T) {
+	oi := domain.FileInfo{
+		FromCalCMS: true,
+		FileType:   "Stream",
+		StreamId:   9,
+	}
+	oi.StartTime = time.Date(2024, 11, 11, 1, 2, 3, 0, time.Local)
+	ci := dto.CalCmsEntry{
+		Title:     "new title",
+		StartTime: time.Date(2024, 11, 11, 1, 2, 3, 0, time.Local),
+		EndTime:   time.Date(2024, 11, 11, 2, 2, 3, 0, time.Local),
+		Duration:  time.Duration(60 * time.Second),
+		EventId:   3,
+		Live:      0,
+	}
+	ni, ct := mergeInfo(oi, ci)
+	assert.EqualValues(t, 1, ct.TotalCount)
+	assert.EqualValues(t, 0, ct.AudioCount)
+	assert.EqualValues(t, 1, ct.StreamCount)
+	assert.EqualValues(t, 60.0, ni.Duration)
 }

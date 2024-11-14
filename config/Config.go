@@ -68,6 +68,8 @@ type AppConfig struct {
 	Metrics struct {
 		FileNumber      prometheus.GaugeVec
 		MairListPlaying prometheus.GaugeVec
+		Connected       prometheus.GaugeVec
+		EventCounters   prometheus.GaugeVec
 	}
 	RunTime struct {
 		Router                *gin.Engine
@@ -91,9 +93,13 @@ type AppConfig struct {
 		ExportJobId           int
 		CleanJobId            int
 		EventJobId            int
+		CalCmsJobId           int
 		LastCalCmsState       string
 		LastMairListCommState string
 		MairListPlaying       bool
+		EventsPresent         int
+		EventsMissing         int
+		EventsMultiple        int
 	}
 }
 
@@ -105,7 +111,7 @@ var (
 func InitConfig(file string, config *AppConfig) error {
 	logger.Infof("Initializing configuration from file %v...", file)
 	if err := loadConfig(file); err != nil {
-		logger.Error("Error while loading configuration from file: ", err)
+		logger.Error("Error while loading configuration from file", err)
 	}
 	if err := envconfig.Process("", config); err != nil {
 		return fmt.Errorf("could not initialize configuration: %v", err.Error())

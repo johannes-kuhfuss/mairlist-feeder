@@ -250,6 +250,26 @@ func TestCrawlFolderOneFilesReturnsOne(t *testing.T) {
 	assert.EqualValues(t, 1, crawlRepo.Size())
 }
 
+func TestCrawlFolderSecondCrawl(t *testing.T) {
+	teardown := setupTestCrawl()
+	defer teardown()
+
+	cfgCrawl.Misc.TestCrawl = true
+	cfgCrawl.Misc.TestDate = "2024/09/23"
+
+	n1, e1 := crawlSvc.crawlFolder("../samples/", []string{".mp3"})
+	s1 := crawlRepo.Size()
+	n2, e2 := crawlSvc.crawlFolder("../samples/", []string{".mp3"})
+	s2 := crawlRepo.Size()
+
+	assert.Nil(t, e1)
+	assert.Nil(t, e2)
+	assert.EqualValues(t, 1, n1)
+	assert.EqualValues(t, 0, n2)
+	assert.EqualValues(t, 1, s1)
+	assert.EqualValues(t, 1, s2)
+}
+
 func TestAnalyzeStreamDataNoFileReturnsError(t *testing.T) {
 	streamMap := make(map[string]int)
 	_, _, err := analyzeStreamData("", streamMap)
@@ -331,4 +351,15 @@ func TestGenHashesOneFileReturnsOne(t *testing.T) {
 	crawlRepo.Store(fi1)
 	hc := crawlSvc.GenHashes()
 	assert.EqualValues(t, 1, hc)
+}
+
+func TestGenHasheshasErrorReturnsZero(t *testing.T) {
+	teardown := setupTestCrawl()
+	defer teardown()
+	fi1 := domain.FileInfo{
+		Path: "not-there",
+	}
+	crawlRepo.Store(fi1)
+	hc := crawlSvc.GenHashes()
+	assert.EqualValues(t, 0, hc)
 }

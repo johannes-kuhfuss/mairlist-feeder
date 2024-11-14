@@ -93,12 +93,12 @@ func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 	action := c.PostForm("action")
 	hour := c.PostForm("hour")
 	if err := validateAction(action); err != nil {
-		logger.Error("Error: ", err)
+		logger.Error("Error validating action", err)
 		c.JSON(err.StatusCode(), err)
 		return
 	}
 	if err := validateHour(hour); err != nil {
-		logger.Error("Error: ", err)
+		logger.Error("Error validating hour", err)
 		c.JSON(err.StatusCode(), err)
 		return
 	}

@@ -269,7 +269,7 @@ func (s DefaultExportService) WritePlaylist(exportPath string) error {
 	exportFile, err := os.OpenFile(exportPath, os.O_CREATE, 0644)
 	dataWriter := bufio.NewWriter(exportFile)
 	if err != nil {
-		logger.Error("Error when creating playlist file for mAirlist: ", err)
+		logger.Error("Error when creating playlist file for mAirlist", err)
 		return err
 	}
 	defer exportFile.Close()
@@ -359,7 +359,7 @@ func (s DefaultExportService) writeEndComment(w *bufio.Writer) {
 func (s DefaultExportService) writeLine(w *bufio.Writer, line string) error {
 	_, err := w.WriteString(line)
 	if err != nil {
-		logger.Error("Error when writing playlist entry: ", err)
+		logger.Error("Error when writing playlist entry", err)
 		return err
 	}
 	return nil
@@ -374,7 +374,10 @@ func (s DefaultExportService) ExecuteMairListRequest(req dto.MairListRequest) er
 			return err
 		}
 	case "getpl":
-		return errors.New("not implemented")
+		err := s.GetPlaylist()
+		if err != nil {
+			return err
+		}
 	default:
 		return errors.New("not implemented")
 	}

@@ -82,6 +82,7 @@ func calcCalCmsEndDate(startDate string) (endDate string, e error) {
 	return sd.AddDate(0, 0, 1).Format("2006-01-02"), nil
 }
 
+// setCalCmsQueryState sets staus of last calCms interaction with result and time for status overview
 func (s DefaultCalCmsService) setCalCmsQueryState(success bool) {
 	if success {
 		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Succeeded (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
@@ -305,12 +306,15 @@ func (s DefaultCalCmsService) convertEventToEntry(event domain.CalCmsEvent) (ent
 
 // parseDuration is a helper function converting calCms duration into seconds for display purposes
 func parseDuration(dur string) string {
-	dStr := dur[0:2] + "h" + dur[3:5] + "m" + dur[6:8] + "s"
-	d, err := time.ParseDuration(dStr)
-	if err != nil {
-		return "N/A"
+	if len(dur) >= 8 {
+		dStr := dur[0:2] + "h" + dur[3:5] + "m" + dur[6:8] + "s"
+		d, err := time.ParseDuration(dStr)
+		if err != nil {
+			return "N/A"
+		}
+		return strconv.FormatFloat(math.Round(d.Seconds()/60), 'f', 1, 64)
 	}
-	return strconv.FormatFloat(math.Round(d.Seconds()/60), 'f', 1, 64)
+	return "N/A"
 }
 
 // extractFileInfo is a helper function that returns file status and file duration as strings
@@ -398,6 +402,7 @@ func (s DefaultCalCmsService) GetEvents() ([]dto.Event, error) {
 		calCmsData domain.CalCmsPgmData
 	)
 	if s.Cfg.CalCms.QueryCalCms {
+		logger.Info("Refreshing event data from calCms...")
 		data, err := s.getCalCmsEventData()
 		if err != nil {
 			logger.Error("error getting data from calCms", err)
@@ -408,9 +413,34 @@ func (s DefaultCalCmsService) GetEvents() ([]dto.Event, error) {
 			return nil, err
 		}
 		el := s.convertEvent(calCmsData)
+		s.countEvents(el)
 		return el, nil
 	} else {
 		logger.Warn("calCMS query not enabled in configuration. Not querying.")
 		return nil, nil
 	}
+}
+
+// countEvents counts the events with their file status
+func (s DefaultCalCmsService) countEvents(events []dto.Event) {
+	var (
+		presentCount, missingCount, multipleCount int
+	)
+	for _, ev := range events {
+		switch {
+		case ev.FileStatus == "Present":
+			presentCount++
+		case ev.FileStatus == "Missing":
+			missingCount++
+		case strings.Contains(ev.FileStatus, "Multiple"):
+			multipleCount++
+		}
+	}
+	s.Cfg.RunTime.EventsPresent = presentCount
+	s.Cfg.RunTime.EventsMissing = missingCount
+	s.Cfg.RunTime.EventsMultiple = multipleCount
+}
+
+func (s DefaultCalCmsService) CountRun() {
+	s.GetEvents()
 }

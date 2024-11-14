@@ -233,7 +233,7 @@ func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
 				newInfo.InfoExtracted = true
 				fc.TotalCount++
 				if err := s.Repo.Store(newInfo); err != nil {
-					logger.Error("Error while storing file in repository: ", err)
+					logger.Error("Error while storing file in repository", err)
 				}
 				logExtractResult(newInfo)
 			}
@@ -248,7 +248,7 @@ func (s DefaultCrawlService) extractAudioInfo(oldInfo domain.FileInfo) (newInfo 
 	newInfo.FileType = "Audio"
 	techMd, err := analyzeTechMd(oldInfo.Path, s.Cfg.Crawl.FfProbeTimeOut, s.Cfg.Crawl.FfprobePath)
 	if err != nil {
-		logger.Error("Could not analyze file length: ", err)
+		logger.Error("Could not analyze file length", err)
 	} else {
 		newInfo.Duration = techMd.DurationSec
 		newInfo.BitRate = techMd.BitRate
@@ -359,13 +359,13 @@ func analyzeTechMd(essencePath string, timeout int, ffprobePath string) (techMet
 	outJson, err := cmd.CombinedOutput()
 	if err != nil {
 		cancel()
-		logger.Error("Could not execute ffprobe: ", err)
+		logger.Error("Could not execute ffprobe", err)
 		return nil, err
 	}
 	cancel()
 	techMd, err := parseTechMd(outJson)
 	if err != nil {
-		logger.Error("Could not parse technical metadata from ffprobe: ", err)
+		logger.Error("Could not parse technical metadata from ffprobe", err)
 		return nil, err
 	}
 	return techMd, nil
