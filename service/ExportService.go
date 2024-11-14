@@ -499,6 +499,7 @@ func parseMairListPlaylist(playlistData []byte) (playing bool, e error) {
 }
 
 func (s DefaultExportService) QueryStatus() {
+	logger.Info("Starting to query mAirList Playlist Status...")
 	for {
 		s.GetPlaylist()
 		time.Sleep(time.Duration(s.Cfg.Export.StatusQueryCycleSec) * time.Second)
