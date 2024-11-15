@@ -13,7 +13,7 @@ func initMetrics() {
 	cfg.Metrics.FileNumber = *prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "Coloradio",
 		Subsystem: "mAirListFeeder",
-		Name:      "mairlistfeeder_file_count",
+		Name:      "file_count",
 		Help:      "Number of files managed by mAirList-Feeder",
 	}, []string{
 		"fileCountType",
@@ -21,7 +21,7 @@ func initMetrics() {
 	cfg.Metrics.MairListPlaying = *prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "Coloradio",
 		Subsystem: "mAirListFeeder",
-		Name:      "mairlistfeeder_playstatus",
+		Name:      "playstatus",
 		Help:      "Status if mAirList is currently playing",
 	}, []string{
 		"mairlistname",
@@ -29,7 +29,7 @@ func initMetrics() {
 	cfg.Metrics.Connected = *prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "Coloradio",
 		Subsystem: "mAirListFeeder",
-		Name:      "mairlistfeeder_subsystem_connection",
+		Name:      "subsystem_connection",
 		Help:      "Status if mAirList-Feeder is connected to its subsystems",
 	}, []string{
 		"subsystemname",
@@ -37,7 +37,7 @@ func initMetrics() {
 	cfg.Metrics.EventCounters = *prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "Coloradio",
 		Subsystem: "mAirListFeeder",
-		Name:      "mairlistfeeder_events_counters",
+		Name:      "event_counters",
 		Help:      "How many events have essence associated vs. missing vs. multiple essence",
 	}, []string{
 		"typename",
