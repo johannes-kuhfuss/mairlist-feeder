@@ -2,6 +2,7 @@
 package dto
 
 import (
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -75,8 +76,13 @@ func getNextJobDate(cfg *config.AppConfig, jobId int) string {
 
 // getStreamMappings retrieves the mapping between the stream names and stream IDs and returns it in its display format
 func getStreamMappings(mappings map[string]int) (mapStr string) {
-	for stream, id := range mappings {
-		mapStr = mapStr + stream + " -> " + strconv.Itoa(id) + "; "
+	keys := make([]string, 0, len(mappings))
+	for k := range mappings {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		mapStr = mapStr + k + " -> " + strconv.Itoa(mappings[k]) + "; "
 	}
 	return
 }
