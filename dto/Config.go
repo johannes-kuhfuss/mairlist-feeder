@@ -83,6 +83,8 @@ func getStreamMappings(mappings map[string]int) (mapStr string) {
 
 // GetConfig converts the configuration to its display format
 func GetConfig(cfg *config.AppConfig) (resp ConfigResp) {
+	cfg.RunTime.Mu.Lock()
+	defer cfg.RunTime.Mu.Unlock()
 	resp = ConfigResp{
 		ServerHost:                 cfg.Server.Host,
 		ServerPort:                 cfg.Server.Port,

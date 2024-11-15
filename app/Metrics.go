@@ -50,27 +50,33 @@ func initMetrics() {
 
 func updateMetrics() {
 	for {
-		cfg.Metrics.FileNumber.WithLabelValues("total").Set(float64(cfg.RunTime.FilesInList))
-		cfg.Metrics.FileNumber.WithLabelValues("audio").Set(float64(cfg.RunTime.AudioFilesInList))
-		cfg.Metrics.FileNumber.WithLabelValues("stream").Set(float64(cfg.RunTime.StreamFilesInList))
-		if cfg.RunTime.MairListPlaying {
-			cfg.Metrics.MairListPlaying.WithLabelValues(cfg.Export.MairListUrl).Set(1)
-		} else {
-			cfg.Metrics.MairListPlaying.WithLabelValues(cfg.Export.MairListUrl).Set(0)
-		}
-		if strings.Contains(cfg.RunTime.LastCalCmsState, "Succeeded") {
-			cfg.Metrics.Connected.WithLabelValues("calCMS").Set(1)
-		} else {
-			cfg.Metrics.Connected.WithLabelValues("calCMS").Set(0)
-		}
-		if strings.Contains(cfg.RunTime.LastMairListCommState, "Succeeded") {
-			cfg.Metrics.Connected.WithLabelValues("mAirList").Set(1)
-		} else {
-			cfg.Metrics.Connected.WithLabelValues("mAirList").Set(0)
-		}
-		cfg.Metrics.EventCounters.WithLabelValues("present").Set(float64(cfg.RunTime.EventsPresent))
-		cfg.Metrics.EventCounters.WithLabelValues("missing").Set(float64(cfg.RunTime.EventsMissing))
-		cfg.Metrics.EventCounters.WithLabelValues("multiple").Set(float64(cfg.RunTime.EventsMultiple))
+		doUpdate()
 		time.Sleep(3 * time.Second)
 	}
+}
+
+func doUpdate() {
+	cfg.RunTime.Mu.Lock()
+	defer cfg.RunTime.Mu.Lock()
+	cfg.Metrics.FileNumber.WithLabelValues("total").Set(float64(cfg.RunTime.FilesInList))
+	cfg.Metrics.FileNumber.WithLabelValues("audio").Set(float64(cfg.RunTime.AudioFilesInList))
+	cfg.Metrics.FileNumber.WithLabelValues("stream").Set(float64(cfg.RunTime.StreamFilesInList))
+	if cfg.RunTime.MairListPlaying {
+		cfg.Metrics.MairListPlaying.WithLabelValues(cfg.Export.MairListUrl).Set(1)
+	} else {
+		cfg.Metrics.MairListPlaying.WithLabelValues(cfg.Export.MairListUrl).Set(0)
+	}
+	if strings.Contains(cfg.RunTime.LastCalCmsState, "Succeeded") {
+		cfg.Metrics.Connected.WithLabelValues("calCMS").Set(1)
+	} else {
+		cfg.Metrics.Connected.WithLabelValues("calCMS").Set(0)
+	}
+	if strings.Contains(cfg.RunTime.LastMairListCommState, "Succeeded") {
+		cfg.Metrics.Connected.WithLabelValues("mAirList").Set(1)
+	} else {
+		cfg.Metrics.Connected.WithLabelValues("mAirList").Set(0)
+	}
+	cfg.Metrics.EventCounters.WithLabelValues("present").Set(float64(cfg.RunTime.EventsPresent))
+	cfg.Metrics.EventCounters.WithLabelValues("missing").Set(float64(cfg.RunTime.EventsMissing))
+	cfg.Metrics.EventCounters.WithLabelValues("multiple").Set(float64(cfg.RunTime.EventsMultiple))
 }

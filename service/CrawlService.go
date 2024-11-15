@@ -120,8 +120,8 @@ func (s DefaultCrawlService) CrawlRun() {
 	if err != nil {
 		logger.Errorf("Error crawling folder %v: . %v", s.Cfg.Crawl.RootFolder, err)
 	}
-	s.Cfg.RunTime.FilesInList = s.Repo.Size()
-	logger.Infof("Finished crawl run #%v. Removed %v orphaned file(s). Added %v new file(s). %v file(s) in list total.", s.Cfg.RunTime.CrawlRunNumber, filesRemoved, fileCount, s.Cfg.RunTime.FilesInList)
+	ts := s.Repo.Size()
+	logger.Infof("Finished crawl run #%v. Removed %v orphaned file(s). Added %v new file(s). %v file(s) in list total.", s.Cfg.RunTime.CrawlRunNumber, filesRemoved, fileCount, ts)
 	if s.Repo.NewFiles() {
 		logger.Info("Starting to extract file data...")
 		fc, _ := s.extractFileInfo()
@@ -134,8 +134,13 @@ func (s DefaultCrawlService) CrawlRun() {
 	} else {
 		logger.Info("No (new) file(s) in file list. No extraction needed.")
 	}
-	s.Cfg.RunTime.AudioFilesInList = s.Repo.AudioSize()
-	s.Cfg.RunTime.StreamFilesInList = s.Repo.StreamSize()
+	as := s.Repo.AudioSize()
+	es := s.Repo.StreamSize()
+	s.Cfg.RunTime.Mu.Lock()
+	defer s.Cfg.RunTime.Mu.Unlock()
+	s.Cfg.RunTime.FilesInList = ts
+	s.Cfg.RunTime.AudioFilesInList = as
+	s.Cfg.RunTime.StreamFilesInList = es
 }
 
 // crawlFolder examines the files on disk and adds an entry in the in-memory representation

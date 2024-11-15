@@ -36,7 +36,6 @@ var (
 
 const (
 	dateFormat = "2006-01-02 15:04:05 -0700 MST"
-	failedMsg  = "Failed (%v)"
 )
 
 // The export service handles the export of information to mAirList
@@ -405,25 +404,35 @@ func (s DefaultExportService) AppendPlaylist(fileName string) error {
 	return errors.New(string(data))
 }
 
+func (s DefaultExportService) SetMairListCommState(success bool) {
+	s.Cfg.RunTime.Mu.Lock()
+	defer s.Cfg.RunTime.Mu.Unlock()
+	if success {
+		s.Cfg.RunTime.LastMairListCommState = fmt.Sprintf("Succeeded (%v)", time.Now().Format(dateFormat))
+	} else {
+		s.Cfg.RunTime.LastMairListCommState = fmt.Sprintf("Failed (%v)", time.Now().Format(dateFormat))
+	}
+}
+
 // execRequest executes the request against mAirList and returns the data
 func (s DefaultExportService) execRequest(req *http.Request) (respData []byte, respStatus int, err error) {
 	resp, err := httpExClient.Do(req)
 	if err != nil {
-		s.Cfg.RunTime.LastMairListCommState = fmt.Sprintf(failedMsg, time.Now().Format(dateFormat))
+		s.SetMairListCommState(false)
 		return nil, 0, err
 	}
 	if resp.StatusCode == 404 {
-		s.Cfg.RunTime.LastMairListCommState = fmt.Sprintf(failedMsg, time.Now().Format(dateFormat))
+		s.SetMairListCommState(false)
 		err := errors.New("url not found")
 		return nil, resp.StatusCode, err
 	}
 	defer resp.Body.Close()
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		s.Cfg.RunTime.LastMairListCommState = fmt.Sprintf(failedMsg, time.Now().Format(dateFormat))
+		s.SetMairListCommState(false)
 		return nil, resp.StatusCode, err
 	}
-	s.Cfg.RunTime.LastMairListCommState = fmt.Sprintf("Succeeded (%v)", time.Now().Format(dateFormat))
+	s.SetMairListCommState(true)
 	return b, resp.StatusCode, nil
 }
 
@@ -477,6 +486,8 @@ func (s DefaultExportService) GetPlaylist() error {
 		if err != nil {
 			return err
 		}
+		s.Cfg.RunTime.Mu.Lock()
+		defer s.Cfg.RunTime.Mu.Unlock()
 		s.Cfg.RunTime.MairListPlaying = p
 		return nil
 	}

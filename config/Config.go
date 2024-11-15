@@ -3,6 +3,7 @@ package config
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -72,6 +73,7 @@ type AppConfig struct {
 		EventCounters   prometheus.GaugeVec
 	}
 	RunTime struct {
+		Mu                    sync.Mutex
 		Router                *gin.Engine
 		BgJobs                *cron.Cron
 		ListenAddr            string

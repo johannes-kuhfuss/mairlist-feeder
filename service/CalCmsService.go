@@ -84,6 +84,8 @@ func calcCalCmsEndDate(startDate string) (endDate string, e error) {
 
 // setCalCmsQueryState sets staus of last calCms interaction with result and time for status overview
 func (s DefaultCalCmsService) setCalCmsQueryState(success bool) {
+	s.Cfg.RunTime.Mu.Lock()
+	defer s.Cfg.RunTime.Mu.Unlock()
 	if success {
 		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Succeeded (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
 	} else {
@@ -436,6 +438,8 @@ func (s DefaultCalCmsService) countEvents(events []dto.Event) {
 			multipleCount++
 		}
 	}
+	s.Cfg.RunTime.Mu.Lock()
+	defer s.Cfg.RunTime.Mu.Unlock()
 	s.Cfg.RunTime.EventsPresent = presentCount
 	s.Cfg.RunTime.EventsMissing = missingCount
 	s.Cfg.RunTime.EventsMultiple = multipleCount
