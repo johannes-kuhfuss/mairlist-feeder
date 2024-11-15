@@ -62,6 +62,7 @@ func StartApp() {
 	}
 	go updateMetrics()
 	crawlService.Crawl()
+	calCmsService.GetEvents()
 
 	<-appEnd
 	cleanUp()
