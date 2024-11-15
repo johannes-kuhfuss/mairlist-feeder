@@ -57,7 +57,7 @@ func updateMetrics() {
 
 func doUpdate() {
 	cfg.RunTime.Mu.Lock()
-	defer cfg.RunTime.Mu.Lock()
+	defer cfg.RunTime.Mu.Unlock()
 	cfg.Metrics.FileNumber.WithLabelValues("total").Set(float64(cfg.RunTime.FilesInList))
 	cfg.Metrics.FileNumber.WithLabelValues("audio").Set(float64(cfg.RunTime.AudioFilesInList))
 	cfg.Metrics.FileNumber.WithLabelValues("stream").Set(float64(cfg.RunTime.StreamFilesInList))
