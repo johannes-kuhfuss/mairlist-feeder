@@ -182,7 +182,7 @@ func (s DefaultCalCmsService) EnrichFileInformation() (fc dto.FileCounts) {
 			if file.EventId != 0 {
 				calCmsInfo, err := s.checkCalCmsEventData(file)
 				if err != nil {
-					logger.Error("Error while checking calCms event data for file", err)
+					logger.Errorf("Error while checking calCms event data for file %v. %v", file.Path, err)
 					continue
 				}
 				newFile, fc = mergeInfo(file, *calCmsInfo)
@@ -404,7 +404,6 @@ func (s DefaultCalCmsService) GetEvents() ([]dto.Event, error) {
 		calCmsData domain.CalCmsPgmData
 	)
 	if s.Cfg.CalCms.QueryCalCms {
-		logger.Info("Refreshing event data from calCms...")
 		data, err := s.getCalCmsEventData()
 		if err != nil {
 			logger.Error("error getting data from calCms", err)
