@@ -79,4 +79,5 @@ func doUpdate() {
 	cfg.Metrics.EventCounters.WithLabelValues("present").Set(float64(cfg.RunTime.EventsPresent))
 	cfg.Metrics.EventCounters.WithLabelValues("missing").Set(float64(cfg.RunTime.EventsMissing))
 	cfg.Metrics.EventCounters.WithLabelValues("multiple").Set(float64(cfg.RunTime.EventsMultiple))
+	cfg.Metrics.EventCounters.WithLabelValues("total").Set(float64(cfg.RunTime.EventsPresent + cfg.RunTime.EventsMissing + cfg.RunTime.EventsMultiple))
 }
