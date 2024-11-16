@@ -177,7 +177,8 @@ func (s DefaultCalCmsService) EnrichFileInformation() (fc dto.FileCounts) {
 	var (
 		newFile domain.FileInfo
 	)
-	if files := s.Repo.GetAll(); files != nil {
+	folderDate := strings.ReplaceAll(helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate), "/", "-")
+	if files := s.Repo.GetByDate(folderDate); files != nil {
 		for _, file := range *files {
 			if file.EventId != 0 {
 				calCmsInfo, err := s.checkCalCmsEventData(file)

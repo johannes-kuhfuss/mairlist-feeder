@@ -112,9 +112,27 @@ func (fr DefaultFileRepository) GetByEventId(eventId int) *domain.FileList {
 	}
 	if len(list) > 0 {
 		return &list
-	} else {
+	}
+	return nil
+}
+
+// GetByDate returns all file data from the repository for a specific folder date. Returns nil if repository is empty or no files match
+func (fr DefaultFileRepository) GetByDate(folderDate string) *domain.FileList {
+	var list domain.FileList
+	if fr.Size() == 0 {
 		return nil
 	}
+	fileList.RLock()
+	defer fileList.RUnlock()
+	for _, file := range fileList.Files {
+		if file.FolderDate == folderDate {
+			list = append(list, file)
+		}
+	}
+	if len(list) > 0 {
+		return &list
+	}
+	return nil
 }
 
 // GetAll returns all file data from the repository. Returns nil if repository is empty

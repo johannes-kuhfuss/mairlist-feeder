@@ -85,7 +85,7 @@ func (s DefaultCrawlService) GenHashes() (hashCount int) {
 					return
 				}
 				hashCount++
-				logger.Infof("Added hash for file %v", file.Path)
+				logger.Infof("Added hash for file %v [%v]", file.Path, hash)
 			}
 		}
 	}
@@ -110,7 +110,7 @@ func (s DefaultCrawlService) checkForOrphanFiles() (filesRemoved int) {
 	return
 }
 
-// CrawlRun performs the crawling of the folder, the data enrichment and the has creation
+// CrawlRun performs the crawling of the folder, the data enrichment and the hash creation
 func (s DefaultCrawlService) CrawlRun() {
 	s.Cfg.RunTime.CrawlRunNumber++
 	s.Cfg.RunTime.LastCrawlDate = time.Now()
@@ -221,13 +221,16 @@ func generateHash(path string) (hash string, e error) {
 // It also initiates the data extraction for technical metadata and streaming information
 // The extracted information is stored in the file list in-memory
 func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
+	var (
+		exErr, stErr error
+	)
 	if files := s.Repo.GetAll(); files != nil {
 		for _, file := range *files {
 			if !file.InfoExtracted {
 				var newInfo domain.FileInfo
 
 				if helper.IsAudioFile(s.Cfg, file.Path) {
-					newInfo = s.extractAudioInfo(file)
+					newInfo, exErr = s.extractAudioInfo(file)
 					fc.AudioCount++
 				}
 				if helper.IsStreamingFile(s.Cfg, file.Path) {
@@ -235,10 +238,12 @@ func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
 					fc.StreamCount++
 				}
 				newInfo = matchFolderName(newInfo)
-				newInfo.InfoExtracted = true
 				fc.TotalCount++
-				if err := s.Repo.Store(newInfo); err != nil {
-					logger.Error("Error while storing file in repository", err)
+				if stErr = s.Repo.Store(newInfo); stErr != nil {
+					logger.Error("Error while storing file in repository", stErr)
+				}
+				if (exErr == nil) && (stErr == nil) {
+					newInfo.InfoExtracted = true
 				}
 				logExtractResult(newInfo)
 			}
@@ -248,18 +253,19 @@ func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
 }
 
 // extractAudioInfo enriches the file information with audio file specific metadata
-func (s DefaultCrawlService) extractAudioInfo(oldInfo domain.FileInfo) (newInfo domain.FileInfo) {
+func (s DefaultCrawlService) extractAudioInfo(oldInfo domain.FileInfo) (newInfo domain.FileInfo, e error) {
 	newInfo = oldInfo
 	newInfo.FileType = "Audio"
 	techMd, err := analyzeTechMd(oldInfo.Path, s.Cfg.Crawl.FfProbeTimeOut, s.Cfg.Crawl.FfprobePath)
 	if err != nil {
 		logger.Error("Could not analyze file length", err)
+		return newInfo, err
 	} else {
 		newInfo.Duration = techMd.DurationSec
 		newInfo.BitRate = techMd.BitRate
 		newInfo.FormatName = techMd.FormatName
 	}
-	return
+	return newInfo, nil
 }
 
 // extractStreamInfo enriches the file information with stream file specific metadata

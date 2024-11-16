@@ -349,3 +349,49 @@ func TestGetByEventIdTwoEventIdsReturnsTwo(t *testing.T) {
 	assert.EqualValues(t, "A", (*res)[0].Path)
 	assert.EqualValues(t, "B", (*res)[1].Path)
 }
+
+func TestGetByDateEmptyReturnsNil(t *testing.T) {
+	setupTest()
+	res := repo.GetByDate("")
+	assert.Nil(t, res)
+}
+
+func TestGetByDateNoMatchReturnsNil(t *testing.T) {
+	setupTest()
+	fi1 := domain.FileInfo{
+		Path:       "A",
+		FolderDate: "2024-09-17",
+	}
+	repo.Store(fi1)
+	res := repo.GetByDate("2024-09-18")
+	assert.Nil(t, res)
+}
+
+func TestGetByDateOneMatchReturnsMatch(t *testing.T) {
+	setupTest()
+	fi1 := domain.FileInfo{
+		Path:       "A",
+		FolderDate: "2024-09-17",
+	}
+	repo.Store(fi1)
+	res := repo.GetByDate("2024-09-17")
+	assert.NotNil(t, res)
+	assert.EqualValues(t, "A", (*res)[0].Path)
+}
+
+func TestGetByDateTwoMatchesReturnsMatches(t *testing.T) {
+	setupTest()
+	fi1 := domain.FileInfo{
+		Path:       "A",
+		FolderDate: "2024-09-17",
+	}
+	fi2 := domain.FileInfo{
+		Path:       "B",
+		FolderDate: "2024-09-17",
+	}
+	repo.Store(fi1)
+	repo.Store(fi2)
+	res := repo.GetByDate("2024-09-17")
+	assert.NotNil(t, res)
+	assert.EqualValues(t, 2, len(*res))
+}
