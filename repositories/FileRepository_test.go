@@ -17,7 +17,8 @@ var (
 )
 
 const (
-	testFile = "test.dta"
+	testFile       = "test.dta"
+	folderDateDash = "2024-09-17"
 )
 
 func setupTest() {
@@ -360,7 +361,7 @@ func TestGetByDateNoMatchReturnsNil(t *testing.T) {
 	setupTest()
 	fi1 := domain.FileInfo{
 		Path:       "A",
-		FolderDate: "2024-09-17",
+		FolderDate: folderDateDash,
 	}
 	repo.Store(fi1)
 	res := repo.GetByDate("2024-09-18")
@@ -371,10 +372,10 @@ func TestGetByDateOneMatchReturnsMatch(t *testing.T) {
 	setupTest()
 	fi1 := domain.FileInfo{
 		Path:       "A",
-		FolderDate: "2024-09-17",
+		FolderDate: folderDateDash,
 	}
 	repo.Store(fi1)
-	res := repo.GetByDate("2024-09-17")
+	res := repo.GetByDate(folderDateDash)
 	assert.NotNil(t, res)
 	assert.EqualValues(t, "A", (*res)[0].Path)
 }
@@ -383,15 +384,15 @@ func TestGetByDateTwoMatchesReturnsMatches(t *testing.T) {
 	setupTest()
 	fi1 := domain.FileInfo{
 		Path:       "A",
-		FolderDate: "2024-09-17",
+		FolderDate: folderDateDash,
 	}
 	fi2 := domain.FileInfo{
 		Path:       "B",
-		FolderDate: "2024-09-17",
+		FolderDate: folderDateDash,
 	}
 	repo.Store(fi1)
 	repo.Store(fi2)
-	res := repo.GetByDate("2024-09-17")
+	res := repo.GetByDate(folderDateDash)
 	assert.NotNil(t, res)
 	assert.EqualValues(t, 2, len(*res))
 }
