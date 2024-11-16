@@ -222,7 +222,7 @@ func generateHash(path string) (hash string, e error) {
 // The extracted information is stored in the file list in-memory
 func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
 	var (
-		exErr, stErr error
+		exErr error
 	)
 	if files := s.Repo.GetAll(); files != nil {
 		for _, file := range *files {
@@ -239,11 +239,11 @@ func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
 				}
 				newInfo = matchFolderName(newInfo)
 				fc.TotalCount++
-				if stErr = s.Repo.Store(newInfo); stErr != nil {
-					logger.Error("Error while storing file in repository", stErr)
-				}
-				if (exErr == nil) && (stErr == nil) {
+				if exErr == nil {
 					newInfo.InfoExtracted = true
+				}
+				if err := s.Repo.Store(newInfo); err != nil {
+					logger.Error("Error while storing file in repository", err)
 				}
 				logExtractResult(newInfo)
 			}
