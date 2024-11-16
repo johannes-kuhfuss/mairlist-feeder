@@ -1,2 +1,0 @@
-Expose as Prometheus metrics: day's events counts (missing vs. present vs. multiple)?
-On all error messages, remove ":"
