@@ -42,6 +42,7 @@ var (
 
 // StartApp orchestrates the startup of the application
 func StartApp() {
+	logger.Init("mlf.log")
 	logger.Info("Starting application...")
 
 	getCmdLine()
