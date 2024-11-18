@@ -54,6 +54,8 @@ type ConfigResp struct {
 	LastMairListCommState      string
 	ExportDayEvents            string
 	MairListPlayingState       string
+	LogFile                    string
+	QueryMairListStatus        string
 }
 
 // convertDate converts a date to its display format
@@ -85,6 +87,13 @@ func getStreamMappings(mappings map[string]int) (mapStr string) {
 		mapStr = mapStr + k + " -> " + strconv.Itoa(mappings[k]) + "; "
 	}
 	return
+}
+
+func formatLogFile(logFile string) string {
+	if logFile == "" {
+		return "Logging to file disabled"
+	}
+	return logFile
 }
 
 // GetConfig converts the configuration to its display format
@@ -123,6 +132,8 @@ func GetConfig(cfg *config.AppConfig) (resp ConfigResp) {
 		LastMairListCommState:      cfg.RunTime.LastMairListCommState,
 		ExportDayEvents:            strconv.FormatBool(cfg.CalCms.ExportDayEvents),
 		MairListPlayingState:       strconv.FormatBool(cfg.RunTime.MairListPlaying),
+		LogFile:                    formatLogFile(cfg.Server.LogFile),
+		QueryMairListStatus:        strconv.FormatBool(cfg.Export.QueryMairListStatus),
 	}
 	resp.LastCrawlDate = convertDate(cfg.RunTime.LastCrawlDate)
 	resp.LastExportDate = convertDate(cfg.RunTime.LastExportRunDate)

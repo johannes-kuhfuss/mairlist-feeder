@@ -241,7 +241,7 @@ func TestSetExportPathTestReturnsTest(t *testing.T) {
 	exportService.Cfg.Misc.TestCrawl = true
 	s, _ := exportService.setExportPath("13")
 	assert.NotNil(t, s)
-	assert.EqualValues(t, "C:\\TEMP\\Test_13.tpi", s)
+	assert.EqualValues(t, strings.ToLower("C:\\temp\\Test_13.tpi"), strings.ToLower(s))
 }
 
 func TestSetExportPathRegularReturnsPath(t *testing.T) {

@@ -3,11 +3,13 @@ package config
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/johannes-kuhfuss/services_utils/logger"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/prometheus/client_golang/prometheus"
@@ -24,6 +26,7 @@ type AppConfig struct {
 		UseTls               bool   `envconfig:"USE_TLS" default:"false"`
 		CertFile             string `envconfig:"CERT_FILE" default:"./cert/cert.pem"`
 		KeyFile              string `envconfig:"KEY_FILE" default:"./cert/cert.key"`
+		LogFile              string `envconfig:"LOG_FILE"` // leave empty to disable logging to file
 	}
 	Gin struct {
 		Mode         string `envconfig:"GIN_MODE" default:"release"`
@@ -111,16 +114,28 @@ var (
 
 // InitConfig initializes the configuration and sets the defaults
 func InitConfig(file string, config *AppConfig) error {
-	logger.Infof("Initializing configuration from file %v...", file)
+	log.Printf("Initializing configuration from file %v...", file)
 	if err := loadConfig(file); err != nil {
-		logger.Error("Error while loading configuration from file", err)
+		log.Printf("Error while loading configuration from file. %v", err)
 	}
 	if err := envconfig.Process("", config); err != nil {
 		return fmt.Errorf("could not initialize configuration: %v", err.Error())
 	}
 	setDefaults(config)
-	logger.Info("Configuration initialized")
+	log.Print("Configuration initialized")
 	return nil
+}
+
+// cleanFilePath does sanity-checking on file paths
+func checkFilePath(filePath *string) {
+	*filePath = filepath.Clean(*filePath)
+	_, err := os.Stat(*filePath)
+	if err == nil {
+		*filePath, err = filepath.EvalSymlinks(*filePath)
+		if err != nil {
+			log.Printf("error checking file %v", *filePath)
+		}
+	}
 }
 
 // setDefaults sets defaults for some configurations items
@@ -130,6 +145,13 @@ func setDefaults(config *AppConfig) {
 	if len(config.Crawl.StreamMap) == 0 {
 		config.Crawl.StreamMap = make(map[string]int)
 	}
+	checkFilePath(&config.Server.CertFile)
+	checkFilePath(&config.Server.KeyFile)
+	checkFilePath(&config.Server.LogFile)
+	checkFilePath(&config.Misc.FileSaveFile)
+	checkFilePath(&config.Crawl.RootFolder)
+	checkFilePath(&config.Crawl.FfprobePath)
+	checkFilePath(&config.Export.ExportFolder)
 }
 
 // loadConfig loads the configuration from file. Returns an error if loading fails

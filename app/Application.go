@@ -42,13 +42,17 @@ var (
 
 // StartApp orchestrates the startup of the application
 func StartApp() {
-	logger.Init("mlf.log")
-	logger.Info("Starting application...")
-
 	getCmdLine()
 	err := config.InitConfig(config.EnvFile, &cfg)
 	if err != nil {
 		panic(err)
+	}
+	logger.Init(cfg.Server.LogFile)
+	logger.Info("Starting application...")
+	if cfg.Server.LogFile != "" {
+		logger.Infof("Logging to file: %v", cfg.Server.LogFile)
+	} else {
+		logger.Info("Logging to file disabled")
 	}
 	initRouter()
 	initServer()
