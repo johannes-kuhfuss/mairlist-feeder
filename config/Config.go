@@ -56,6 +56,7 @@ type AppConfig struct {
 		MairListUrl            string  `envconfig:"MAIRLIST_URL" default:"http://localhost:9300/"`
 		MairListUser           string  `envconfig:"MAIRLIST_USER" default:"dbtest"`
 		MairListPassword       string  `envconfig:"MAIRLIST_PASS" default:"dbtest"`
+		MairListVersion        int     `envconfig:"MAIRLIST_VERSION" default:"6"`
 		AppendPlaylist         bool    `envconfig:"APPEND_PLAYLIST" default:"false"`
 		TerminateAfterDuration bool    `envconfig:"TERM_AFTER_DUR" default:"true"`
 		LimitTime              bool    `envconfig:"LIMIT_TIME" default:"false"`

@@ -3,6 +3,7 @@ package service
 
 import (
 	"bufio"
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -473,6 +474,9 @@ func (s DefaultExportService) GetPlaylist() error {
 	// GET to http://<server>:9300/playlist/0/content
 	// Basic Auth
 	// Returns the current playlist as XML
+	var (
+		p bool
+	)
 	req, err := s.buildGetPlaylistRequest()
 	if err != nil {
 		return err
@@ -482,10 +486,18 @@ func (s DefaultExportService) GetPlaylist() error {
 		return err
 	}
 	if statusCode == 200 {
-		p, err := parseMairListPlaylist(data)
-		if err != nil {
-			return err
+		if s.Cfg.Export.MairListVersion >= 6 {
+			p, err = parseMairListPlaylistJson(data)
+			if err != nil {
+				return err
+			}
+		} else {
+			p, err = parseMairListPlaylistXml(data)
+			if err != nil {
+				return err
+			}
 		}
+
 		s.Cfg.RunTime.Mu.Lock()
 		defer s.Cfg.RunTime.Mu.Unlock()
 		s.Cfg.RunTime.MairListPlaying = p
@@ -495,9 +507,9 @@ func (s DefaultExportService) GetPlaylist() error {
 	return err
 }
 
-func parseMairListPlaylist(playlistData []byte) (playing bool, e error) {
+func parseMairListPlaylistXml(playlistData []byte) (playing bool, e error) {
 	var (
-		playList domain.MairListPlaylist
+		playList domain.MairListPlaylistXml
 	)
 	err := xml.Unmarshal(playlistData, &playList)
 	if err != nil {
@@ -505,6 +517,23 @@ func parseMairListPlaylist(playlistData []byte) (playing bool, e error) {
 		return false, err
 	}
 	for _, item := range playList.PlaylistItem {
+		if item.State == "playing" {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func parseMairListPlaylistJson(playlistData []byte) (playing bool, e error) {
+	var (
+		playList domain.MairListPlaylistJson
+	)
+	err := json.Unmarshal(playlistData, &playList)
+	if err != nil {
+		logger.Error("Error converting mAirList playlist data into playlist", err)
+		return false, err
+	}
+	for _, item := range playList.Items {
 		if item.State == "playing" {
 			return true, nil
 		}

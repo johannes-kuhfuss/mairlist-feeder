@@ -3,8 +3,8 @@ package domain
 
 import "encoding/xml"
 
-// Playlist is returned from mAirList via API
-type MairListPlaylist struct {
+// Playlist is returned from mAirList 5.x via API in XML
+type MairListPlaylistXml struct {
 	XMLName      xml.Name `xml:"Playlist"`
 	Text         string   `xml:",chardata"`
 	Version      string   `xml:"Version,attr"`
@@ -43,4 +43,32 @@ type MairListPlaylist struct {
 		} `xml:"Markers"`
 		Amplification string `xml:"Amplification"`
 	} `xml:"PlaylistItem"`
+}
+
+type MairListPlaylistJson struct {
+	Items []struct {
+		PlaybackPosition string  `json:"PlaybackPosition,omitempty"`
+		Duration         float64 `json:"Duration"`
+		DisplayEnd       string  `json:"DisplayEnd,omitempty"`
+		ID               string  `json:"ID"`
+		Markers          struct {
+			FadeOut float64 `json:"FadeOut"`
+			CueOut  float64 `json:"CueOut"`
+			CueIn   float64 `json:"CueIn"`
+		} `json:"Markers,omitempty"`
+		Title       string `json:"Title"`
+		Time        string `json:"Time"`
+		State       string `json:"State"`
+		Filename    string `json:"Filename"`
+		Player      int    `json:"Player,omitempty"`
+		Class       string `json:"Class"`
+		Version     int    `json:"Version"`
+		PlaybackEnd string `json:"PlaybackEnd,omitempty"`
+		Artist      string `json:"Artist,omitempty"`
+		Attributes  struct {
+			Album string `json:"Album"`
+			Genre string `json:"Genre"`
+			Jahr  string `json:"Jahr"`
+		} `json:"Attributes,omitempty"`
+	} `json:"Items"`
 }

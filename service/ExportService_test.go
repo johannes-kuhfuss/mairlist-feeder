@@ -360,7 +360,7 @@ func TestParseMairListPlaylistWrongXMLReturnsError(t *testing.T) {
 	plfile, _ := os.Open("../samples/mairlist_playlist_error.xml")
 	defer plfile.Close()
 	pldata, _ := io.ReadAll(plfile)
-	playing, err := parseMairListPlaylist(pldata)
+	playing, err := parseMairListPlaylistXml(pldata)
 	assert.False(t, playing)
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "XML syntax error on line 8: element <Database> closed by </Databas>", err.Error())
@@ -370,7 +370,7 @@ func TestParseMairListPlaylistNotPlayingReturnsFalse(t *testing.T) {
 	plfile, _ := os.Open("../samples/mairlist_playlist_notplaying.xml")
 	defer plfile.Close()
 	pldata, _ := io.ReadAll(plfile)
-	playing, err := parseMairListPlaylist(pldata)
+	playing, err := parseMairListPlaylistXml(pldata)
 	assert.False(t, playing)
 	assert.Nil(t, err)
 }
@@ -379,7 +379,7 @@ func TestParseMairListPlaylistPlayingReturnsTrue(t *testing.T) {
 	plfile, _ := os.Open("../samples/mairlist_playlist_playing.xml")
 	defer plfile.Close()
 	pldata, _ := io.ReadAll(plfile)
-	playing, err := parseMairListPlaylist(pldata)
+	playing, err := parseMairListPlaylistXml(pldata)
 	assert.True(t, playing)
 	assert.Nil(t, err)
 }
