@@ -128,12 +128,14 @@ func InitConfig(file string, config *AppConfig) error {
 
 // cleanFilePath does sanity-checking on file paths
 func checkFilePath(filePath *string) {
-	*filePath = filepath.Clean(*filePath)
-	_, err := os.Stat(*filePath)
-	if err == nil {
-		*filePath, err = filepath.EvalSymlinks(*filePath)
-		if err != nil {
-			log.Printf("error checking file %v", *filePath)
+	if *filePath != "" {
+		*filePath = filepath.Clean(*filePath)
+		_, err := os.Stat(*filePath)
+		if err == nil {
+			*filePath, err = filepath.EvalSymlinks(*filePath)
+			if err != nil {
+				log.Printf("error checking file %v", *filePath)
+			}
 		}
 	}
 }
