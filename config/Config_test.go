@@ -73,3 +73,21 @@ func TestInitConfigWithEnvFileSetsValues(t *testing.T) {
 	assert.EqualValues(t, 10, testConfig.Server.GracefulShutdownTime)
 	assert.EqualValues(t, "debug", testConfig.Gin.Mode)
 }
+
+func TestCheckFilePathEmptyPathKeepsPathEmpty(t *testing.T) {
+	testPath := ""
+	checkFilePath(&testPath)
+	assert.EqualValues(t, "", testPath)
+}
+
+func TestCheckFilePathCorrectPathReturnsCorrectPath(t *testing.T) {
+	testPath := "C:\\TEMP"
+	checkFilePath(&testPath)
+	assert.EqualValues(t, "C:\\temp", testPath)
+}
+
+func TestCheckFilePathWeirdPathReturnsCorrectPath(t *testing.T) {
+	testPath := "C:\\TEMP\\..\\..\\..\\etc"
+	checkFilePath(&testPath)
+	assert.EqualValues(t, "C:\\etc", testPath)
+}
