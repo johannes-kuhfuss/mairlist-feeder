@@ -356,7 +356,7 @@ func TestExportToPlayoutOneFilesExport(t *testing.T) {
 	assert.GreaterOrEqual(t, time.Now(), exportService.Cfg.RunTime.LastExportedFileDate)
 }
 
-func TestParseMairListPlaylistWrongXMLReturnsError(t *testing.T) {
+func TestParseMairListPlaylistXmlWrongXMLReturnsError(t *testing.T) {
 	plfile, _ := os.Open("../samples/mairlist_playlist_error.xml")
 	defer plfile.Close()
 	pldata, _ := io.ReadAll(plfile)
@@ -366,7 +366,7 @@ func TestParseMairListPlaylistWrongXMLReturnsError(t *testing.T) {
 	assert.EqualValues(t, "XML syntax error on line 8: element <Database> closed by </Databas>", err.Error())
 }
 
-func TestParseMairListPlaylistNotPlayingReturnsFalse(t *testing.T) {
+func TestParseMairListPlaylistXmlNotPlayingReturnsFalse(t *testing.T) {
 	plfile, _ := os.Open("../samples/mairlist_playlist_notplaying.xml")
 	defer plfile.Close()
 	pldata, _ := io.ReadAll(plfile)
@@ -375,7 +375,7 @@ func TestParseMairListPlaylistNotPlayingReturnsFalse(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestParseMairListPlaylistPlayingReturnsTrue(t *testing.T) {
+func TestParseMairListPlaylistXmlPlayingReturnsTrue(t *testing.T) {
 	plfile, _ := os.Open("../samples/mairlist_playlist_playing.xml")
 	defer plfile.Close()
 	pldata, _ := io.ReadAll(plfile)
@@ -415,6 +415,7 @@ func TestGetPlaylistParseFails(t *testing.T) {
 	}))
 	defer srv.Close()
 	exportService.Cfg.Export.MairListUrl = srv.URL
+	exportService.Cfg.Export.MairListVersion = 5
 	err := exportService.GetPlaylist()
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "EOF", err.Error())
@@ -433,7 +434,36 @@ func TestGetPlaylistPlaying(t *testing.T) {
 	}))
 	defer srv.Close()
 	exportService.Cfg.Export.MairListUrl = srv.URL
+	exportService.Cfg.Export.MairListVersion = 5
 	err := exportService.GetPlaylist()
 	assert.Nil(t, err)
 	assert.True(t, exportService.Cfg.RunTime.MairListPlaying)
+}
+
+func TestParseMairListPlaylistJsonWrongJsonReturnsError(t *testing.T) {
+	plfile, _ := os.Open("../samples/mairlist_playlist_error.json")
+	defer plfile.Close()
+	pldata, _ := io.ReadAll(plfile)
+	playing, err := parseMairListPlaylistJson(pldata)
+	assert.False(t, playing)
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "invalid character ':' after array element", err.Error())
+}
+
+func TestParseMairListPlaylistJsonNotPlayingReturnsFalse(t *testing.T) {
+	plfile, _ := os.Open("../samples/mairlist_playlist_notplaying.json")
+	defer plfile.Close()
+	pldata, _ := io.ReadAll(plfile)
+	playing, err := parseMairListPlaylistJson(pldata)
+	assert.False(t, playing)
+	assert.Nil(t, err)
+}
+
+func TestParseMairListPlaylistJsonPlayingReturnsTrue(t *testing.T) {
+	plfile, _ := os.Open("../samples/mairlist_playlist_playing.json")
+	defer plfile.Close()
+	pldata, _ := io.ReadAll(plfile)
+	playing, err := parseMairListPlaylistJson(pldata)
+	assert.True(t, playing)
+	assert.Nil(t, err)
 }

@@ -1,0 +1,61 @@
+{
+ "Items": [
+  {
+   "PlaybackPosition": "0.000",
+   "Duration": 3608.011,
+   "DisplayEnd": "3606.818",
+   "ID": "{3A1CF456-6ABD-48DF-88F9-D70D11596B0D}",
+   "Markers": {
+    "FadeOut": 3606.818,
+    "CueOut": 3608.011
+   },
+   "Title": "2030-2130_quatschbr\u00f6tchen 121",
+   "Time": "16:04:58",
+   "State": "buffered",
+   "Filename": "Z:\\sendungen\\2024\\11\\15\\2030-2130_quatschbr\u00f6tchen 121.mp3",
+   "Player": 0,
+   "Class": "File",
+   "Version": 1,
+   "PlaybackEnd": "3606.818"
+  },{
+   "Artist": "Jacques Palminger & The Kings Of Dub Rock, the kings of dub rock",
+   "Duration": 5400.415,
+   "Attributes": {
+    "Album": "Mondo Cherry",
+    "Genre": "Alternative",
+    "Track": "11",
+    "Jahr": "2008"
+   },
+   "ID": "{3F61C57F-B748-4E3E-A7E1-4CC749CC985D}",
+   "Markers": {
+    "FadeOut": 5393.198,
+    "CueOut": 5400.415
+   },
+   "Title": "Harter Rock",
+   "Time": "17:05:05",
+   "State": "none",
+   "Filename": "Z:\\sendungen\\2024\\11\\15\\21-30\\2024-11-15_13-54-06-id34420-p_demankowski-uvradio091_cod_reggae.mp3",
+   "Class": "File",
+   "Version": 1
+  },{
+   "Comment": "DISCOnnect \u2013 Ausgabe November 2024 feat. Caren Callas & Marafi Bros. | www.disconnect.dance",
+   "Artist": "www.disconnect.dance",
+   "Duration": 7200,
+   "Attributes": {
+    "Album": "Disco",
+    "Genre": "Disco",
+    "Jahr": "2024"
+   },
+   "ID": "{D8BAC166-F174-4587-8A92-EF1ABB2A92FF}",
+   "Markers": {
+    "FadeOut": 7197.26,
+    "CueOut": 7200
+   },
+   "Title": "DISCOnnect \u2013 Ausgabe November 2024 feat. Caren Callas & Marafi Bros.",
+   "Time": "18:34:58",
+   "State": "none",
+   "Filename": "Z:\\sendungen\\2024\\11\\15\\23-00\\2024-11-03_18-44-32-id35890-TK-DISCOnnectaufColoRadioAusgabeNovember2024.mp3",
+   "Class": "File",
+   "Version": 1
+  }]
+}
