@@ -390,6 +390,9 @@ func (s DefaultExportService) AppendPlaylist(fileName string) error {
 	// Basic Auth
 	// Body is Form URL encoded
 	// command = PLAYLIST 1 APPEND <filename>
+	var (
+		okReply bool
+	)
 	req, err := s.buildAppendRequest(fileName)
 	if err != nil {
 		return err
@@ -398,7 +401,12 @@ func (s DefaultExportService) AppendPlaylist(fileName string) error {
 	if err != nil {
 		return err
 	}
-	if statusCode == 200 && string(data) == "ok" {
+	if s.Cfg.Export.MairListVersion >= 6 {
+		okReply = string(data) == "\"ok\""
+	} else {
+		okReply = string(data) == "ok"
+	}
+	if statusCode == 200 && okReply {
 		logger.Infof("Successfully appended playlist %v to mAirList", fileName)
 		return nil
 	}

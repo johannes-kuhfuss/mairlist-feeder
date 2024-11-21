@@ -231,6 +231,7 @@ func TestAppendPlaylistMairListOkReturnsNil(t *testing.T) {
 	}))
 	defer srv.Close()
 	exportService.Cfg.Export.MairListUrl = srv.URL
+	exportService.Cfg.Export.MairListVersion = 5
 	err := exportService.AppendPlaylist(appendListFileName)
 	assert.Nil(t, err)
 }
