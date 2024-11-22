@@ -111,7 +111,7 @@ func TestDeleteExistingElementDeletesElement(t *testing.T) {
 
 func TestGetForHourEmptyListReturnsNil(t *testing.T) {
 	setupTest()
-	res := repo.GetForHour("13")
+	res := repo.GetForHour("13", false)
 	assert.Nil(t, res)
 }
 
@@ -123,7 +123,7 @@ func TestGetForHourNoMatchReturnsNil(t *testing.T) {
 		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
 	}
 	repo.Store(fi)
-	res := repo.GetForHour("13")
+	res := repo.GetForHour("13", false)
 	assert.Nil(t, res)
 }
 
@@ -135,7 +135,7 @@ func TestGetForHourOneMatchReturnsElement(t *testing.T) {
 		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
 	}
 	repo.Store(fi)
-	res := repo.GetForHour("12")
+	res := repo.GetForHour("12", false)
 	el := (*res)[0]
 	assert.NotNil(t, *res)
 	assert.EqualValues(t, 1, len(*res))
@@ -163,7 +163,70 @@ func TestGetForHourTwoMatchesReturnsElements(t *testing.T) {
 	repo.Store(fi1)
 	repo.Store(fi2)
 	repo.Store(fi3)
-	res := repo.GetForHour("12")
+	res := repo.GetForHour("12", false)
+	assert.NotNil(t, *res)
+	assert.EqualValues(t, 2, len(*res))
+}
+
+func TestGetForHourOnlyLiveReturnsNil(t *testing.T) {
+	setupTest()
+	fi1 := domain.FileInfo{
+		Path:        "A",
+		StartTime:   helper.TimeFromHourAndMinute(12, 0),
+		FolderDate:  strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
+		EventIsLive: true,
+	}
+	fi2 := domain.FileInfo{
+		Path:        "B",
+		StartTime:   helper.TimeFromHourAndMinute(12, 0),
+		FolderDate:  strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
+		EventIsLive: true,
+	}
+	repo.Store(fi1)
+	repo.Store(fi2)
+	res := repo.GetForHour("12", false)
+	assert.Nil(t, res)
+}
+
+func TestGetForHourOneLiveReturnsOne(t *testing.T) {
+	setupTest()
+	fi1 := domain.FileInfo{
+		Path:        "A",
+		StartTime:   helper.TimeFromHourAndMinute(12, 0),
+		FolderDate:  strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
+		EventIsLive: false,
+	}
+	fi2 := domain.FileInfo{
+		Path:        "B",
+		StartTime:   helper.TimeFromHourAndMinute(12, 0),
+		FolderDate:  strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
+		EventIsLive: true,
+	}
+	repo.Store(fi1)
+	repo.Store(fi2)
+	res := repo.GetForHour("12", false)
+	assert.NotNil(t, *res)
+	assert.EqualValues(t, 1, len(*res))
+	assert.EqualValues(t, "A", (*res)[0].Path)
+}
+
+func TestGetForHourOneLiveReturnsBoth(t *testing.T) {
+	setupTest()
+	fi1 := domain.FileInfo{
+		Path:        "A",
+		StartTime:   helper.TimeFromHourAndMinute(12, 0),
+		FolderDate:  strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
+		EventIsLive: false,
+	}
+	fi2 := domain.FileInfo{
+		Path:        "B",
+		StartTime:   helper.TimeFromHourAndMinute(12, 0),
+		FolderDate:  strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
+		EventIsLive: true,
+	}
+	repo.Store(fi1)
+	repo.Store(fi2)
+	res := repo.GetForHour("12", true)
 	assert.NotNil(t, *res)
 	assert.EqualValues(t, 2, len(*res))
 }

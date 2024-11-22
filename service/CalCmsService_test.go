@@ -364,7 +364,7 @@ func TestCheckCalCmsDataDoubleMatchReturnsError(t *testing.T) {
 	assert.EqualValues(t, "multiple matches in calCMS", err.Error())
 }
 
-func TestCheckCalCmsDataIsLiveReturnsError(t *testing.T) {
+func TestCheckCalCmsDataIsLiveReturnsData(t *testing.T) {
 	var events []domain.CalCmsEvent
 	teardown := setupTestCal()
 	defer teardown()
@@ -399,10 +399,14 @@ func TestCheckCalCmsDataIsLiveReturnsError(t *testing.T) {
 	calCmsService.Cfg.Misc.TestCrawl = true
 	calCmsService.Cfg.Misc.TestDate = folderDateSlash
 
-	_, err := calCmsService.checkCalCmsEventData(fi)
+	res, err := calCmsService.checkCalCmsEventData(fi)
 
-	assert.NotNil(t, err)
-	assert.EqualValues(t, "event is live in calCMS", err.Error())
+	assert.Nil(t, err)
+	assert.EqualValues(t, event.FullTitle, res.Title)
+	st1, _ := time.ParseInLocation(parseDate, event.StartDatetime, time.Local)
+	st2, _ := time.ParseInLocation(parseDate, event.EndDatetime, time.Local)
+	assert.EqualValues(t, fmt.Sprintf("%02d:%02d", st1.Hour(), st1.Minute()), res.StartTime.Format("15:04"))
+	assert.EqualValues(t, fmt.Sprintf("%02d:%02d", st2.Hour(), st2.Minute()), res.EndTime.Format("15:04"))
 }
 
 func TestCheckCalCmsDataDataOkReturnsData(t *testing.T) {
@@ -849,6 +853,7 @@ func TestMergeInfoNotFromCalCms(t *testing.T) {
 	assert.EqualValues(t, 1, ct.TotalCount)
 	assert.EqualValues(t, true, ni.FromCalCMS)
 	assert.EqualValues(t, true, ni.CalCmsInfoExtracted)
+	assert.False(t, ni.EventIsLive)
 }
 
 func TestMergeInfoStartTimesDiffer(t *testing.T) {
@@ -862,6 +867,7 @@ func TestMergeInfoStartTimesDiffer(t *testing.T) {
 	ni, ct := mergeInfo(oi, ci)
 	assert.EqualValues(t, 1, ct.TotalCount)
 	assert.EqualValues(t, time.Date(2024, 11, 11, 1, 2, 4, 0, time.Local), ni.StartTime)
+	assert.False(t, ni.EventIsLive)
 }
 
 func TestMergeInfoAudio(t *testing.T) {
@@ -885,6 +891,7 @@ func TestMergeInfoAudio(t *testing.T) {
 	assert.EqualValues(t, time.Date(2024, 11, 11, 1, 2, 3, 0, time.Local), ni.StartTime)
 	assert.EqualValues(t, time.Date(2024, 11, 11, 2, 2, 3, 0, time.Local), ni.EndTime)
 	assert.EqualValues(t, title, ni.CalCmsTitle)
+	assert.False(t, ni.EventIsLive)
 }
 
 func TestMergeInfoStream(t *testing.T) {
@@ -907,4 +914,19 @@ func TestMergeInfoStream(t *testing.T) {
 	assert.EqualValues(t, 0, ct.AudioCount)
 	assert.EqualValues(t, 1, ct.StreamCount)
 	assert.EqualValues(t, 60.0, ni.Duration)
+	assert.False(t, ni.EventIsLive)
+}
+
+func TestMergeInfoIsLive(t *testing.T) {
+	oi := domain.FileInfo{
+		FromCalCMS: true,
+		StartTime:  time.Date(2024, 11, 11, 1, 2, 3, 0, time.Local),
+	}
+	ci := dto.CalCmsEntry{
+		StartTime: time.Date(2024, 11, 11, 1, 2, 3, 0, time.Local),
+		Live:      1,
+	}
+	ni, ct := mergeInfo(oi, ci)
+	assert.EqualValues(t, 1, ct.TotalCount)
+	assert.True(t, ni.EventIsLive)
 }

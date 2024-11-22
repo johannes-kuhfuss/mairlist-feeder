@@ -23,7 +23,7 @@ type FileRepository interface {
 	GetByPath(string) *domain.FileInfo
 	GetByEventId(int) *domain.FileList
 	GetAll() *domain.FileList
-	GetForHour(string) *domain.FileList
+	GetForHour(string, bool) *domain.FileList
 	Store(domain.FileInfo) error
 	Delete(string) error
 	SaveToDisk(string) error
@@ -150,7 +150,7 @@ func (fr DefaultFileRepository) GetAll() *domain.FileList {
 }
 
 // GetForHour returns all files' information that fall into a given start hour. If no files match, the methods returns nil
-func (fr DefaultFileRepository) GetForHour(hour string) *domain.FileList {
+func (fr DefaultFileRepository) GetForHour(hour string, includeLive bool) *domain.FileList {
 	var list domain.FileList
 	if fr.Size() == 0 {
 		return nil
@@ -161,7 +161,9 @@ func (fr DefaultFileRepository) GetForHour(hour string) *domain.FileList {
 	for _, file := range fileList.Files {
 		hi, _ := strconv.Atoi(hour)
 		if (!file.StartTime.IsZero()) && (file.StartTime.Hour() == hi) && (file.FolderDate == folderDate) {
-			list = append(list, file)
+			if (!file.EventIsLive) || (file.EventIsLive && includeLive) {
+				list = append(list, file)
+			}
 		}
 	}
 	if len(list) > 0 {

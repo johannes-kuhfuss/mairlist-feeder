@@ -217,6 +217,9 @@ func mergeInfo(oldFileInfo domain.FileInfo, calCmsInfo dto.CalCmsEntry) (newFile
 		newFileInfo.Duration = float64(calCmsInfo.Duration.Seconds())
 		fc.StreamCount++
 	}
+	if calCmsInfo.Live != 0 {
+		newFileInfo.EventIsLive = true
+	}
 	fc.TotalCount++
 	return
 }
@@ -237,12 +240,11 @@ func (s DefaultCalCmsService) checkCalCmsEventData(file domain.FileInfo) (*dto.C
 		logger.Warnf("Ambiguous information from calCMS. Found %v entries. Not adding information.", len(info))
 		return nil, errors.New("multiple matches in calCMS")
 	}
-	if (len(info) == 1) && (info[0].Live == 1) {
-		logger.Warnf("%v, Id: %v is designated as live. Not adding information.", info[0].Title, info[0].EventId)
-		return nil, errors.New("event is live in calCMS")
-	}
 	if calCmsDate != file.FolderDate {
 		return nil, errors.New("file has different date than calCms data")
+	}
+	if (len(info) == 1) && (info[0].Live == 1) {
+		logger.Warnf("%v, Id: %v is designated as live, yet a file is present.", info[0].Title, info[0].EventId)
 	}
 	return &info[0], nil
 }

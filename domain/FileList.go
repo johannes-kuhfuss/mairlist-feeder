@@ -28,6 +28,7 @@ type FileInfo struct {
 	StreamId            int
 	StreamName          string
 	Checksum            string
+	EventIsLive         bool
 }
 
 type FileList []FileInfo
