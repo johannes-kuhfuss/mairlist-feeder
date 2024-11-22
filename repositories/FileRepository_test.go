@@ -188,7 +188,7 @@ func TestGetForHourOnlyLiveReturnsNil(t *testing.T) {
 	assert.Nil(t, res)
 }
 
-func TestGetForHourOneLiveReturnsOne(t *testing.T) {
+func TestGetForHourLiveCheck(t *testing.T) {
 	setupTest()
 	fi1 := domain.FileInfo{
 		Path:        "A",
@@ -204,31 +204,13 @@ func TestGetForHourOneLiveReturnsOne(t *testing.T) {
 	}
 	repo.Store(fi1)
 	repo.Store(fi2)
-	res := repo.GetForHour("12", false)
-	assert.NotNil(t, *res)
-	assert.EqualValues(t, 1, len(*res))
-	assert.EqualValues(t, "A", (*res)[0].Path)
-}
-
-func TestGetForHourOneLiveReturnsBoth(t *testing.T) {
-	setupTest()
-	fi1 := domain.FileInfo{
-		Path:        "A",
-		StartTime:   helper.TimeFromHourAndMinute(12, 0),
-		FolderDate:  strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
-		EventIsLive: false,
-	}
-	fi2 := domain.FileInfo{
-		Path:        "B",
-		StartTime:   helper.TimeFromHourAndMinute(12, 0),
-		FolderDate:  strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
-		EventIsLive: true,
-	}
-	repo.Store(fi1)
-	repo.Store(fi2)
-	res := repo.GetForHour("12", true)
-	assert.NotNil(t, *res)
-	assert.EqualValues(t, 2, len(*res))
+	res1 := repo.GetForHour("12", false)
+	assert.NotNil(t, *res1)
+	assert.EqualValues(t, 1, len(*res1))
+	assert.EqualValues(t, "A", (*res1)[0].Path)
+	res2 := repo.GetForHour("12", true)
+	assert.NotNil(t, *res2)
+	assert.EqualValues(t, 2, len(*res2))
 }
 
 func TestSaveToDiskSavesToDisk(t *testing.T) {
