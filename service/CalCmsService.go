@@ -383,17 +383,19 @@ func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dt
 			ev.PlannedDuration = parseDuration(event.Duration)
 			if event.Live == 0 {
 				ev.EventType = "Preproduction"
-				files := s.Repo.GetByEventId(event.EventID)
-				if files == nil {
-					ev.FileStatus = "Missing"
-					ev.ActualDuration = "N/A"
-				} else {
-					ev.FileStatus, ev.ActualDuration = extractFileInfo(files, s.Cfg.Crawl.GenerateHash)
-				}
 			} else {
 				ev.EventType = "Live"
-				ev.FileStatus = "N/A"
+			}
+			files := s.Repo.GetByEventId(event.EventID)
+			if files == nil {
+				if event.Live == 0 {
+					ev.FileStatus = "Missing"
+				} else {
+					ev.FileStatus = "N/A"
+				}
 				ev.ActualDuration = "N/A"
+			} else {
+				ev.FileStatus, ev.ActualDuration = extractFileInfo(files, s.Cfg.Crawl.GenerateHash)
 			}
 			el = append(el, ev)
 		}
