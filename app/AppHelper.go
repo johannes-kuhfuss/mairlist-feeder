@@ -17,12 +17,12 @@ import (
 // ExportDayDataRun runs the export job
 func ExportDayDataRun() {
 	logger.Info("Exporting the day's event state...")
-	file, err := exportState("/events", "events")
+	file, err := exportState(eventUrl, "events")
 	if err != nil {
 		logger.Error("Error exporting day's event state", err)
 	}
 	logger.Infof("Exported day's event state into file %v", file)
-	file, err = exportState("/filelist", "filelist")
+	file, err = exportState(fileUrl, "filelist")
 	if err != nil {
 		logger.Error("Error exporting day's file list state", err)
 	}

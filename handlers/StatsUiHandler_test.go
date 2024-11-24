@@ -25,7 +25,7 @@ var (
 )
 
 const (
-	actionPage = "/actions"
+	actionUrl = "/actions"
 )
 
 func setupUiTest() func() {
@@ -95,8 +95,8 @@ func TestFileListPageReturnsFileListPage(t *testing.T) {
 func TestActionPageReturnsAction(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
-	router.GET(actionPage, uh.ActionPage)
-	request := httptest.NewRequest(http.MethodGet, actionPage, nil)
+	router.GET(actionUrl, uh.ActionPage)
+	request := httptest.NewRequest(http.MethodGet, actionUrl, nil)
 
 	router.ServeHTTP(recorder, request)
 	res := recorder.Result()
@@ -172,8 +172,8 @@ func TestValidateActionCorrectActionReturnsNoError(t *testing.T) {
 func TestActionExecNoDataReturnsError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
-	router.POST(actionPage, uh.ExecAction)
-	request := httptest.NewRequest(http.MethodPost, actionPage, nil)
+	router.POST(actionUrl, uh.ExecAction)
+	request := httptest.NewRequest(http.MethodPost, actionUrl, nil)
 
 	router.ServeHTTP(recorder, request)
 	res := recorder.Result()
@@ -185,7 +185,7 @@ func TestActionExecNoDataReturnsError(t *testing.T) {
 }
 
 func runRequest(form url.Values) (data []byte, statusCode int) {
-	request := httptest.NewRequest(http.MethodPost, actionPage, strings.NewReader(form.Encode()))
+	request := httptest.NewRequest(http.MethodPost, actionUrl, strings.NewReader(form.Encode()))
 	request.Header.Set("Content-type", "application/x-www-form-urlencoded")
 	router.ServeHTTP(recorder, request)
 	res := recorder.Result()
@@ -197,7 +197,7 @@ func runRequest(form url.Values) (data []byte, statusCode int) {
 func TestActionExecWrongActionReturnsError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
-	router.POST(actionPage, uh.ExecAction)
+	router.POST(actionUrl, uh.ExecAction)
 	form := url.Values{}
 	form.Add("action", "unknown")
 
@@ -210,7 +210,7 @@ func TestActionExecWrongActionReturnsError(t *testing.T) {
 func TestActionExecInvalidHourReturnsError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
-	router.POST(actionPage, uh.ExecAction)
+	router.POST(actionUrl, uh.ExecAction)
 	form := url.Values{}
 	form.Add("action", "crawl")
 	form.Add("hour", "44")

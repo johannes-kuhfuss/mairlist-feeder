@@ -40,6 +40,12 @@ var (
 	calCmsService  service.DefaultCalCmsService
 )
 
+const (
+	eventUrl  = "/events"
+	fileUrl   = "/filelist"
+	actionUrl = "/actions"
+)
+
 // StartApp orchestrates the startup of the application
 func StartApp() {
 	getCmdLine()
@@ -152,10 +158,10 @@ func wireApp() {
 // mapUrls defines the handlers for the available URLs
 func mapUrls() {
 	cfg.RunTime.Router.GET("/", statsUiHandler.StatusPage)
-	cfg.RunTime.Router.GET("/filelist", statsUiHandler.FileListPage)
-	cfg.RunTime.Router.GET("/events", statsUiHandler.EventListPage)
-	cfg.RunTime.Router.GET("/actions", statsUiHandler.ActionPage)
-	cfg.RunTime.Router.POST("/actions", statsUiHandler.ExecAction)
+	cfg.RunTime.Router.GET(fileUrl, statsUiHandler.FileListPage)
+	cfg.RunTime.Router.GET(eventUrl, statsUiHandler.EventListPage)
+	cfg.RunTime.Router.GET(actionUrl, statsUiHandler.ActionPage)
+	cfg.RunTime.Router.POST(actionUrl, statsUiHandler.ExecAction)
 	cfg.RunTime.Router.GET("/logs", statsUiHandler.LogsPage)
 	cfg.RunTime.Router.GET("/about", statsUiHandler.AboutPage)
 	cfg.RunTime.Router.GET("/metrics", gin.WrapH(promhttp.Handler()))
