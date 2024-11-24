@@ -19,7 +19,7 @@ func setupHelperTest() {
 }
 
 func TestExportDayEventsNoConfigReturnsError(t *testing.T) {
-	file, err := exportDayEvents()
+	file, err := exportState("/events", "events")
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "", file)
 	assert.EqualValues(t, "Get \"http:///events\": http: no Host in request URL", err.Error())
@@ -27,7 +27,7 @@ func TestExportDayEventsNoConfigReturnsError(t *testing.T) {
 
 func TestExportDayEventsGetErrorReturnsError(t *testing.T) {
 	setupHelperTest()
-	file, err := exportDayEvents()
+	file, err := exportState("/events", "events")
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "", file)
 	assert.EqualValues(t, "Get \"http://:8080/events\": dial tcp :8080: connectex: No connection could be made because the target machine actively refused it.", err.Error())
@@ -43,7 +43,7 @@ func TestExportDayEventsNoErrorReturnsFileName(t *testing.T) {
 	defer srv.Close()
 	u, _ := url.Parse(srv.URL)
 	cfg.RunTime.ListenAddr = u.Hostname() + ":" + u.Port()
-	fileName, err := exportDayEvents()
+	fileName, err := exportState("/events", "events")
 	_, noFile := os.Stat(fileName)
 	assert.Nil(t, err)
 	assert.Nil(t, noFile)

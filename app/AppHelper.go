@@ -14,19 +14,24 @@ import (
 	"github.com/johannes-kuhfuss/services_utils/logger"
 )
 
-// ExportDayEventsRun runs the export job
-func ExportDayEventsRun() {
-	logger.Info("Exporting the day's event's state...")
-	file, err := exportDayEvents()
+// ExportDayDataRun runs the export job
+func ExportDayDataRun() {
+	logger.Info("Exporting the day's event state...")
+	file, err := exportState("/events", "events")
 	if err != nil {
-		logger.Error("Error exporting day's event's state", err)
+		logger.Error("Error exporting day's event state", err)
 	}
-	logger.Infof("Exported day's event's state into file %v", file)
+	logger.Infof("Exported day's event state into file %v", file)
+	file, err = exportState("/filelist", "filelist")
+	if err != nil {
+		logger.Error("Error exporting day's file list state", err)
+	}
+	logger.Infof("Exported day's file list state into file %v", file)
 }
 
-// exportDayEvents exports an HTML file containing the event view
-// represents the event status for the day, so you can retroactively check what files were present
-func exportDayEvents() (fileName string, e error) {
+// exportState exports an HTML file containing the event view or the file view of the day
+// This represents the status for the day, so you can retroactively check for which event files were present
+func exportState(urlPath string, filePrefix string) (fileName string, e error) {
 	u := url.URL{}
 	if cfg.Server.UseTls {
 		u.Scheme = "https"
@@ -34,23 +39,23 @@ func exportDayEvents() (fileName string, e error) {
 		u.Scheme = "http"
 	}
 	u.Host = cfg.RunTime.ListenAddr
-	u.Path = "/events"
+	u.Path = urlPath
 	resp, err := http.Get(u.String())
 	if err != nil {
-		logger.Error("Error while trying to save day's events", err)
+		logger.Error("Error while trying to save day's status", err)
 		return "", err
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logger.Error("Error while trying to save day's events", err)
+		logger.Error("Error while trying to save day's status", err)
 		return "", err
 	}
-	exportFileName := "events_" + time.Now().Format("2006-01-02__15-04-05") + ".html"
+	exportFileName := filePrefix + "_" + time.Now().Format("2006-01-02__15-04-05") + ".html"
 	writePath := path.Join(cfg.Export.ExportFolder, exportFileName)
 	absWritePath, err := filepath.Abs(writePath)
 	if err != nil {
-		logger.Error("error creating event export file path", err)
+		logger.Error("error creating export file path", err)
 		return "", err
 	}
 	if !strings.HasPrefix(absWritePath, cfg.Export.ExportFolder) {
@@ -58,12 +63,12 @@ func exportDayEvents() (fileName string, e error) {
 	}
 	file, err := os.Create(absWritePath)
 	if err != nil {
-		logger.Error("error creating event export file", err)
+		logger.Error("error creating export file", err)
 		return "", err
 	}
 	defer file.Close()
 	if _, err := file.Write(body); err != nil {
-		logger.Error("error writing event export file", err)
+		logger.Error("error writing export file", err)
 		return "", err
 	}
 	return absWritePath, nil
