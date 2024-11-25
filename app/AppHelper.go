@@ -16,17 +16,18 @@ import (
 
 // ExportDayDataRun runs the export job
 func ExportDayDataRun() {
-	logger.Info("Exporting the day's event state...")
 	file, err := exportState(eventUrl, "events")
 	if err != nil {
 		logger.Error("Error exporting day's event state", err)
+	} else {
+		logger.Infof("Exported day's event state into file %v", file)
 	}
-	logger.Infof("Exported day's event state into file %v", file)
 	file, err = exportState(fileUrl, "filelist")
 	if err != nil {
 		logger.Error("Error exporting day's file list state", err)
+	} else {
+		logger.Infof("Exported day's file list state into file %v", file)
 	}
-	logger.Infof("Exported day's file list state into file %v", file)
 }
 
 // exportState exports an HTML file containing the event view or the file view of the day
