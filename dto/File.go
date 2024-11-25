@@ -38,6 +38,12 @@ type FileCounts struct {
 	StreamCount int
 }
 
+func (fc *FileCounts) Add(nfc FileCounts) {
+	fc.AudioCount = fc.AudioCount + nfc.AudioCount
+	fc.StreamCount = fc.StreamCount + nfc.StreamCount
+	fc.TotalCount = fc.TotalCount + nfc.TotalCount
+}
+
 func formatTime(t1 time.Time) string {
 	if t1.IsZero() {
 		return "N/A"

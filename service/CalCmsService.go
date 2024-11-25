@@ -174,9 +174,6 @@ func (s DefaultCalCmsService) Query() error {
 
 // EnrichFileInformation runs through all file representations and adds information from calCms where applicable
 func (s DefaultCalCmsService) EnrichFileInformation() (fc dto.FileCounts) {
-	var (
-		newFile domain.FileInfo
-	)
 	folderDate := strings.ReplaceAll(helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate), "/", "-")
 	if files := s.Repo.GetByDate(folderDate); files != nil {
 		for _, file := range *files {
@@ -186,7 +183,8 @@ func (s DefaultCalCmsService) EnrichFileInformation() (fc dto.FileCounts) {
 					logger.Errorf("Error while checking calCms event data for file %v. %v", file.Path, err)
 					continue
 				}
-				newFile, fc = mergeInfo(file, *calCmsInfo)
+				newFile, nfc := mergeInfo(file, *calCmsInfo)
+				fc.Add(nfc)
 				if err := s.Repo.Store(newFile); err != nil {
 					logger.Error("Error updating information in file repository", err)
 				}
