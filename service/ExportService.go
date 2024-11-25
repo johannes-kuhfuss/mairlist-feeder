@@ -186,6 +186,7 @@ func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengt
 	is60Min := (roundedDurationMin >= 60.0-shortDelta) && (roundedDurationMin <= 60.0+longDelta)
 	is90Min := (roundedDurationMin >= 90.0-shortDelta) && (roundedDurationMin <= 90.0+longDelta)
 	is120Min := (roundedDurationMin >= 120.0-shortDelta) && (roundedDurationMin <= 120.0+longDelta)
+	isLonger := (roundedDurationMin > 120.0+longDelta)
 	switch {
 	case is30Min:
 		lengthSlot = 30.0
@@ -202,6 +203,10 @@ func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengt
 	case is120Min:
 		lengthSlot = 120.0
 		slotDelta = roundedDurationMin - 120.0
+	case isLonger:
+		lengthSlot = roundedDurationMin
+		slotDelta = 0.0
+		logger.Warnf("Detected very long file: %v with length %vmin. Please verify.", fi.Path, roundedDurationMin)
 	default:
 		lengthSlot = 0.0
 		slotDelta = 0.0
@@ -213,7 +218,7 @@ func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengt
 	} else {
 		plannedAvail = false
 	}
-	lOk := is30Min || is45Min || is60Min || is90Min || is120Min
+	lOk := is30Min || is45Min || is60Min || is90Min || is120Min || isLonger
 	if lengthSlot > 0.0 {
 		lenStr = strconv.Itoa(int(math.Round(lengthSlot))) + "min"
 
