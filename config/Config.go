@@ -62,7 +62,7 @@ type AppConfig struct {
 		LimitTime              bool    `envconfig:"LIMIT_TIME" default:"false"`
 		QueryMairListStatus    bool    `envconfig:"QUERY_MAIRLIST_STATUS" default:"false"`
 		StatusQueryCycleSec    int     `envconfig:"QUERY_STATUS_CYCLE_SEC" default:"5"`
-		ExportLiveItems        bool    `envconfig:"EXPORT_LIVE_ITEMS" default:"true"`
+		ExportLiveItems        bool    `envconfig:"EXPORT_LIVE_ITEMS" default:"false"`
 	}
 	CalCms struct {
 		QueryCalCms     bool     `envconfig:"QUERY_CALCMS" default:"false"`
