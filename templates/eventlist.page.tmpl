@@ -30,26 +30,29 @@
                           <td>{{ .PlannedDuration }}</td>
                           <td>{{ .ActualDuration }}</td>
                           <td>{{ .EventType }}</td>
-                          {{ if eq .FileStatus "N/A" }}
-                            <td>{{ .FileStatus }}</td>
+                          {{ if eq .EventType "Live" }}
+                            {{ if eq .FileStatus "N/A" }}
+                              <td>{{ .FileStatus }}</td>
+                            {{else}}
+                              <td style="color: yellow">{{ .FileStatus }}</td>
+                            {{ end }}
                           {{ end }}
-                          {{ if eq .FileStatus "Missing" }}
-                            <td style="color: red">{{ .FileStatus }}</td>
-                          {{ end }}
-                          {{ if and (eq .FileStatus "Present") (eq .EventType "Live") }}
-                            <td style="color: yellow">{{ .FileStatus }}</td>
-                          {{ end }}
-                          {{ if and (eq .FileStatus "Present") (eq .EventType "Preproduction") }}
-                            <td style="color: green">{{ .FileStatus }}</td>
-                          {{ end }}
-                          {{ if eq .FileStatus "Multiple (identical)" }}
-                            <td style="color: green">{{ .FileStatus }}</td>
-                          {{ end }}
-                          {{ if eq .FileStatus "Multiple (different)" }}
-                            <td style="color: yellow">{{ .FileStatus }}</td>
-                          {{ end }}
-                          {{ if eq .FileStatus "Multiple" }}
-                            <td style="color: yellow">{{ .FileStatus }}</td>
+                          {{ if eq .EventType "Preproduction" }}
+                            {{ if eq .FileStatus "Missing" }}
+                              <td style="color: red">{{ .FileStatus }}</td>
+                            {{ end }}
+                            {{ if eq .FileStatus "Present" }}
+                              <td style="color: green">{{ .FileStatus }}</td>
+                            {{ end }}
+                            {{ if eq .FileStatus "Multiple (identical)" }}
+                              <td style="color: green">{{ .FileStatus }}</td>
+                            {{ end }}
+                            {{ if eq .FileStatus "Multiple (different)" }}
+                              <td style="color: yellow">{{ .FileStatus }}</td>
+                            {{ end }}
+                            {{ if eq .FileStatus "Multiple" }}
+                              <td style="color: yellow">{{ .FileStatus }}</td>
+                            {{ end }}
                           {{ end }}
                         </tr>
                         {{ end }}
