@@ -332,7 +332,7 @@ func logExtractResult(fi domain.FileInfo) {
 	}
 	switch fi.FileType {
 	case "Stream":
-		logger.Infof("Time Slot: % v, File: %v (Stream Description)", startTimeDisplay, fi.Path)
+		logger.Infof("Time Slot: % v, File: %v (Stream Descriptor)", startTimeDisplay, fi.Path)
 	default:
 		roundedDurationMin := math.Round(fi.Duration / 60)
 		logger.Infof("Time Slot: % v, File: %v - Length (min): %v", startTimeDisplay, fi.Path, roundedDurationMin)
