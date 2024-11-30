@@ -237,7 +237,7 @@ func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
 					newInfo = s.extractStreamInfo(file)
 					fc.StreamCount++
 				}
-				newInfo = matchFolderName(newInfo)
+				newInfo = s.matchFolderName(newInfo)
 				fc.TotalCount++
 				if exErr == nil {
 					newInfo.InfoExtracted = true
@@ -283,7 +283,7 @@ func (s DefaultCrawlService) extractStreamInfo(oldInfo domain.FileInfo) (newInfo
 }
 
 // matchFolderName determines the source of the file, either calCms or naming convention
-func matchFolderName(oldInfo domain.FileInfo) (newInfo domain.FileInfo) {
+func (s DefaultCrawlService) matchFolderName(oldInfo domain.FileInfo) (newInfo domain.FileInfo) {
 	var (
 		timeData string
 	)
@@ -304,7 +304,7 @@ func matchFolderName(oldInfo domain.FileInfo) (newInfo domain.FileInfo) {
 			newInfo.RuleMatched = "folder HH-MM (calCMS)"
 		}
 	// Condition: start time and end time is encoded in file name in the form "HHMM-HHMM_"
-	case file1Exp.MatchString(fileName):
+	case file1Exp.MatchString(fileName) && s.Cfg.Crawl.AddNonCalCmsFiles:
 		{
 			timeData = file1Exp.FindString(fileName)
 			timeData = strings.Replace(timeData, " ", "", -1)

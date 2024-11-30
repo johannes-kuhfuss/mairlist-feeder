@@ -48,6 +48,7 @@ type AppConfig struct {
 		CrawlCycleMin           int            `envconfig:"CRAWL_CYCLE_MIN" default:"15"`
 		StreamMap               map[string]int `envconfig:"STREAM_MAP"`
 		GenerateHash            bool           `envconfig:"GENERATE_HASH" default:"false"`
+		AddNonCalCmsFiles       bool           `envconfig:"ADD_NON_CALCMS_FILES" default:"true"`
 	}
 	Export struct {
 		ExportFolder           string  `envconfig:"EXPORT_FOLDER" default:"C:\\TEMP"`

@@ -57,6 +57,7 @@ type ConfigResp struct {
 	LogFile                    string
 	QueryMairListStatus        string
 	ExportLiveItems            string
+	AddNonCalCmsFiles          string
 }
 
 // convertDate converts a date to its display format
@@ -136,6 +137,7 @@ func GetConfig(cfg *config.AppConfig) (resp ConfigResp) {
 		LogFile:                    formatLogFile(cfg.Server.LogFile),
 		QueryMairListStatus:        strconv.FormatBool(cfg.Export.QueryMairListStatus),
 		ExportLiveItems:            strconv.FormatBool(cfg.Export.ExportLiveItems),
+		AddNonCalCmsFiles:          strconv.FormatBool(cfg.Crawl.AddNonCalCmsFiles),
 	}
 	resp.LastCrawlDate = convertDate(cfg.RunTime.LastCrawlDate)
 	resp.LastExportDate = convertDate(cfg.RunTime.LastExportRunDate)
