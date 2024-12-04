@@ -39,7 +39,7 @@ type AppConfig struct {
 		FileSaveFile string `envconfig:"FILE_SAVE_FILE" default:"files.dta"`
 	}
 	Crawl struct {
-		RootFolder              string         `envconfig:"ROOT_FOLDER" default:"Z:\\sendungen"`
+		RootFolder              string         `envconfig:"ROOT_FOLDER"`
 		CrawlExtensions         []string       `envconfig:"CRAWL_EXTENSIONS" default:".mp3,.m4a,.wav,.stream"`
 		AudioFileExtensions     []string       `envconfig:"AUDIO_FILE_EXTENSIONS" default:".mp3,.m4a,.wav"`
 		StreamingFileExtensions []string       `envconfig:"STREAM_FILE_EXTENSIONS" default:".stream"`
