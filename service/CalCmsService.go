@@ -152,6 +152,7 @@ func (s DefaultCalCmsService) getCalCmsEventData() (eventData []byte, e error) {
 func (s DefaultCalCmsService) Query() error {
 	if s.Cfg.CalCms.QueryCalCms {
 		logger.Info("Starting to add information from calCMS...")
+		start := time.Now().UTC()
 		data, err := s.getCalCmsEventData()
 		if err != nil {
 			logger.Error("error getting data from calCms", err)
@@ -164,7 +165,9 @@ func (s DefaultCalCmsService) Query() error {
 		}
 		CalCmsPgm.Unlock()
 		fc := s.EnrichFileInformation()
-		logger.Infof("Added or updated information from calCMS for %v file(s), audio: %v, stream: %v", fc.TotalCount, fc.AudioCount, fc.StreamCount)
+		end := time.Now().UTC()
+		dur := end.Sub(start)
+		logger.Infof("Added or updated information from calCMS for %v file(s), audio: %v, stream: %v (%v)", fc.TotalCount, fc.AudioCount, fc.StreamCount, dur.String())
 		return nil
 	}
 	logger.Warn("calCMS query not enabled in configuration. Not querying")

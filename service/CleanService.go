@@ -50,12 +50,15 @@ func isYesterdayOrOlder(folderDate string) (bool, error) {
 // Clean orchestrates the clean-up of the file list kept in memory
 func (s DefaultCleanService) Clean() {
 	logger.Info("Starting file list clean-up...")
+	start := time.Now().UTC()
 	filesCleaned, err := s.CleanRun()
 	if err != nil {
 		logger.Error("Error while cleaning repository", err)
 	}
 	s.Cfg.RunTime.FilesCleaned = filesCleaned
-	logger.Infof("File list cleaned-up. Removed %v entries.", filesCleaned)
+	end := time.Now().UTC()
+	dur := end.Sub(start)
+	logger.Infof("File list cleaned-up. Removed %v entries. (%v)", filesCleaned, dur.String())
 }
 
 // CleanRun performs the clean-up of expired file list entries

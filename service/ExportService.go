@@ -111,6 +111,7 @@ func (s DefaultExportService) ExportForHour(hour string) {
 	s.Cfg.RunTime.ExportRunning = true
 	if files := s.Repo.GetForHour(hour, s.Cfg.Export.ExportLiveItems); files != nil {
 		logger.Infof("Starting export for timeslot %v:00 ...", hour)
+		start := time.Now().UTC()
 		s.checkTimeAndLenghth(files)
 		exportPath, err := s.ExportToPlayout(hour)
 		if s.Cfg.Export.AppendPlaylist && exportPath != "" && err == nil {
@@ -123,7 +124,9 @@ func (s DefaultExportService) ExportForHour(hour string) {
 				logger.Error("Error appending playlist", err)
 			}
 		}
-		logger.Infof("Finished exporting for timeslot %v:00 ...", hour)
+		end := time.Now().UTC()
+		dur := end.Sub(start)
+		logger.Infof("Finished exporting for timeslot %v:00 ... (%v)", hour, dur.String())
 	} else {
 		logger.Infof("No files to export for timeslot %v:00 ...", hour)
 	}
