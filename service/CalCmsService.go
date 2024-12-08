@@ -324,25 +324,31 @@ func parseDuration(dur string) string {
 }
 
 // extractFileInfo is a helper function that returns file status and file duration as strings
-func extractFileInfo(files *domain.FileList, hashEnabled bool) (fileStatus string, duration string) {
+func extractFileInfo(files *domain.FileList, hashEnabled bool) (fileStatus string, duration string, fileSource string) {
+	var fs string
 	if len(*files) == 0 {
-		return "N/A", "N/A"
+		return "N/A", "N/A", "N/A"
 	}
 	if len(*files) == 1 {
-		return "Present", strconv.FormatFloat(math.Round((*files)[0].Duration/60), 'f', 1, 64)
+		if (*files)[0].FromCalCMS && (*files)[0].EventId != 0 {
+			fs = "calCMS"
+		} else {
+			fs = "Manual"
+		}
+		return "Present", strconv.FormatFloat(math.Round((*files)[0].Duration/60), 'f', 1, 64), fs
 	}
 	if hashEnabled {
 		filesIdentical, checksumAvail := checkHash(files)
 		switch {
 		case checksumAvail && filesIdentical:
-			return "Multiple (identical)", strconv.FormatFloat(math.Round((*files)[0].Duration/60), 'f', 1, 64)
+			return "Multiple (identical)", strconv.FormatFloat(math.Round((*files)[0].Duration/60), 'f', 1, 64), "N/A"
 		case checksumAvail && !filesIdentical:
-			return "Multiple (different)", "N/A"
+			return "Multiple (different)", "N/A", "N/A"
 		default:
-			return "Multiple", "N/A"
+			return "Multiple", "N/A", "N/A"
 		}
 	}
-	return "Multiple", "N/A"
+	return "Multiple", "N/A", "N/A"
 }
 
 // checkHash compares the has of all files and returns true, if the hash values of all files are identical
@@ -401,7 +407,7 @@ func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dt
 				}
 				ev.ActualDuration = "N/A"
 			} else {
-				ev.FileStatus, ev.ActualDuration = extractFileInfo(files, s.Cfg.Crawl.GenerateHash)
+				ev.FileStatus, ev.ActualDuration, ev.FileSource = extractFileInfo(files, s.Cfg.Crawl.GenerateHash)
 			}
 			el = append(el, ev)
 		}

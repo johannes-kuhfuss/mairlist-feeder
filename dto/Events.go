@@ -12,4 +12,5 @@ type Event struct {
 	ActualDuration  string `json:"actual_duration"`
 	EventType       string `json:"event_type"`
 	FileStatus      string `json:"file_status"`
+	FileSource      string `json:"file_source"`
 }

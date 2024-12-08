@@ -747,21 +747,24 @@ func TestCheckHashTwoFilesSameChecksumReturnsTrue(t *testing.T) {
 
 func TestExtractFileInfoNoFilesReturnsNA(t *testing.T) {
 	files := domain.FileList{}
-	s, d := extractFileInfo(&files, false)
+	s, d, f := extractFileInfo(&files, false)
 	assert.EqualValues(t, "N/A", s)
 	assert.EqualValues(t, "N/A", d)
+	assert.EqualValues(t, "N/A", f)
 }
 
 func TestExtractFileInfoOneFilesNoHashReturnsDuration(t *testing.T) {
 	files := domain.FileList{}
 	fi1 := domain.FileInfo{
-		Checksum: "A",
-		Duration: 60.0,
+		Checksum:   "A",
+		Duration:   60.0,
+		FromCalCMS: true,
 	}
 	files = append(files, fi1)
-	s, d := extractFileInfo(&files, false)
+	s, d, f := extractFileInfo(&files, false)
 	assert.EqualValues(t, "Present", s)
 	assert.EqualValues(t, "1.0", d)
+	assert.EqualValues(t, "calCMS", f)
 }
 
 func TestExtractFileInfoTwoFilesNoHashReturnsNoDuration(t *testing.T) {
@@ -776,9 +779,10 @@ func TestExtractFileInfoTwoFilesNoHashReturnsNoDuration(t *testing.T) {
 	}
 	files = append(files, fi1)
 	files = append(files, fi2)
-	s, d := extractFileInfo(&files, false)
+	s, d, f := extractFileInfo(&files, false)
 	assert.EqualValues(t, "Multiple", s)
 	assert.EqualValues(t, "N/A", d)
+	assert.EqualValues(t, "N/A", f)
 }
 
 func TestExtractFileInfoTwoFilesHashMissingReturnsNoDuration(t *testing.T) {
@@ -791,9 +795,10 @@ func TestExtractFileInfoTwoFilesHashMissingReturnsNoDuration(t *testing.T) {
 	}
 	files = append(files, fi1)
 	files = append(files, fi2)
-	s, d := extractFileInfo(&files, true)
+	s, d, f := extractFileInfo(&files, true)
 	assert.EqualValues(t, "Multiple", s)
 	assert.EqualValues(t, "N/A", d)
+	assert.EqualValues(t, "N/A", f)
 }
 
 func TestExtractFileInfoTwoDifferentFilesWithHashReturnsDifferent(t *testing.T) {
@@ -808,9 +813,10 @@ func TestExtractFileInfoTwoDifferentFilesWithHashReturnsDifferent(t *testing.T) 
 	}
 	files = append(files, fi1)
 	files = append(files, fi2)
-	s, d := extractFileInfo(&files, true)
+	s, d, f := extractFileInfo(&files, true)
 	assert.EqualValues(t, "Multiple (different)", s)
 	assert.EqualValues(t, "N/A", d)
+	assert.EqualValues(t, "N/A", f)
 }
 
 func TestExtractFileInfoTwoIdenticalFilesWithHashReturnsSame(t *testing.T) {
@@ -825,9 +831,10 @@ func TestExtractFileInfoTwoIdenticalFilesWithHashReturnsSame(t *testing.T) {
 	}
 	files = append(files, fi1)
 	files = append(files, fi2)
-	s, d := extractFileInfo(&files, true)
+	s, d, f := extractFileInfo(&files, true)
 	assert.EqualValues(t, "Multiple (identical)", s)
 	assert.EqualValues(t, "1.0", d)
+	assert.EqualValues(t, "N/A", f)
 }
 
 func TestSetCalCmsQueryStateSuccess(t *testing.T) {

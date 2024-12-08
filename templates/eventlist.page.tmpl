@@ -17,6 +17,7 @@
                           <th scope="col">Actual<br />Duration (min)</th>
                           <th scope="col">Event Type</th>
                           <th scope="col">File Present</th>
+                          <th scope="col">File Source</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -54,6 +55,7 @@
                               <td style="color: yellow">{{ .FileStatus }}</td>
                             {{ end }}
                           {{ end }}
+                          <td>{{ .FileSource }}</td>
                         </tr>
                         {{ end }}
                     </tbody>
