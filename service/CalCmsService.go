@@ -371,7 +371,8 @@ func checkHash(files *domain.FileList) (filesIdentical bool, checksumAvail bool)
 // convertEvent is a helper function that converts calCms data into the event representation
 func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dto.Event {
 	var (
-		el []dto.Event
+		el    []dto.Event
+		files *domain.FileList
 	)
 	for _, event := range calCmsData.Events {
 		if !misc.SliceContainsString(s.Cfg.CalCms.EventExclusion, event.Skey) {
@@ -387,8 +388,11 @@ func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dt
 			} else {
 				ev.EventType = "Live"
 			}
-			//files := s.Repo.GetByEventId(event.EventID)
-			files := s.Repo.GetByIdAndHour(event.EventID, ev.StartTime[0:2], s.Cfg.Export.ExportLiveItems)
+			if s.Cfg.CalCms.ShowNonCalCmsFiles {
+				files = s.Repo.GetByIdAndHour(event.EventID, ev.StartTime[0:2], s.Cfg.Export.ExportLiveItems)
+			} else {
+				files = s.Repo.GetByEventId(event.EventID)
+			}
 			if files == nil {
 				if event.Live == 0 {
 					ev.FileStatus = "Missing"

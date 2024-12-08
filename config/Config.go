@@ -66,11 +66,12 @@ type AppConfig struct {
 		ExportLiveItems        bool    `envconfig:"EXPORT_LIVE_ITEMS" default:"false"`
 	}
 	CalCms struct {
-		QueryCalCms     bool     `envconfig:"QUERY_CALCMS" default:"false"`
-		CmsUrl          string   `envconfig:"CALCMS_URL" default:"https://programm.coloradio.org/agenda/events.cgi"`
-		Template        string   `envconfig:"CALCMS_TEMPLATE" default:"event.json-p"`
-		EventExclusion  []string `envconfig:"EVENT_EXCLUSION"`
-		ExportDayEvents bool     `envconfig:"EXPORT_DAY_EVENTS" default:"false"`
+		QueryCalCms        bool     `envconfig:"QUERY_CALCMS" default:"false"`
+		CmsUrl             string   `envconfig:"CALCMS_URL" default:"https://programm.coloradio.org/agenda/events.cgi"`
+		Template           string   `envconfig:"CALCMS_TEMPLATE" default:"event.json-p"`
+		EventExclusion     []string `envconfig:"EVENT_EXCLUSION"`
+		ExportDayEvents    bool     `envconfig:"EXPORT_DAY_EVENTS" default:"false"`
+		ShowNonCalCmsFiles bool     `envconfig:"SHOW_NON_CLACMS_FILES" default:"true"`
 	}
 	Metrics struct {
 		FileNumber      prometheus.GaugeVec
