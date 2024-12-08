@@ -533,7 +533,7 @@ func parseMairListPlaylistXml(playlistData []byte) (playing bool, e error) {
 		return false, err
 	}
 	for _, item := range playList.PlaylistItem {
-		if item.State == "playing" {
+		if item.State == "playing" && item.Class != "InfiniteSilence" {
 			return true, nil
 		}
 	}
@@ -550,7 +550,7 @@ func parseMairListPlaylistJson(playlistData []byte) (playing bool, e error) {
 		return false, err
 	}
 	for _, item := range playList.Items {
-		if item.State == "playing" {
+		if item.State == "playing" && item.Class != "InfiniteSilence" {
 			return true, nil
 		}
 	}
