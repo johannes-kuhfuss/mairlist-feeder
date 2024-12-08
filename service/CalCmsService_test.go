@@ -756,9 +756,23 @@ func TestExtractFileInfoNoFilesReturnsNA(t *testing.T) {
 func TestExtractFileInfoOneFilesNoHashReturnsDuration(t *testing.T) {
 	files := domain.FileList{}
 	fi1 := domain.FileInfo{
+		Checksum: "A",
+		Duration: 60.0,
+	}
+	files = append(files, fi1)
+	s, d, f := extractFileInfo(&files, false)
+	assert.EqualValues(t, "Present", s)
+	assert.EqualValues(t, "1.0", d)
+	assert.EqualValues(t, "Manual", f)
+}
+
+func TestExtractFileInfoOnecalCmsFilesNoHashReturnsDuration(t *testing.T) {
+	files := domain.FileList{}
+	fi1 := domain.FileInfo{
 		Checksum:   "A",
 		Duration:   60.0,
 		FromCalCMS: true,
+		EventId:    5,
 	}
 	files = append(files, fi1)
 	s, d, f := extractFileInfo(&files, false)
