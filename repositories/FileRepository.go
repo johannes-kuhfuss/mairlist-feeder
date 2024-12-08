@@ -168,9 +168,42 @@ func (fr DefaultFileRepository) GetByHour(hour string, includeLive bool) *domain
 	}
 	if len(list) > 0 {
 		return &list
-	} else {
-		return nil
 	}
+	return nil
+}
+
+// mergeFileList combines two file lists
+func mergeFileList(fl1, fl2 *domain.FileList) domain.FileList {
+	var list domain.FileList
+	if fl1 != nil {
+		if len(*fl1) > 0 {
+			for _, f := range *fl1 {
+				list = append(list, f)
+			}
+		}
+	}
+	if fl2 != nil {
+		if len(*fl2) > 0 {
+			for _, f := range *fl2 {
+				if !list.ContainsPath(f.Path) {
+					list = append(list, f)
+				}
+			}
+		}
+	}
+	return list
+}
+
+// GetByIdAndHour gets all elements form the list that either match an eventId or a particular hour
+func (fr DefaultFileRepository) GetByIdAndHour(eventId int, hour string, includeLive bool) *domain.FileList {
+	var list domain.FileList
+	files1 := fr.GetByEventId(eventId)
+	files2 := fr.GetByHour(hour, includeLive)
+	list = mergeFileList(files1, files2)
+	if len(list) > 0 {
+		return &list
+	}
+	return nil
 }
 
 // Store stores a new file information entry into the repository

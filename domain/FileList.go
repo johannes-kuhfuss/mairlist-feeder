@@ -38,3 +38,12 @@ type SafeFileList struct {
 	sync.RWMutex
 	Files map[string]FileInfo
 }
+
+func (fl FileList) ContainsPath(path string) bool {
+	for _, e := range fl {
+		if e.Path == path {
+			return true
+		}
+	}
+	return false
+}

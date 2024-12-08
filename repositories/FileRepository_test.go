@@ -441,3 +441,34 @@ func TestGetByDateTwoMatchesReturnsMatches(t *testing.T) {
 	assert.NotNil(t, res)
 	assert.EqualValues(t, 2, len(*res))
 }
+
+func TestMergeFileListNil(t *testing.T) {
+	flm := mergeFileList(nil, nil)
+	assert.EqualValues(t, 0, len(flm))
+}
+
+func TestMergeFileListEmpty(t *testing.T) {
+	fl1 := domain.FileList{}
+	fl2 := domain.FileList{}
+	flm := mergeFileList(&fl1, &fl2)
+	assert.EqualValues(t, 0, len(flm))
+}
+
+func TestMergeFileListTwoDifferentElements(t *testing.T) {
+	fi1 := domain.FileInfo{Path: "A"}
+	fi2 := domain.FileInfo{Path: "B"}
+	fl1 := domain.FileList{fi1}
+	fl2 := domain.FileList{fi2}
+	flm := mergeFileList(&fl1, &fl2)
+	assert.EqualValues(t, 2, len(flm))
+}
+
+func TestMergeFileListTwoEqualElements(t *testing.T) {
+	fi1 := domain.FileInfo{Path: "A"}
+	fi2 := domain.FileInfo{Path: "A"}
+	fi3 := domain.FileInfo{Path: "B"}
+	fl1 := domain.FileList{fi1}
+	fl2 := domain.FileList{fi2, fi3}
+	flm := mergeFileList(&fl1, &fl2)
+	assert.EqualValues(t, 2, len(flm))
+}

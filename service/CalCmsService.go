@@ -387,7 +387,8 @@ func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dt
 			} else {
 				ev.EventType = "Live"
 			}
-			files := s.Repo.GetByEventId(event.EventID)
+			//files := s.Repo.GetByEventId(event.EventID)
+			files := s.Repo.GetByIdAndHour(event.EventID, ev.StartTime[0:2], s.Cfg.Export.ExportLiveItems)
 			if files == nil {
 				if event.Live == 0 {
 					ev.FileStatus = "Missing"
