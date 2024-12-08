@@ -111,7 +111,7 @@ func TestDeleteExistingElementDeletesElement(t *testing.T) {
 
 func TestGetForHourEmptyListReturnsNil(t *testing.T) {
 	setupTest()
-	res := repo.GetForHour("13", false)
+	res := repo.GetByHour("13", false)
 	assert.Nil(t, res)
 }
 
@@ -123,7 +123,7 @@ func TestGetForHourNoMatchReturnsNil(t *testing.T) {
 		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
 	}
 	repo.Store(fi)
-	res := repo.GetForHour("13", false)
+	res := repo.GetByHour("13", false)
 	assert.Nil(t, res)
 }
 
@@ -135,7 +135,7 @@ func TestGetForHourOneMatchReturnsElement(t *testing.T) {
 		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
 	}
 	repo.Store(fi)
-	res := repo.GetForHour("12", false)
+	res := repo.GetByHour("12", false)
 	el := (*res)[0]
 	assert.NotNil(t, *res)
 	assert.EqualValues(t, 1, len(*res))
@@ -163,7 +163,7 @@ func TestGetForHourTwoMatchesReturnsElements(t *testing.T) {
 	repo.Store(fi1)
 	repo.Store(fi2)
 	repo.Store(fi3)
-	res := repo.GetForHour("12", false)
+	res := repo.GetByHour("12", false)
 	assert.NotNil(t, *res)
 	assert.EqualValues(t, 2, len(*res))
 }
@@ -184,7 +184,7 @@ func TestGetForHourOnlyLiveReturnsNil(t *testing.T) {
 	}
 	repo.Store(fi1)
 	repo.Store(fi2)
-	res := repo.GetForHour("12", false)
+	res := repo.GetByHour("12", false)
 	assert.Nil(t, res)
 }
 
@@ -204,11 +204,11 @@ func TestGetForHourLiveCheck(t *testing.T) {
 	}
 	repo.Store(fi1)
 	repo.Store(fi2)
-	res1 := repo.GetForHour("12", false)
+	res1 := repo.GetByHour("12", false)
 	assert.NotNil(t, *res1)
 	assert.EqualValues(t, 1, len(*res1))
 	assert.EqualValues(t, "A", (*res1)[0].Path)
-	res2 := repo.GetForHour("12", true)
+	res2 := repo.GetByHour("12", true)
 	assert.NotNil(t, *res2)
 	assert.EqualValues(t, 2, len(*res2))
 }

@@ -109,7 +109,7 @@ func (s DefaultExportService) ExportForHour(hour string) {
 	exmu.Lock()
 	defer exmu.Unlock()
 	s.Cfg.RunTime.ExportRunning = true
-	if files := s.Repo.GetForHour(hour, s.Cfg.Export.ExportLiveItems); files != nil {
+	if files := s.Repo.GetByHour(hour, s.Cfg.Export.ExportLiveItems); files != nil {
 		logger.Infof("Starting export for timeslot %v:00 ...", hour)
 		start := time.Now().UTC()
 		s.checkTimeAndLenghth(files)

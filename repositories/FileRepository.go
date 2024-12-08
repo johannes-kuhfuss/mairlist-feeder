@@ -149,8 +149,8 @@ func (fr DefaultFileRepository) GetAll() *domain.FileList {
 	return &list
 }
 
-// GetForHour returns all files' information that fall into a given start hour. If no files match, the methods returns nil
-func (fr DefaultFileRepository) GetForHour(hour string, includeLive bool) *domain.FileList {
+// GetByHour returns all files' information that fall into a given start hour. If no files match, the methods returns nil
+func (fr DefaultFileRepository) GetByHour(hour string, includeLive bool) *domain.FileList {
 	var list domain.FileList
 	if fr.Size() == 0 {
 		return nil
