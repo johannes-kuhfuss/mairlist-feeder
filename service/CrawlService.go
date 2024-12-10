@@ -167,6 +167,7 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []st
 					if oldFile.ModTime == newFile.ModTime() {
 						return nil
 					}
+					logger.Infof("Modification date changed. Updating %v", oldFile.Path)
 				}
 				fi := s.setNewFileData(newFile, srcPath, rootFolder)
 				fileCount++
