@@ -52,7 +52,7 @@ func exportState(urlPath string, filePrefix string) (fileName string, e error) {
 		logger.Error("Error while trying to save day's status", err)
 		return "", err
 	}
-	exportFileName := filePrefix + "_" + time.Now().Format("2006-01-02__15-04-05") + ".html"
+	exportFileName := filePrefix + "_" + time.Now().Format("2006-01-02") + ".html"
 	writePath := path.Join(cfg.Export.ExportFolder, exportFileName)
 	absWritePath, err := filepath.Abs(writePath)
 	if err != nil {
