@@ -300,7 +300,7 @@ func TestCheckCalCmsDataDifferingDatesReturnsError(t *testing.T) {
 	_, err := calCmsService.checkCalCmsEventData(fi1)
 
 	assert.NotNil(t, err)
-	assert.EqualValues(t, "file has different date than calCms data", err.Error())
+	assert.EqualValues(t, "file has different date (2024-09-17) than calCms data (2024-12-16)", err.Error())
 }
 
 func TestCheckCalCmsDataNoMatchingOnSameDayDataReturnsError(t *testing.T) {
@@ -314,7 +314,7 @@ func TestCheckCalCmsDataNoMatchingOnSameDayDataReturnsError(t *testing.T) {
 	_, err := calCmsService.checkCalCmsEventData(fi1)
 
 	assert.NotNil(t, err)
-	assert.EqualValues(t, "no such id in calCMS", err.Error())
+	assert.EqualValues(t, "no Id 0 in calCMS", err.Error())
 }
 
 func TestCheckCalCmsDataDoubleMatchReturnsError(t *testing.T) {
@@ -401,7 +401,7 @@ func TestCheckCalCmsDataIsLiveReturnsData(t *testing.T) {
 
 	res, err := calCmsService.checkCalCmsEventData(fi)
 
-	assert.Nil(t, err)
+	assert.EqualValues(t, "Id: 1 is designated as live, yet a file is present.", err.Error())
 	assert.EqualValues(t, event.FullTitle, res.Title)
 	st1, _ := time.ParseInLocation(parseDate, event.StartDatetime, time.Local)
 	st2, _ := time.ParseInLocation(parseDate, event.EndDatetime, time.Local)

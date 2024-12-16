@@ -183,7 +183,7 @@ func (s DefaultCalCmsService) EnrichFileInformation() (fc dto.FileCounts) {
 			if file.EventId != 0 {
 				calCmsInfo, err := s.checkCalCmsEventData(file)
 				if err != nil {
-					logger.Errorf("Error while checking calCms event data for file %v. %v", file.Path, err)
+					logger.Errorf("Error while checking calCms event data for file %v: %v", file.Path, err)
 					continue
 				}
 				newFile, nfc := mergeInfo(file, *calCmsInfo)
@@ -229,23 +229,21 @@ func mergeInfo(oldFileInfo domain.FileInfo, calCmsInfo dto.CalCmsEntry) (newFile
 func (s DefaultCalCmsService) checkCalCmsEventData(file domain.FileInfo) (*dto.CalCmsEntry, error) {
 	info, err := s.GetCalCmsEventDataForId(file.EventId)
 	if err != nil {
-		logger.Error("Error retrieving calCMS info", err)
 		return nil, err
 	}
 	calCmsDate := strings.ReplaceAll(helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate), "/", "-")
 	if (len(info) == 0) && (calCmsDate == file.FolderDate) {
-		logger.Warnf("No information from calCMS for Id %v in today's calCMS events", file.EventId)
-		return nil, errors.New("no such id in calCMS")
+		return nil, fmt.Errorf("no Id %v in calCMS", file.EventId)
 	}
 	if len(info) > 1 {
 		logger.Warnf("Ambiguous information from calCMS. Found %v entries. Not adding information.", len(info))
 		return nil, errors.New("multiple matches in calCMS")
 	}
 	if calCmsDate != file.FolderDate {
-		return nil, errors.New("file has different date than calCms data")
+		return nil, fmt.Errorf("file has different date (%v) than calCms data (%v)", file.FolderDate, calCmsDate)
 	}
 	if (len(info) == 1) && (info[0].Live == 1) {
-		logger.Warnf("%v, Id: %v is designated as live, yet a file is present.", info[0].Title, info[0].EventId)
+		return &info[0], fmt.Errorf("Id: %v is designated as live, yet a file is present.", info[0].EventId)
 	}
 	return &info[0], nil
 }
