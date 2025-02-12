@@ -227,6 +227,9 @@ func mergeInfo(oldFileInfo domain.FileInfo, calCmsInfo dto.CalCmsEntry) (newFile
 
 // checkCalCmsEventData evaluates calCms event data on a per file basis and performs some sanity checks
 func (s DefaultCalCmsService) checkCalCmsEventData(file domain.FileInfo) (*dto.CalCmsEntry, error) {
+	var (
+		exportLive string
+	)
 	info, err := s.GetCalCmsEventDataForId(file.EventId)
 	if err != nil {
 		return nil, err
@@ -243,7 +246,13 @@ func (s DefaultCalCmsService) checkCalCmsEventData(file domain.FileInfo) (*dto.C
 		return nil, fmt.Errorf("file has different date (%v) than calCms data (%v)", file.FolderDate, calCmsDate)
 	}
 	if (len(info) == 1) && (info[0].Live == 1) {
-		return &info[0], fmt.Errorf("Id: %v is designated as live, yet a file is present.", info[0].EventId)
+		if s.Cfg.Export.ExportLiveItems {
+			exportLive = "Per configuration setting Live items will be exported."
+		} else {
+			exportLive = "Per configuration setting Live items will NOT be exported."
+		}
+		logger.Warnf("%v, Id: %v is designated as live, yet a file is present. %v", info[0].Title, info[0].EventId, exportLive)
+		return &info[0], nil
 	}
 	return &info[0], nil
 }

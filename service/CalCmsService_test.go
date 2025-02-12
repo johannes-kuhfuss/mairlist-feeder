@@ -395,18 +395,18 @@ func TestCheckCalCmsDataIsLiveReturnsData(t *testing.T) {
 		EventId:       1,
 		CalCmsTitle:   "",
 	}
-
 	calCmsService.Cfg.Misc.TestCrawl = true
 	calCmsService.Cfg.Misc.TestDate = folderDateSlash
 
 	res, err := calCmsService.checkCalCmsEventData(fi)
 
-	assert.EqualValues(t, "Id: 1 is designated as live, yet a file is present.", err.Error())
+	assert.Nil(t, err)
 	assert.EqualValues(t, event.FullTitle, res.Title)
 	st1, _ := time.ParseInLocation(parseDate, event.StartDatetime, time.Local)
 	st2, _ := time.ParseInLocation(parseDate, event.EndDatetime, time.Local)
 	assert.EqualValues(t, fmt.Sprintf("%02d:%02d", st1.Hour(), st1.Minute()), res.StartTime.Format("15:04"))
 	assert.EqualValues(t, fmt.Sprintf("%02d:%02d", st2.Hour(), st2.Minute()), res.EndTime.Format("15:04"))
+	assert.EqualValues(t, res.Live, 1)
 }
 
 func TestCheckCalCmsDataDataOkReturnsData(t *testing.T) {
