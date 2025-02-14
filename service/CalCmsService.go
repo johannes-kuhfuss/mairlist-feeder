@@ -220,6 +220,8 @@ func mergeInfo(oldFileInfo domain.FileInfo, calCmsInfo dto.CalCmsEntry) (newFile
 	}
 	if calCmsInfo.Live != 0 {
 		newFileInfo.EventIsLive = true
+	} else {
+		newFileInfo.EventIsLive = false
 	}
 	fc.TotalCount++
 	return
