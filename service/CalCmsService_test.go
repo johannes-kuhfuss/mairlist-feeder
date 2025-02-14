@@ -951,3 +951,18 @@ func TestMergeInfoIsLive(t *testing.T) {
 	assert.EqualValues(t, 1, ct.TotalCount)
 	assert.True(t, ni.EventIsLive)
 }
+
+func TestMergeLiveWasReset(t *testing.T) {
+	oi := domain.FileInfo{
+		FromCalCMS:  true,
+		StartTime:   time.Date(2024, 11, 11, 1, 2, 3, 0, time.Local),
+		EventIsLive: true,
+	}
+	ci := dto.CalCmsEntry{
+		StartTime: time.Date(2024, 11, 11, 1, 2, 3, 0, time.Local),
+		Live:      0,
+	}
+	ni, ct := mergeInfo(oi, ci)
+	assert.EqualValues(t, 1, ct.TotalCount)
+	assert.False(t, ni.EventIsLive)
+}
