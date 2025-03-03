@@ -60,6 +60,12 @@ type ConfigResp struct {
 	AddNonCalCmsFiles          string
 }
 
+// setStartDate sets the service start date and adds the run duration
+func setStartDate(date time.Time) string {
+	dur := time.Since(date)
+	return convertDate(date) + " (running for " + dur.String() + ")"
+}
+
 // convertDate converts a date to its display format
 func convertDate(date time.Time) string {
 	if date.IsZero() {
@@ -143,7 +149,7 @@ func GetConfig(cfg *config.AppConfig) (resp ConfigResp) {
 	resp.LastExportDate = convertDate(cfg.RunTime.LastExportRunDate)
 	resp.LastCleanDate = convertDate(cfg.RunTime.LastCleanDate)
 	resp.LastExportedFileDate = convertDate(cfg.RunTime.LastExportedFileDate)
-	resp.StartDate = convertDate(cfg.RunTime.StartDate)
+	resp.StartDate = setStartDate(cfg.RunTime.StartDate)
 	if cfg.RunTime.LastExportFileName == "" {
 		resp.LastExportFileName = "N/A"
 	} else {
