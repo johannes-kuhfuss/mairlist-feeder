@@ -8,6 +8,7 @@
                 <table class="table table-striped table-sm">
                     <thead>
                         <tr>
+                          <th scope="col"></th>
                           <th scope="col">Event Id</th>
                           <th scope="col">Title</th>
                           <th scope="col">Start Date</th>
@@ -23,6 +24,7 @@
                     <tbody>
                         {{ range .events }}
                         <tr>
+                          <td>{{ .CurrentEvent }}</td>
                           <td>{{ .EventId }}</td>
                           <td>{{ .Title }}</td>
                           <td>{{ .StartDate }}</td>

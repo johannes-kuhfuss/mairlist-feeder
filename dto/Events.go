@@ -3,6 +3,7 @@ package dto
 
 // Event defines the data used to display the day's events
 type Event struct {
+	CurrentEvent    string `json:"current_event"`
 	EventId         string `json:"event_id"`
 	Title           string `json:"title"`
 	StartDate       string `json:"start_date"`

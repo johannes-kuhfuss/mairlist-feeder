@@ -392,6 +392,7 @@ func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dt
 	for _, event := range calCmsData.Events {
 		if !misc.SliceContainsString(s.Cfg.CalCms.EventExclusion, event.Skey) {
 			var ev dto.Event
+			ev.CurrentEvent = isCurrent(event.StartTime, event.EndTime)
 			ev.EventId = strconv.Itoa(event.EventID)
 			ev.StartDate = event.StartDate
 			ev.StartTime = event.StartTime
@@ -422,6 +423,19 @@ func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dt
 		}
 	}
 	return el
+}
+
+func isCurrent(startTime string, endTime string) string {
+	sth, _ := strconv.Atoi(startTime[0:2])
+	stm, _ := strconv.Atoi(startTime[2:4])
+	st := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), sth, stm, 0, 0, time.Local)
+	eth, _ := strconv.Atoi(endTime[0:2])
+	etm, _ := strconv.Atoi(endTime[2:4])
+	et := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), eth, etm, 0, 0, time.Local)
+	if time.Now().After(st) && time.Now().Before(et) {
+		return "***"
+	}
+	return ""
 }
 
 // GetEvents orchestrates the generation of an event list for display on the web UI
