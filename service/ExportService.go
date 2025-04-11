@@ -75,25 +75,11 @@ func NewExportService(cfg *config.AppConfig, repo *repositories.DefaultFileRepos
 	}
 }
 
-// isNotMonday is a helper function to determine if today is not Monday
-func isNotMonday() bool {
-	return int(time.Now().Weekday()) != 1
-}
-
 // Export orchestrates the export of data to mAirList
 func (s DefaultExportService) Export() {
 	s.Cfg.RunTime.LastExportRunDate = time.Now()
 	nextHour := getNextHour()
-	// LimitTime is a stop-gap measure until the human-side of the new TK is squared away. Will be removed once mairlist-feeder goes into full production
-	if s.Cfg.Export.LimitTime {
-		// 23:00, but not on Mondays and 00:00, 01:00
-		if (nextHour == "23" && isNotMonday()) || (nextHour == "00") || (nextHour == "01") {
-			s.ExportForHour(nextHour)
-		}
-	} else {
-		s.ExportForHour(nextHour)
-	}
-
+	s.ExportForHour(nextHour)
 }
 
 // ExportAllHours exports a playlist for all hours of the day

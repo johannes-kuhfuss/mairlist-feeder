@@ -43,7 +43,6 @@ type ConfigResp struct {
 	CrawlRunning               string
 	ExportRunning              string
 	CleanRunning               string
-	LimitTime                  string
 	LastCleanDate              string
 	NextCrawlDate              string
 	NextExportDate             string
@@ -133,7 +132,6 @@ func GetConfig(cfg *config.AppConfig) (resp ConfigResp) {
 		CrawlRunning:               strconv.FormatBool(cfg.RunTime.CrawlRunning),
 		ExportRunning:              strconv.FormatBool(cfg.RunTime.ExportRunning),
 		CleanRunning:               strconv.FormatBool(cfg.RunTime.CleanRunning),
-		LimitTime:                  strconv.FormatBool(cfg.Export.LimitTime),
 		FilesCleaned:               strconv.Itoa(cfg.RunTime.FilesCleaned),
 		GenHashes:                  strconv.FormatBool(cfg.Crawl.GenerateHash),
 		LastCalCmsState:            cfg.RunTime.LastCalCmsState,

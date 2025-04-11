@@ -60,7 +60,6 @@ type AppConfig struct {
 		MairListVersion        int     `envconfig:"MAIRLIST_VERSION" default:"6"`
 		AppendPlaylist         bool    `envconfig:"APPEND_PLAYLIST" default:"false"`
 		TerminateAfterDuration bool    `envconfig:"TERM_AFTER_DUR" default:"true"`
-		LimitTime              bool    `envconfig:"LIMIT_TIME" default:"false"`
 		QueryMairListStatus    bool    `envconfig:"QUERY_MAIRLIST_STATUS" default:"false"`
 		StatusQueryCycleSec    int     `envconfig:"QUERY_STATUS_CYCLE_SEC" default:"5"`
 		ExportLiveItems        bool    `envconfig:"EXPORT_LIVE_ITEMS" default:"false"`
