@@ -16,6 +16,7 @@ import (
 
 // ExportDayDataRun runs the export job
 func ExportDayDataRun() {
+	calCmsService.SaveYesterdaysEvents()
 	file, err := exportState(eventUrl, "events")
 	if err != nil {
 		logger.Error("Error exporting day's event state", err)

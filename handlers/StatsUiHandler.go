@@ -63,6 +63,15 @@ func (uh *StatsUiHandler) EventListPage(c *gin.Context) {
 	})
 }
 
+// YesterdaysEvents is the handler for the yesterday's event list page
+func (uh *StatsUiHandler) YesterdaysEvents(c *gin.Context) {
+	events := uh.CalCmsSvc.GetYesterdaysEvents()
+	c.HTML(http.StatusOK, "eventlist.page.tmpl", gin.H{
+		"title":  "Yesterday's Event List",
+		"events": events,
+	})
+}
+
 // ActionPage is the handler for the page where the user can invoke actions
 func (uh *StatsUiHandler) ActionPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "actions.page.tmpl", gin.H{

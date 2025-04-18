@@ -160,6 +160,7 @@ func mapUrls() {
 	cfg.RunTime.Router.GET("/", statsUiHandler.StatusPage)
 	cfg.RunTime.Router.GET(fileUrl, statsUiHandler.FileListPage)
 	cfg.RunTime.Router.GET(eventUrl, statsUiHandler.EventListPage)
+	cfg.RunTime.Router.GET("/yesterday", statsUiHandler.YesterdaysEvents)
 	cfg.RunTime.Router.GET(actionUrl, statsUiHandler.ActionPage)
 	cfg.RunTime.Router.POST(actionUrl, statsUiHandler.ExecAction)
 	cfg.RunTime.Router.GET("/logs", statsUiHandler.LogsPage)

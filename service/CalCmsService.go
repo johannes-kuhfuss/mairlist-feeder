@@ -40,6 +40,7 @@ var (
 		sync.RWMutex
 		data domain.CalCmsPgmData
 	}
+	EventsYesterday []dto.Event
 )
 
 // InitHttpCalClient sets the defaukt values for the http client used to query calCms
@@ -486,4 +487,20 @@ func (s DefaultCalCmsService) countEvents(events []dto.Event) {
 
 func (s DefaultCalCmsService) CountRun() {
 	s.GetEvents()
+}
+
+// SaveYesterdaysEvents saves the current event state to the local variable
+func (s DefaultCalCmsService) SaveYesterdaysEvents() {
+	events, err := s.GetEvents()
+	if err == nil {
+		EventsYesterday = events
+	}
+}
+
+// GetYesterdaysEvents retrieves yesterday's event state from the local variable
+func (s DefaultCalCmsService) GetYesterdaysEvents() []dto.Event {
+	if len(EventsYesterday) > 0 {
+		return EventsYesterday
+	}
+	return nil
 }
