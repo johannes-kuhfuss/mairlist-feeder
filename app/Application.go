@@ -117,7 +117,6 @@ func initServer() {
 				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
 				tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
 			},
 			PreferServerCipherSuites: true,
 			MinVersion:               tls.VersionTLS12,
