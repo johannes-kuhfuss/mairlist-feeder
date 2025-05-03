@@ -113,13 +113,13 @@ func initServer() {
 
 	if cfg.Server.UseTls {
 		tlsConfig = tls.Config{
-			CipherSuites: []uint16{
-				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-			},
 			PreferServerCipherSuites: true,
-			MinVersion:               tls.VersionTLS12,
-			CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+			MinVersion:               tls.VersionTLS13,
+			CurvePreferences: []tls.CurveID{
+				tls.X25519,
+				tls.CurveP256,
+				tls.CurveP384,
+			},
 		}
 	}
 	if cfg.Server.UseTls {
