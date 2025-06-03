@@ -70,7 +70,7 @@ type AppConfig struct {
 		Template           string   `envconfig:"CALCMS_TEMPLATE" default:"event.json-p"`
 		EventExclusion     []string `envconfig:"EVENT_EXCLUSION"`
 		ExportDayEvents    bool     `envconfig:"EXPORT_DAY_EVENTS" default:"false"`
-		ShowNonCalCmsFiles bool     `envconfig:"SHOW_NON_CLACMS_FILES" default:"true"`
+		ShowNonCalCmsFiles bool     `envconfig:"SHOW_NON_CALCMS_FILES" default:"true"`
 	}
 	Metrics struct {
 		FileNumber      prometheus.GaugeVec
