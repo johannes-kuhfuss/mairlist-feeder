@@ -160,7 +160,7 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []st
 			if err != nil {
 				return err
 			}
-			if misc.SliceContainsString(crawlExtensions, filepath.Ext(srcPath)) {
+			if misc.SliceContainsStringCI(crawlExtensions, filepath.Ext(srcPath)) {
 				newFile, _ := info.Info()
 				if s.Repo.Exists(srcPath) {
 					oldFile := s.Repo.GetByPath(srcPath)
