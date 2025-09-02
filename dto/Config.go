@@ -57,6 +57,7 @@ type ConfigResp struct {
 	QueryMairListStatus        string
 	ExportLiveItems            string
 	AddNonCalCmsFiles          string
+	ExportMinute               string
 }
 
 // setStartDate sets the service start date and adds the run duration
@@ -142,6 +143,7 @@ func GetConfig(cfg *config.AppConfig) (resp ConfigResp) {
 		QueryMairListStatus:        strconv.FormatBool(cfg.Export.QueryMairListStatus),
 		ExportLiveItems:            strconv.FormatBool(cfg.Export.ExportLiveItems),
 		AddNonCalCmsFiles:          strconv.FormatBool(cfg.Crawl.AddNonCalCmsFiles),
+		ExportMinute:               strconv.Itoa(cfg.Export.ExportMinute),
 	}
 	resp.LastCrawlDate = convertDate(cfg.RunTime.LastCrawlDate)
 	resp.LastExportDate = convertDate(cfg.RunTime.LastExportRunDate)

@@ -182,8 +182,9 @@ func scheduleBgJobs() {
 	crawlId, crawlErr := cfg.RunTime.BgJobs.AddFunc(crawlCycle, crawlService.Crawl)
 	// Clean 00:30 local time
 	cleanId, cleanErr := cfg.RunTime.BgJobs.AddFunc("30 0 * * *", cleanService.Clean)
-	// Export every hour, 10 minutes to the hour
-	exportId, exportErr := cfg.RunTime.BgJobs.AddFunc("50 * * * *", exportService.Export)
+	// Export every hour, x minutes to the hour
+	exportStr := fmt.Sprintf("%02d * * * *", cfg.Export.ExportMinute)
+	exportId, exportErr := cfg.RunTime.BgJobs.AddFunc(exportStr, exportService.Export)
 	cfg.RunTime.BgJobs.Start()
 	if crawlErr != nil {
 		logger.Errorf("Error when scheduling job %v for crawling. %v", crawlId, crawlErr)
