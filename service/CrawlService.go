@@ -164,7 +164,7 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []st
 				newFile, _ := info.Info()
 				if s.Repo.Exists(srcPath) {
 					oldFile := s.Repo.GetByPath(srcPath)
-					if oldFile.ModTime == newFile.ModTime() {
+					if time.Time.Equal(oldFile.ModTime, newFile.ModTime()) {
 						return nil
 					}
 					logger.Infof("Modification date changed. Updating %v", oldFile.Path)
