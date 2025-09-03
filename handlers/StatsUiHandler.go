@@ -100,6 +100,8 @@ func (uh *StatsUiHandler) AboutPage(c *gin.Context) {
 // ExecAction is the handler invoked when the user excecutes an action
 func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 	action := c.PostForm("action")
+	note := c.PostForm("note")
+	logger.Infof("Execute Action %s with note %v", action, note)
 	hour := c.PostForm("hour")
 	if err := validateAction(action); err != nil {
 		logger.Error("Error validating action", err)
