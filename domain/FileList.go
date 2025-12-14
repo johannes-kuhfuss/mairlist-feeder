@@ -33,6 +33,21 @@ type FileInfo struct {
 
 type FileList []FileInfo
 
+// Len implements sort.Interface.
+func (fl FileList) Len() int {
+	return len(fl)
+}
+
+// Less implements sort.Interface.
+func (fl FileList) Less(i int, j int) bool {
+	return fl[i].StartTime.Before(fl[j].StartTime)
+}
+
+// Swap implements sort.Interface.
+func (fl FileList) Swap(i int, j int) {
+	fl[i], fl[j] = fl[j], fl[i]
+}
+
 // SafeFileList adds a mutex to allow thread-safe access of the file data entries
 type SafeFileList struct {
 	sync.RWMutex

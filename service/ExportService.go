@@ -14,6 +14,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -98,6 +99,7 @@ func (s DefaultExportService) ExportForHour(hour string) {
 	if files := s.Repo.GetByHour(hour, s.Cfg.Export.ExportLiveItems); files != nil {
 		logger.Infof("Starting export for timeslot %v:00 ...", hour)
 		start := time.Now().UTC()
+		sort.Sort(files)
 		s.checkTimeAndLenghth(files)
 		exportPath, err := s.ExportToPlayout(hour)
 		if s.Cfg.Export.AppendPlaylist && exportPath != "" && err == nil {
