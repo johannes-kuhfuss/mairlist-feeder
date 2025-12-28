@@ -52,7 +52,7 @@ var (
 	httpExClient   http.Client
 )
 
-// InitHttpExClient sets the defaukt values for the http client used to interact with mAirlist
+// InitHttpExClient sets the default values for the http client used to interact with mAirlist
 func InitHttpExClient() {
 	httpExTr = http.Transport{
 		DisableKeepAlives:  false,
