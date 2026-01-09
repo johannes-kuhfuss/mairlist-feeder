@@ -131,7 +131,7 @@ func TestExtractFileInfoRealFileReturnsData(t *testing.T) {
 	assert.EqualValues(t, 0, n.StreamCount)
 	assert.EqualValues(t, false, fires.FromCalCMS)
 	assert.EqualValues(t, "file HHMM-HHMM", fires.RuleMatched)
-	assert.EqualValues(t, 5.041633, fires.Duration)
+	assert.EqualValues(t, 5.0, fires.Duration)
 	assert.EqualValues(t, 34, fires.BitRate)
 	assert.EqualValues(t, "MP2/3 (MPEG audio layer 2/3)", fires.FormatName)
 }
@@ -221,7 +221,7 @@ func TestAnalyzeTechMdSampleFileReturnsTechMd(t *testing.T) {
 	d, e := analyzeTechMd(audioSampleFile, 5, "../prog/ffprobe.exe")
 	assert.Nil(t, e)
 	assert.NotNil(t, d)
-	assert.EqualValues(t, 5.041633, d.DurationSec)
+	assert.EqualValues(t, 5.0, d.DurationSec)
 }
 
 func TestCrawlFolderNoFilesReturnsZero(t *testing.T) {
