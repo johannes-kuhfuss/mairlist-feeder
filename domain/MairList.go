@@ -55,7 +55,7 @@ type MairListPlaylistJson struct {
 			FadeOut float64 `json:"FadeOut"`
 			CueOut  float64 `json:"CueOut"`
 			CueIn   float64 `json:"CueIn"`
-		} `json:"Markers,omitempty"`
+		} `json:"Markers"`
 		Title       string `json:"Title"`
 		Time        string `json:"Time"`
 		State       string `json:"State"`
@@ -69,6 +69,6 @@ type MairListPlaylistJson struct {
 			Album string `json:"Album"`
 			Genre string `json:"Genre"`
 			Jahr  string `json:"Jahr"`
-		} `json:"Attributes,omitempty"`
+		} `json:"Attributes"`
 	} `json:"Items"`
 }

@@ -85,7 +85,7 @@ func (s DefaultExportService) Export() {
 
 // ExportAllHours exports a playlist for all hours of the day
 func (s DefaultExportService) ExportAllHours() {
-	for hour := 0; hour < 24; hour++ {
+	for hour := range 24 {
 		s.ExportForHour(fmt.Sprintf("%02d", hour))
 	}
 }
