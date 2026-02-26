@@ -69,18 +69,18 @@ func NewCalCmsService(cfg *config.AppConfig, repo *repositories.DefaultFileRepos
 // insertData inserts new calCms data in a thread-safe manner
 func (s DefaultCalCmsService) insertData(data domain.CalCmsPgmData) {
 	CalCmsPgm.Lock()
+	defer CalCmsPgm.Unlock()
 	CalCmsPgm.data = data
-	CalCmsPgm.Unlock()
 }
 
 // calcCalCmsEndDate calculates the end date based on a given start date used to query events from calCms
 // this is used to query calCms for the day's events
-func calcCalCmsEndDate(startDate string) (endDate string, e error) {
+func calcCalCmsEndDate(startDate string, days int) (endDate string, e error) {
 	sd, err := time.Parse("2006-01-02", startDate)
 	if err != nil {
 		return "", err
 	}
-	return sd.AddDate(0, 0, 1).Format("2006-01-02"), nil
+	return sd.AddDate(0, 0, days).Format("2006-01-02"), nil
 }
 
 // setCalCmsQueryState sets staus of last calCms interaction with result and time for status overview
@@ -96,7 +96,7 @@ func (s DefaultCalCmsService) setCalCmsQueryState(success bool) {
 }
 
 // getCalCmsEventData retrieves the today's event information from calCms
-func (s DefaultCalCmsService) getCalCmsEventData() (eventData []byte, e error) {
+func (s DefaultCalCmsService) getCalCmsEventData(durationInDays int) (eventData []byte, e error) {
 	//API doc: https://github.com/rapilodev/racalmas/blob/master/docs/event-api.md
 	//URL old: https://programm.coloradio.org/agenda/events.cgi?date=2024-04-09&template=event.json-p
 	//URL new: https://programm.coloradio.org/agenda/events.cgi?from_date=2024-10-04&from_time=00:00&till_date=2024-10-05&till_time=00:00&template=event.json-p
@@ -110,7 +110,7 @@ func (s DefaultCalCmsService) getCalCmsEventData() (eventData []byte, e error) {
 	}
 	query := url.Values{}
 	calCmsStartDate = strings.ReplaceAll(helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate), "/", "-")
-	calCmsEndDate, err := calcCalCmsEndDate(calCmsStartDate)
+	calCmsEndDate, err := calcCalCmsEndDate(calCmsStartDate, durationInDays)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +154,7 @@ func (s DefaultCalCmsService) Query() error {
 	if s.Cfg.CalCms.QueryCalCms {
 		logger.Info("Starting to add information from calCMS...")
 		start := time.Now().UTC()
-		data, err := s.getCalCmsEventData()
+		data, err := s.getCalCmsEventData(1)
 		if err != nil {
 			logger.Error("error getting data from calCms", err)
 			return err
@@ -439,13 +439,13 @@ func isCurrent(startTime string, endTime string) string {
 	return ""
 }
 
-// GetEvents orchestrates the generation of an event list for display on the web UI
-func (s DefaultCalCmsService) GetEvents() ([]dto.Event, error) {
+// GetTodayEvents orchestrates the generation of an event list for display on the web UI
+func (s DefaultCalCmsService) GetTodayEvents() ([]dto.Event, error) {
 	var (
 		calCmsData domain.CalCmsPgmData
 	)
 	if s.Cfg.CalCms.QueryCalCms {
-		data, err := s.getCalCmsEventData()
+		data, err := s.getCalCmsEventData(1)
 		if err != nil {
 			logger.Error("error getting data from calCms", err)
 			return nil, err
@@ -486,12 +486,12 @@ func (s DefaultCalCmsService) countEvents(events []dto.Event) {
 }
 
 func (s DefaultCalCmsService) CountRun() {
-	s.GetEvents()
+	s.GetTodayEvents()
 }
 
 // SaveYesterdaysEvents saves the current event state to the local variable
 func (s DefaultCalCmsService) SaveYesterdaysEvents() {
-	events, err := s.GetEvents()
+	events, err := s.GetTodayEvents()
 	if err == nil {
 		EventsYesterday = events
 	}

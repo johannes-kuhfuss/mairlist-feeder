@@ -56,7 +56,7 @@ func (uh *StatsUiHandler) FileListPage(c *gin.Context) {
 
 // EventListPage is the handler for the event list page
 func (uh *StatsUiHandler) EventListPage(c *gin.Context) {
-	events, _ := uh.CalCmsSvc.GetEvents()
+	events, _ := uh.CalCmsSvc.GetTodayEvents()
 	c.HTML(http.StatusOK, "eventlist.page.tmpl", gin.H{
 		"title":  "Event List",
 		"events": events,

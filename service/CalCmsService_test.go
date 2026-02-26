@@ -552,7 +552,7 @@ func TestGetCalCmsDataWrongUrlReturnsError(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	cfgCal.CalCms.CmsUrl = "§$%&/()"
-	data, err := calCmsService.getCalCmsEventData()
+	data, err := calCmsService.getCalCmsEventData(1)
 	assert.Nil(t, data)
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "parse \"§$%&/()\": invalid URL escape \"%&/\"", err.Error())
@@ -571,7 +571,7 @@ func TestGetCalCmsDatahttpRequestReturnsData(t *testing.T) {
 	cfgCal.CalCms.CmsUrl = srv.URL
 	cfgCal.Misc.TestCrawl = true
 	cfgCal.Misc.TestDate = folderDateSlash
-	data, err := calCmsService.getCalCmsEventData()
+	data, err := calCmsService.getCalCmsEventData(1)
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
 	assert.EqualValues(t, respData, data)
@@ -588,7 +588,7 @@ func TestGetCalCmsDatahttpRequestReturnsError(t *testing.T) {
 	cfgCal.CalCms.CmsUrl = srv.URL
 	cfgCal.Misc.TestCrawl = true
 	cfgCal.Misc.TestDate = folderDateSlash
-	data, err := calCmsService.getCalCmsEventData()
+	data, err := calCmsService.getCalCmsEventData(1)
 	assert.NotNil(t, err)
 	assert.Nil(t, data)
 	assert.EqualValues(t, "400 Bad Request", err.Error())
@@ -641,14 +641,14 @@ func TestQueryNoQueryReturnsNoError(t *testing.T) {
 
 func TestCalcCalCmsEndDateWrongDateReturnsErros(t *testing.T) {
 	startDate := "sdf"
-	endDate, err := calcCalCmsEndDate(startDate)
+	endDate, err := calcCalCmsEndDate(startDate, 1)
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "", endDate)
 	assert.EqualValues(t, "parsing time \"sdf\" as \"2006-01-02\": cannot parse \"sdf\" as \"2006\"", err.Error())
 }
 
 func TestCalcCalCmsEndDateDateReturnsNextDay(t *testing.T) {
-	endDate, err := calcCalCmsEndDate(folderDateDash)
+	endDate, err := calcCalCmsEndDate(folderDateDash, 1)
 	assert.Nil(t, err)
 	assert.EqualValues(t, "2024-09-18", endDate)
 }
@@ -682,7 +682,7 @@ func TestGetEventsReturnsdata(t *testing.T) {
 	cfgCal.Misc.TestCrawl = true
 	cfgCal.Misc.TestDate = "2024/09/24"
 	cfgCal.CalCms.QueryCalCms = true
-	ev, err := calCmsService.GetEvents()
+	ev, err := calCmsService.GetTodayEvents()
 	assert.Nil(t, err)
 	assert.EqualValues(t, 8, len(ev))
 	assert.EqualValues(t, "Morgenmagazin - der Freien Radios", ev[0].Title)
