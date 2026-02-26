@@ -72,6 +72,7 @@ type AppConfig struct {
 		EventExclusion     []string `envconfig:"EVENT_EXCLUSION"`
 		ExportDayEvents    bool     `envconfig:"EXPORT_DAY_EVENTS" default:"false"`
 		ShowNonCalCmsFiles bool     `envconfig:"SHOW_NON_CALCMS_FILES" default:"true"`
+		FutureEventsDays   int      `envconfig:"FUTURE_EVENTS_DAYS" default:"5"`
 	}
 	Metrics struct {
 		FileNumber      prometheus.GaugeVec

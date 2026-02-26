@@ -273,3 +273,21 @@ func TestYesterdayPageReturnsYesterdaysEvents(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, containsTitle)
 }
+
+func TestFuturePageReturnsFutureEvents(t *testing.T) {
+	teardown := setupUiTest()
+	defer teardown()
+	cfg.CalCms.QueryCalCms = true
+	router.GET("/future", uh.FutureEvents)
+	request := httptest.NewRequest(http.MethodGet, "/future", nil)
+
+	router.ServeHTTP(recorder, request)
+	res := recorder.Result()
+	defer res.Body.Close()
+	data, err := io.ReadAll(res.Body)
+	containsTitle := strings.Contains(string(data), "<title>Future Events List</title>")
+
+	assert.EqualValues(t, http.StatusOK, res.StatusCode)
+	assert.Nil(t, err)
+	assert.True(t, containsTitle)
+}

@@ -74,10 +74,10 @@ func (uh *StatsUiHandler) YesterdaysEvents(c *gin.Context) {
 
 // FutureEvents is the handler for the future event list page
 func (uh *StatsUiHandler) FutureEvents(c *gin.Context) {
-	//events := uh.CalCmsSvc.GetYesterdaysEvents()
+	events, _ := uh.CalCmsSvc.GetFutureEvents()
 	c.HTML(http.StatusOK, "futureeventslist.page.tmpl", gin.H{
 		"title":  "Future Events List",
-		"events": nil,
+		"events": events,
 	})
 }
 

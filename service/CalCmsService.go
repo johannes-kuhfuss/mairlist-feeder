@@ -463,6 +463,34 @@ func (s DefaultCalCmsService) GetTodayEvents() ([]dto.Event, error) {
 	}
 }
 
+// GetFutureEvents orchestrates the generation of a future event list for display on the web UI
+func (s DefaultCalCmsService) GetFutureEvents() ([]dto.Event, error) {
+	var (
+		calCmsData domain.CalCmsPgmData
+	)
+	if s.Cfg.CalCms.QueryCalCms {
+		data, err := s.getCalCmsEventData(s.Cfg.CalCms.FutureEventsDays)
+		if err != nil {
+			logger.Error("error getting data from calCms", err)
+			return nil, err
+		}
+		if err := json.Unmarshal(data, &calCmsData); err != nil {
+			logger.Error("Cannot convert calCMS response data to Json", err)
+			return nil, err
+		}
+		el := s.convertEvent(calCmsData)
+		el = s.checkFileStatusInCalCms(el)
+		return el, nil
+	} else {
+		logger.Warn("calCMS query not enabled in configuration. Not querying future events.")
+		return nil, nil
+	}
+}
+
+func (s DefaultCalCmsService) checkFileStatusInCalCms(el []dto.Event) []dto.Event {
+	return el
+}
+
 // countEvents counts the events with their file status
 func (s DefaultCalCmsService) countEvents(events []dto.Event) {
 	var (

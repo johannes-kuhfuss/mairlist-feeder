@@ -1,7 +1,7 @@
 // package dto defines the data structures used to exchange information
 package dto
 
-// Event defines the data used to display the day's events
+// Event defines the data used to display the events
 type Event struct {
 	CurrentEvent    string `json:"current_event"`
 	EventId         string `json:"event_id"`
@@ -14,4 +14,5 @@ type Event struct {
 	EventType       string `json:"event_type"`
 	FileStatus      string `json:"file_status"`
 	FileSource      string `json:"file_source"`
+	FileAvail       string `json:"file_avail"`
 }
