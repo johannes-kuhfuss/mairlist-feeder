@@ -164,6 +164,7 @@ func mapUrls() {
 	cfg.RunTime.Router.GET("/logs", statsUiHandler.LogsPage)
 	cfg.RunTime.Router.GET("/about", statsUiHandler.AboutPage)
 	cfg.RunTime.Router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	cfg.RunTime.Router.GET("/future", statsUiHandler.FutureEvents)
 }
 
 // RegisterForOsSignals listens for OS signals terminating the program and sends an internal signal to start cleanup
