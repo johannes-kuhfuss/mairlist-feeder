@@ -72,15 +72,6 @@ func (uh *StatsUiHandler) YesterdaysEvents(c *gin.Context) {
 	})
 }
 
-// FutureEvents is the handler for the future event list page
-func (uh *StatsUiHandler) FutureEvents(c *gin.Context) {
-	events, _ := uh.CalCmsSvc.GetFutureEvents()
-	c.HTML(http.StatusOK, "futureeventslist.page.tmpl", gin.H{
-		"title":  "Future Events List",
-		"events": events,
-	})
-}
-
 // ActionPage is the handler for the page where the user can invoke actions
 func (uh *StatsUiHandler) ActionPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "actions.page.tmpl", gin.H{
