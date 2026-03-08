@@ -552,7 +552,7 @@ func TestGetCalCmsDataWrongUrlReturnsError(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	cfgCal.CalCms.CmsUrl = "§$%&/()"
-	data, err := calCmsService.getCalCmsEventData(1)
+	data, err := calCmsService.getCalCmsEventData()
 	assert.Nil(t, data)
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "parse \"§$%&/()\": invalid URL escape \"%&/\"", err.Error())
@@ -571,7 +571,7 @@ func TestGetCalCmsDatahttpRequestReturnsData(t *testing.T) {
 	cfgCal.CalCms.CmsUrl = srv.URL
 	cfgCal.Misc.TestCrawl = true
 	cfgCal.Misc.TestDate = folderDateSlash
-	data, err := calCmsService.getCalCmsEventData(1)
+	data, err := calCmsService.getCalCmsEventData()
 	assert.Nil(t, err)
 	assert.NotNil(t, data)
 	assert.EqualValues(t, respData, data)
@@ -588,7 +588,7 @@ func TestGetCalCmsDatahttpRequestReturnsError(t *testing.T) {
 	cfgCal.CalCms.CmsUrl = srv.URL
 	cfgCal.Misc.TestCrawl = true
 	cfgCal.Misc.TestDate = folderDateSlash
-	data, err := calCmsService.getCalCmsEventData(1)
+	data, err := calCmsService.getCalCmsEventData()
 	assert.NotNil(t, err)
 	assert.Nil(t, data)
 	assert.EqualValues(t, "400 Bad Request", err.Error())
