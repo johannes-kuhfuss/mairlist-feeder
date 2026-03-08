@@ -641,14 +641,14 @@ func TestQueryNoQueryReturnsNoError(t *testing.T) {
 
 func TestCalcCalCmsEndDateWrongDateReturnsErros(t *testing.T) {
 	startDate := "sdf"
-	endDate, err := calcCalCmsEndDate(startDate, 1)
+	endDate, err := calcCalCmsEndDate(startDate)
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "", endDate)
 	assert.EqualValues(t, "parsing time \"sdf\" as \"2006-01-02\": cannot parse \"sdf\" as \"2006\"", err.Error())
 }
 
 func TestCalcCalCmsEndDateDateReturnsNextDay(t *testing.T) {
-	endDate, err := calcCalCmsEndDate(folderDateDash, 1)
+	endDate, err := calcCalCmsEndDate(folderDateDash)
 	assert.Nil(t, err)
 	assert.EqualValues(t, "2024-09-18", endDate)
 }
