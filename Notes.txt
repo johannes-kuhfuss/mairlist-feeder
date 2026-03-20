@@ -1,0 +1,4 @@
+Config --> JSON
+Allow date ranges for file scan
+Use OTel for logging and metrics
+All functions to use correct data types (e.g. not string for date)
