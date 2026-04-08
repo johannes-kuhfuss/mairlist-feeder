@@ -39,12 +39,12 @@ func (fl FileList) Len() int {
 }
 
 // Less implements sort.Interface.
-func (fl FileList) Less(i int, j int) bool {
+func (fl FileList) Less(i, j int) bool {
 	return fl[i].StartTime.Before(fl[j].StartTime)
 }
 
 // Swap implements sort.Interface.
-func (fl FileList) Swap(i int, j int) {
+func (fl FileList) Swap(i, j int) {
 	fl[i], fl[j] = fl[j], fl[i]
 }
 

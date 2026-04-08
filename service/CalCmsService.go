@@ -23,7 +23,7 @@ import (
 	"github.com/johannes-kuhfuss/services_utils/misc"
 )
 
-type CalCmsService interface {
+type CalCmsQuerier interface {
 	Query() error
 }
 
@@ -426,7 +426,7 @@ func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dt
 	return el
 }
 
-func isCurrent(startTime string, endTime string) string {
+func isCurrent(startTime, endTime string) string {
 	sth, _ := strconv.Atoi(startTime[0:2])
 	stm, _ := strconv.Atoi(startTime[2:4])
 	st := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), sth, stm, 0, 0, time.Local)

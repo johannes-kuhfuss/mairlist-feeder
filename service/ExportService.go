@@ -28,7 +28,7 @@ import (
 	"github.com/johannes-kuhfuss/services_utils/logger"
 )
 
-type ExportService interface {
+type Exporter interface {
 	Export()
 }
 

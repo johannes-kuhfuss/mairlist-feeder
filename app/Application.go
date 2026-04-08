@@ -249,8 +249,8 @@ func cleanUp() {
 	cfg.RunTime.BgJobs.Stop()
 	shutdownTime := time.Duration(cfg.Server.GracefulShutdownTime) * time.Second
 	ctx, cancel = context.WithTimeout(context.Background(), shutdownTime)
+	defer cancel()
 	defer func() {
 		logger.Info("Cleaned up")
-		cancel()
 	}()
 }

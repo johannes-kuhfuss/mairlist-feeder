@@ -33,7 +33,7 @@ func ExportDayDataRun() {
 
 // exportState exports an HTML file containing the event view or the file view of the day
 // This represents the status for the day, so you can retroactively check for which event files were present
-func exportState(urlPath string, filePrefix string) (fileName string, e error) {
+func exportState(urlPath, filePrefix string) (fileName string, e error) {
 	u := url.URL{}
 	if cfg.Server.UseTls {
 		u.Scheme = "https"

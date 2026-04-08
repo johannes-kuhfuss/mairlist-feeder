@@ -35,12 +35,12 @@ func GetTodayFolder(test bool, testDate string) string {
 }
 
 // TimeFromHourAndMinute generates a time.Time{} from an hour and minute value
-func TimeFromHourAndMinute(hour int, minute int) time.Time {
+func TimeFromHourAndMinute(hour, minute int) time.Time {
 	return time.Date(1, 1, 1, hour, minute, 0, 0, time.Local)
 }
 
 // TimeFromHourAndMinute generates a time.Time{} from an hour and minute and date value
-func TimeFromHourAndMinuteAndDate(hour int, minute int, fd time.Time) time.Time {
+func TimeFromHourAndMinuteAndDate(hour, minute int, fd time.Time) time.Time {
 	return time.Date(fd.Year(), fd.Month(), fd.Day(), hour, minute, 0, 0, time.Local)
 }
 

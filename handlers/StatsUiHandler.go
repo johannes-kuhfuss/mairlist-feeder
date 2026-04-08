@@ -133,7 +133,7 @@ func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 // validateAction filters the actions tring and only allows valid actions
 func validateAction(action string) api_error.ApiErr {
 	actions := []string{"crawl", "export", "clean", "exporttodisk"}
-	if exists := misc.SliceContainsString(actions, action); exists {
+	if misc.SliceContainsString(actions, action) {
 		return nil
 	} else {
 		return api_error.NewBadRequestError("unknown action")

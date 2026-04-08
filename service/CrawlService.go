@@ -28,7 +28,7 @@ import (
 	"github.com/johannes-kuhfuss/services_utils/misc"
 )
 
-type CrawlService interface {
+type Crawler interface {
 	Crawl()
 }
 
@@ -40,11 +40,11 @@ var (
 type DefaultCrawlService struct {
 	Cfg    *config.AppConfig
 	Repo   *repositories.DefaultFileRepository
-	CalSvc CalCmsService
+	CalSvc CalCmsQuerier
 }
 
 // NewCrawlService creates a new crawling service and injects its dependencies
-func NewCrawlService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository, calSvc CalCmsService) DefaultCrawlService {
+func NewCrawlService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository, calSvc CalCmsQuerier) DefaultCrawlService {
 	return DefaultCrawlService{
 		Cfg:    cfg,
 		Repo:   repo,
@@ -351,7 +351,7 @@ func logExtractResult(fi domain.FileInfo) {
 }
 
 // convertTime is a helper function to convert time information extracted from the file names into a time.Time
-func convertTime(t1str string, t2str string, folderDate string) (t time.Time, e error) {
+func convertTime(t1str, t2str, folderDate string) (t time.Time, e error) {
 	t1, err := strconv.Atoi(t1str)
 	if err != nil {
 		logger.Error("converting start time error", err)

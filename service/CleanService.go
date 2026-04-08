@@ -12,7 +12,7 @@ import (
 	"github.com/johannes-kuhfuss/services_utils/logger"
 )
 
-type CleanService interface {
+type Cleaner interface {
 	Clean()
 }
 
