@@ -45,7 +45,7 @@ type AppConfig struct {
 		StreamingFileExtensions []string       `envconfig:"STREAM_FILE_EXTENSIONS" default:".stream"`
 		FfprobePath             string         `envconfig:"FFPROBE_PATH" default:"/usr/bin/ffprobe"`
 		FfProbeTimeOut          int            `envconfig:"FFPROBE_TIMEOUT" default:"60"`
-		CrawlCycleMin           int            `envconfig:"CRAWL_CYCLE_MIN" default:"15"`
+		CrawlCycleMin           int            `envconfig:"CRAWL_CYCLE_MIN" default:"10"`
 		StreamMap               map[string]int `envconfig:"STREAM_MAP"`
 		GenerateHash            bool           `envconfig:"GENERATE_HASH" default:"false"`
 		AddNonCalCmsFiles       bool           `envconfig:"ADD_NON_CALCMS_FILES" default:"true"`
