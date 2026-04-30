@@ -99,11 +99,11 @@ type AppConfig struct {
 		CleanRunning          bool
 		LastCleanDate         time.Time
 		FilesCleaned          int
-		CrawlJobId            int
-		ExportJobId           int
-		CleanJobId            int
-		EventJobId            int
-		CalCmsJobId           int
+		CrawlJobId            cron.EntryID
+		ExportJobId           cron.EntryID
+		CleanJobId            cron.EntryID
+		EventJobId            cron.EntryID
+		CalCmsJobId           cron.EntryID
 		LastCalCmsState       string
 		LastMairListCommState string
 		MairListPlaying       bool

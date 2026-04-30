@@ -116,6 +116,7 @@ func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 	switch action {
 	case "crawl":
 		uh.CrawlSvc.Crawl()
+		uh.resetCrawl()
 	case "export":
 		if hour == "" {
 			uh.ExportSvc.ExportAllHours()
@@ -153,4 +154,15 @@ func validateHour(hour string) api_error.ApiErr {
 		return api_error.NewBadRequestError("hour must be between 00 and 23")
 	}
 	return nil
+}
+
+func (uh *StatsUiHandler) resetCrawl() {
+	uh.Cfg.RunTime.BgJobs.Remove(uh.Cfg.RunTime.CrawlJobId)
+	crawlCycle := "@every " + strconv.Itoa(uh.Cfg.Crawl.CrawlCycleMin) + "m"
+	crawlId, crawlErr := uh.Cfg.RunTime.BgJobs.AddFunc(crawlCycle, uh.CrawlSvc.Crawl)
+	if crawlErr != nil {
+		logger.Errorf("Error when scheduling job %v for crawling. %v", crawlId, crawlErr)
+	} else {
+		uh.Cfg.RunTime.CrawlJobId = crawlId
+	}
 }

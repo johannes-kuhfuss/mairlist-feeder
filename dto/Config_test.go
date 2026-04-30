@@ -49,7 +49,7 @@ func TestGetNextJobDateJobReturnsDate(t *testing.T) {
 	config.InitConfig("", &testConfig)
 	testConfig.RunTime.BgJobs = cron.New()
 	id, _ := testConfig.RunTime.BgJobs.AddFunc("@every 5m", NoOp)
-	j := getNextJobDate(&testConfig, int(id))
+	j := getNextJobDate(&testConfig, id)
 	assert.EqualValues(t, "0001-01-01 00:00:00 +0000 UTC", j)
 }
 

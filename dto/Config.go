@@ -76,9 +76,9 @@ func convertDate(date time.Time) string {
 }
 
 // getNextJobDate retrieves a job's next execution date and returns it in its display format
-func getNextJobDate(cfg *config.AppConfig, jobId int) string {
-	if cfg.RunTime.BgJobs != nil && cfg.RunTime.BgJobs.Entry(cron.EntryID(jobId)).Valid() {
-		return cfg.RunTime.BgJobs.Entry(cron.EntryID(jobId)).Next.String()
+func getNextJobDate(cfg *config.AppConfig, jobId cron.EntryID) string {
+	if cfg.RunTime.BgJobs != nil && cfg.RunTime.BgJobs.Entry(jobId).Valid() {
+		return cfg.RunTime.BgJobs.Entry(jobId).Next.String()
 	} else {
 		return "N/A"
 	}

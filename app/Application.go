@@ -189,19 +189,19 @@ func scheduleBgJobs() {
 	if crawlErr != nil {
 		logger.Errorf("Error when scheduling job %v for crawling. %v", crawlId, crawlErr)
 	} else {
-		cfg.RunTime.CrawlJobId = int(crawlId)
+		cfg.RunTime.CrawlJobId = crawlId
 		logger.Infof("Crawl Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(crawlId).Job, cfg.RunTime.BgJobs.Entry(crawlId).Next.String())
 	}
 	if cleanErr != nil {
 		logger.Errorf("Error when scheduling job %v for cleaning. %v", cleanId, cleanErr)
 	} else {
-		cfg.RunTime.CleanJobId = int(cleanId)
+		cfg.RunTime.CleanJobId = cleanId
 		logger.Infof("Clean Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(cleanId).Job, cfg.RunTime.BgJobs.Entry(cleanId).Next.String())
 	}
 	if exportErr != nil {
 		logger.Errorf("Error when scheduling job %v for exporting. %v", exportId, exportErr)
 	} else {
-		cfg.RunTime.ExportJobId = int(exportId)
+		cfg.RunTime.ExportJobId = exportId
 		logger.Infof("Export Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(exportId).Job, cfg.RunTime.BgJobs.Entry(exportId).Next.String())
 	}
 	// Export day's events at 23:15 (before we start looking at the next day)
@@ -210,7 +210,7 @@ func scheduleBgJobs() {
 		if eventErr != nil {
 			logger.Errorf("Error when scheduling job %v for recording day's events state. %v", eventId, eventErr)
 		} else {
-			cfg.RunTime.EventJobId = int(eventId)
+			cfg.RunTime.EventJobId = eventId
 			logger.Infof("Recording Day's Events Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(eventId).Job, cfg.RunTime.BgJobs.Entry(eventId).Next.String())
 		}
 	}
@@ -219,7 +219,7 @@ func scheduleBgJobs() {
 		if calCmsErr != nil {
 			logger.Errorf("Error when scheduling job %v for CalCMS event counting. %v", calCmsId, calCmsErr)
 		} else {
-			cfg.RunTime.CalCmsJobId = int(calCmsId)
+			cfg.RunTime.CalCmsJobId = calCmsId
 			logger.Infof("CalCMS Event Counting Job: %v - Next execution: %v", cfg.RunTime.BgJobs.Entry(calCmsId).Job, cfg.RunTime.BgJobs.Entry(calCmsId).Next.String())
 		}
 	}
