@@ -152,6 +152,7 @@ func setDefaults(config *AppConfig) {
 	if len(config.Crawl.StreamMap) == 0 {
 		config.Crawl.StreamMap = make(map[string]int)
 	}
+	config.RunTime.LastCrawlDate = time.Now()
 	checkFilePath(&config.Server.CertFile)
 	checkFilePath(&config.Server.KeyFile)
 	checkFilePath(&config.Server.LogFile)

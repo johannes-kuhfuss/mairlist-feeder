@@ -112,9 +112,10 @@ func (s DefaultCrawlService) checkForOrphanFiles() (filesRemoved int) {
 
 // CrawlRun performs the crawling of the folder, the data enrichment and the hash creation
 func (s DefaultCrawlService) CrawlRun() {
+	sinceLastRun := time.Since(s.Cfg.RunTime.LastCrawlDate)
 	s.Cfg.RunTime.CrawlRunNumber++
 	s.Cfg.RunTime.LastCrawlDate = time.Now()
-	logger.Infof("Starting crawl run #%v (Root Folder: %v).", s.Cfg.RunTime.CrawlRunNumber, s.Cfg.Crawl.RootFolder)
+	logger.Infof("Starting crawl run #%v (Root Folder: %v). Time since last crawl: %v", s.Cfg.RunTime.CrawlRunNumber, s.Cfg.Crawl.RootFolder, sinceLastRun)
 	start := time.Now().UTC()
 	filesRemoved := s.checkForOrphanFiles()
 	fileCount, err := s.crawlFolder(s.Cfg.Crawl.RootFolder, s.Cfg.Crawl.CrawlExtensions)
