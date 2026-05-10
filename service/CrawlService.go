@@ -112,10 +112,13 @@ func (s DefaultCrawlService) checkForOrphanFiles() (filesRemoved int) {
 
 // CrawlRun performs the crawling of the folder, the data enrichment and the hash creation
 func (s DefaultCrawlService) CrawlRun() {
-	sinceLastRun := time.Since(s.Cfg.RunTime.LastCrawlDate)
+	var (
+		crawlDur, extractDur, hashDur time.Duration
+	)
+	sinceLastCrawl := time.Since(s.Cfg.RunTime.LastCrawlDate)
 	s.Cfg.RunTime.CrawlRunNumber++
 	s.Cfg.RunTime.LastCrawlDate = time.Now()
-	logger.Infof("Starting crawl run #%v (Root Folder: %v). Time since last crawl: %v", s.Cfg.RunTime.CrawlRunNumber, s.Cfg.Crawl.RootFolder, sinceLastRun)
+	logger.Infof("Starting crawl run #%v (Root Folder: %v). Time since last crawl: %v", s.Cfg.RunTime.CrawlRunNumber, s.Cfg.Crawl.RootFolder, sinceLastCrawl)
 	start := time.Now().UTC()
 	filesRemoved := s.checkForOrphanFiles()
 	fileCount, err := s.crawlFolder(s.Cfg.Crawl.RootFolder, s.Cfg.Crawl.CrawlExtensions)
@@ -124,22 +127,22 @@ func (s DefaultCrawlService) CrawlRun() {
 	}
 	ts := s.Repo.Size()
 	end := time.Now().UTC()
-	dur := end.Sub(start)
-	logger.Infof("Finished crawl run #%v. Removed %v orphaned file(s). Added %v new file(s). %v file(s) in list total. (%v)", s.Cfg.RunTime.CrawlRunNumber, filesRemoved, fileCount, ts, dur.String())
+	crawlDur = end.Sub(start)
+	logger.Infof("Finished crawl run #%v. Removed %v orphaned file(s). Added %v new file(s). %v file(s) in list total. (%v)", s.Cfg.RunTime.CrawlRunNumber, filesRemoved, fileCount, ts, crawlDur.String())
 	if s.Repo.NewFiles() {
 		logger.Info("Starting to extract file data...")
 		start = time.Now().UTC()
 		fc, _ := s.extractFileInfo()
 		end = time.Now().UTC()
-		dur = end.Sub(start)
-		logger.Infof("Extracted file data for %v file(s). %v audio file(s), %v stream file(s) (%v)", fc.TotalCount, fc.AudioCount, fc.StreamCount, dur.String())
+		extractDur = end.Sub(start)
+		logger.Infof("Extracted file data for %v file(s). %v audio file(s), %v stream file(s) (%v)", fc.TotalCount, fc.AudioCount, fc.StreamCount, extractDur.String())
 		if s.Cfg.Crawl.GenerateHash {
 			logger.Info("Starting to add hashes for new files...")
 			start = time.Now().UTC()
 			hc := s.GenHashes()
 			end = time.Now().UTC()
-			dur = end.Sub(start)
-			logger.Infof("Added hashes for %v new file(s) (%v)", hc, dur.String())
+			hashDur = end.Sub(start)
+			logger.Infof("Added hashes for %v new file(s) (%v)", hc, hashDur.String())
 		}
 	} else {
 		logger.Info("No (new) file(s) in file list. No extraction needed.")
@@ -151,6 +154,10 @@ func (s DefaultCrawlService) CrawlRun() {
 	s.Cfg.RunTime.FilesInList = ts
 	s.Cfg.RunTime.AudioFilesInList = as
 	s.Cfg.RunTime.StreamFilesInList = es
+	s.Cfg.RunTime.DurationSinceLastCrawl = sinceLastCrawl
+	s.Cfg.RunTime.LastCrawlDuration = crawlDur
+	s.Cfg.RunTime.LastExtractDuration = extractDur
+	s.Cfg.RunTime.LastHashDuration = hashDur
 }
 
 // crawlFolder examines the files on disk and adds an entry in the in-memory representation

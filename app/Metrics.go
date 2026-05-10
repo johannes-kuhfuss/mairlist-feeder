@@ -42,10 +42,19 @@ func initMetrics() {
 	}, []string{
 		"typename",
 	})
+	cfg.Metrics.EventDurations = *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "Coloradio",
+		Subsystem: "mAirListFeeder",
+		Name:      "event_duration",
+		Help:      "Duration of an event",
+	}, []string{
+		"eventname",
+	})
 	prometheus.MustRegister(cfg.Metrics.FileNumber)
 	prometheus.MustRegister(cfg.Metrics.MairListPlaying)
 	prometheus.MustRegister(cfg.Metrics.Connected)
 	prometheus.MustRegister(cfg.Metrics.EventCounters)
+	prometheus.MustRegister(cfg.Metrics.EventDurations)
 }
 
 func updateMetrics() {
@@ -80,4 +89,9 @@ func doUpdate() {
 	cfg.Metrics.EventCounters.WithLabelValues("missing").Set(float64(cfg.RunTime.EventsMissing))
 	cfg.Metrics.EventCounters.WithLabelValues("multiple").Set(float64(cfg.RunTime.EventsMultiple))
 	cfg.Metrics.EventCounters.WithLabelValues("total").Set(float64(cfg.RunTime.EventsPresent + cfg.RunTime.EventsMissing + cfg.RunTime.EventsMultiple))
+	cfg.Metrics.EventDurations.WithLabelValues("sincelastcrawl").Set(float64(cfg.RunTime.DurationSinceLastCrawl))
+	cfg.Metrics.EventDurations.WithLabelValues("lastcrawl").Set(float64(cfg.RunTime.LastCrawlDuration))
+	cfg.Metrics.EventDurations.WithLabelValues("lastextraction").Set(float64(cfg.RunTime.LastExtractDuration))
+	cfg.Metrics.EventDurations.WithLabelValues("lasthash").Set(float64(cfg.RunTime.LastHashDuration))
+	cfg.Metrics.EventDurations.WithLabelValues("lastcalcmsupdate").Set(float64(cfg.RunTime.LastCalCmsUpdateDuration))
 }

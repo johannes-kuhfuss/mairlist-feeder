@@ -169,6 +169,9 @@ func (s DefaultCalCmsService) Query() error {
 		end := time.Now().UTC()
 		dur := end.Sub(start)
 		logger.Infof("Added or updated information from calCMS for %v file(s), audio: %v, stream: %v (%v)", fc.TotalCount, fc.AudioCount, fc.StreamCount, dur.String())
+		s.Cfg.RunTime.Mu.Lock()
+		defer s.Cfg.RunTime.Mu.Unlock()
+		s.Cfg.RunTime.LastCalCmsUpdateDuration = dur
 		return nil
 	}
 	logger.Warn("calCMS query not enabled in configuration. Not querying")
