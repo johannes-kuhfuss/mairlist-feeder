@@ -42,19 +42,49 @@ func initMetrics() {
 	}, []string{
 		"typename",
 	})
-	cfg.Metrics.EventDurations = *prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "Coloradio",
-		Subsystem: "mAirListFeeder",
-		Name:      "event_duration",
-		Help:      "Duration of an event",
-	}, []string{
-		"eventname",
-	})
+	cfg.Metrics.FastEventDurations = *prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: "Coloradio",
+			Subsystem: "mAirListFeeder",
+			Name:      "fast_event_duration_seconds",
+			Help:      "Duration of a fast event in seconds",
+
+			Buckets: []float64{
+				0.001, 0.005, 0.01, 0.025, 0.05,
+				0.1, 0.25, 0.5, 1, 2.5, 5,
+			},
+		},
+		[]string{
+			"eventname",
+		},
+	)
+	cfg.Metrics.LongEventDurations = *prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: "Coloradio",
+			Subsystem: "mAirListFeeder",
+			Name:      "long_event_duration_seconds",
+			Help:      "Duration of a long event in seconds",
+
+			Buckets: []float64{
+				30,  // 30s
+				60,  // 1m
+				120, // 2m
+				300, // 5m
+				600, // 10m
+				900, // 15m
+			},
+		},
+		[]string{
+			"eventname",
+		},
+	)
+
 	prometheus.MustRegister(cfg.Metrics.FileNumber)
 	prometheus.MustRegister(cfg.Metrics.MairListPlaying)
 	prometheus.MustRegister(cfg.Metrics.Connected)
 	prometheus.MustRegister(cfg.Metrics.EventCounters)
-	prometheus.MustRegister(cfg.Metrics.EventDurations)
+	prometheus.MustRegister(cfg.Metrics.FastEventDurations)
+	prometheus.MustRegister(cfg.Metrics.LongEventDurations)
 }
 
 func updateMetrics() {
@@ -89,9 +119,10 @@ func doUpdate() {
 	cfg.Metrics.EventCounters.WithLabelValues("missing").Set(float64(cfg.RunTime.EventsMissing))
 	cfg.Metrics.EventCounters.WithLabelValues("multiple").Set(float64(cfg.RunTime.EventsMultiple))
 	cfg.Metrics.EventCounters.WithLabelValues("total").Set(float64(cfg.RunTime.EventsPresent + cfg.RunTime.EventsMissing + cfg.RunTime.EventsMultiple))
-	cfg.Metrics.EventDurations.WithLabelValues("sincelastcrawl").Set(float64(cfg.RunTime.DurationSinceLastCrawl))
-	cfg.Metrics.EventDurations.WithLabelValues("lastcrawl").Set(float64(cfg.RunTime.LastCrawlDuration))
-	cfg.Metrics.EventDurations.WithLabelValues("lastextraction").Set(float64(cfg.RunTime.LastExtractDuration))
-	cfg.Metrics.EventDurations.WithLabelValues("lasthash").Set(float64(cfg.RunTime.LastHashDuration))
-	cfg.Metrics.EventDurations.WithLabelValues("lastcalcmsupdate").Set(float64(cfg.RunTime.LastCalCmsUpdateDuration))
+	// Durations
+	cfg.Metrics.LongEventDurations.WithLabelValues("sincelastcrawl").Observe(cfg.RunTime.DurationSinceLastCrawl.Seconds())
+	cfg.Metrics.FastEventDurations.WithLabelValues("lastcrawl").Observe(cfg.RunTime.LastCrawlDuration.Seconds())
+	cfg.Metrics.FastEventDurations.WithLabelValues("lastextraction").Observe(cfg.RunTime.LastExtractDuration.Seconds())
+	cfg.Metrics.FastEventDurations.WithLabelValues("lasthash").Observe(cfg.RunTime.LastHashDuration.Seconds())
+	cfg.Metrics.FastEventDurations.WithLabelValues("lastcalcmsupdate").Observe(cfg.RunTime.LastCalCmsUpdateDuration.Seconds())
 }

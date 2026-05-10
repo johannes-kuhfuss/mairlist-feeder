@@ -75,11 +75,12 @@ type AppConfig struct {
 		FutureEventsDays   int      `envconfig:"FUTURE_EVENTS_DAYS" default:"5"`
 	}
 	Metrics struct {
-		FileNumber      prometheus.GaugeVec
-		MairListPlaying prometheus.GaugeVec
-		Connected       prometheus.GaugeVec
-		EventCounters   prometheus.GaugeVec
-		EventDurations  prometheus.GaugeVec
+		FileNumber         prometheus.GaugeVec
+		MairListPlaying    prometheus.GaugeVec
+		Connected          prometheus.GaugeVec
+		EventCounters      prometheus.GaugeVec
+		FastEventDurations prometheus.HistogramVec
+		LongEventDurations prometheus.HistogramVec
 	}
 	RunTime struct {
 		Mu                       sync.Mutex
