@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	metrics "github.com/johannes-kuhfuss/mairlist-feeder/Metrics"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/johannes-kuhfuss/mairlist-feeder/service"
@@ -30,6 +31,7 @@ const (
 
 func setupUiTest() func() {
 	config.InitConfig("", &cfg)
+	metrics.InitMetrics(&cfg)
 	repo = repositories.NewFileRepository(&cfg)
 	calCmsSvc = service.NewCalCmsService(&cfg, &repo)
 	uh = NewStatsUiHandler(&cfg, &repo, nil, nil, nil, &calCmsSvc)
@@ -38,6 +40,7 @@ func setupUiTest() func() {
 	recorder = httptest.NewRecorder()
 	return func() {
 		router = nil
+		metrics.UnregisterMetrics(&cfg)
 	}
 }
 

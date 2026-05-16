@@ -34,9 +34,6 @@ type ConfigResp struct {
 	LongAllowance              string
 	CrawlRunNumber             string
 	LastCrawlDate              string
-	FilesInList                string
-	AudioFilesInList           string
-	StreamFilesInList          string
 	LastExportDate             string
 	LastExportedFileDate       string
 	LastExportFileName         string
@@ -127,9 +124,6 @@ func GetConfig(cfg *config.AppConfig) (resp ConfigResp) {
 		ShortAllowance:             strconv.FormatFloat(cfg.Export.ShortDeltaAllowance, 'f', 1, 64),
 		LongAllowance:              strconv.FormatFloat(cfg.Export.LongDeltaAllowance, 'f', 1, 64),
 		CrawlRunNumber:             strconv.Itoa(cfg.RunTime.CrawlRunNumber),
-		FilesInList:                strconv.Itoa(cfg.RunTime.FilesInList),
-		AudioFilesInList:           strconv.Itoa(cfg.RunTime.AudioFilesInList),
-		StreamFilesInList:          strconv.Itoa(cfg.RunTime.StreamFilesInList),
 		CrawlRunning:               strconv.FormatBool(cfg.RunTime.CrawlRunning),
 		ExportRunning:              strconv.FormatBool(cfg.RunTime.ExportRunning),
 		CleanRunning:               strconv.FormatBool(cfg.RunTime.CleanRunning),

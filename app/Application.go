@@ -18,6 +18,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/robfig/cron/v3"
 
+	metrics "github.com/johannes-kuhfuss/mairlist-feeder/Metrics"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/handlers"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
@@ -62,7 +63,7 @@ func StartApp() {
 	}
 	initRouter()
 	initServer()
-	initMetrics()
+	metrics.InitMetrics(&cfg)
 	wireApp()
 	mapUrls()
 	RegisterForOsSignals()
@@ -71,7 +72,6 @@ func StartApp() {
 	if cfg.Export.QueryMairListStatus {
 		go exportService.QueryStatus()
 	}
-	go updateMetrics()
 	crawlService.Crawl()
 	calCmsService.GetTodayEvents()
 

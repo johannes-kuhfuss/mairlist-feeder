@@ -116,8 +116,10 @@ func (s DefaultCrawlService) CrawlRun() {
 		crawlDur, extractDur, hashDur time.Duration
 	)
 	sinceLastCrawl := time.Since(s.Cfg.RunTime.LastCrawlDate)
+	s.Cfg.Metrics.LongEventDurations.WithLabelValues("sincelastcrawl").Observe(sinceLastCrawl.Seconds())
 	s.Cfg.RunTime.CrawlRunNumber++
 	s.Cfg.RunTime.LastCrawlDate = time.Now()
+
 	logger.Infof("Starting crawl run #%v (Root Folder: %v). Time since last crawl: %v", s.Cfg.RunTime.CrawlRunNumber, s.Cfg.Crawl.RootFolder, sinceLastCrawl)
 	start := time.Now().UTC()
 	filesRemoved := s.checkForOrphanFiles()
@@ -128,6 +130,7 @@ func (s DefaultCrawlService) CrawlRun() {
 	ts := s.Repo.Size()
 	end := time.Now().UTC()
 	crawlDur = end.Sub(start)
+	s.Cfg.Metrics.FastEventDurations.WithLabelValues("lastcrawl").Observe(crawlDur.Seconds())
 	logger.Infof("Finished crawl run #%v. Removed %v orphaned file(s). Added %v new file(s). %v file(s) in list total. (%v)", s.Cfg.RunTime.CrawlRunNumber, filesRemoved, fileCount, ts, crawlDur.String())
 	if s.Repo.NewFiles() {
 		logger.Info("Starting to extract file data...")
@@ -135,6 +138,7 @@ func (s DefaultCrawlService) CrawlRun() {
 		fc, _ := s.extractFileInfo()
 		end = time.Now().UTC()
 		extractDur = end.Sub(start)
+		s.Cfg.Metrics.FastEventDurations.WithLabelValues("lastextraction").Observe(extractDur.Seconds())
 		logger.Infof("Extracted file data for %v file(s). %v audio file(s), %v stream file(s) (%v)", fc.TotalCount, fc.AudioCount, fc.StreamCount, extractDur.String())
 		if s.Cfg.Crawl.GenerateHash {
 			logger.Info("Starting to add hashes for new files...")
@@ -142,6 +146,7 @@ func (s DefaultCrawlService) CrawlRun() {
 			hc := s.GenHashes()
 			end = time.Now().UTC()
 			hashDur = end.Sub(start)
+			s.Cfg.Metrics.FastEventDurations.WithLabelValues("lasthash").Observe(hashDur.Seconds())
 			logger.Infof("Added hashes for %v new file(s) (%v)", hc, hashDur.String())
 		}
 	} else {
@@ -149,15 +154,9 @@ func (s DefaultCrawlService) CrawlRun() {
 	}
 	as := s.Repo.AudioSize()
 	es := s.Repo.StreamSize()
-	s.Cfg.RunTime.Mu.Lock()
-	defer s.Cfg.RunTime.Mu.Unlock()
-	s.Cfg.RunTime.FilesInList = ts
-	s.Cfg.RunTime.AudioFilesInList = as
-	s.Cfg.RunTime.StreamFilesInList = es
-	s.Cfg.RunTime.DurationSinceLastCrawl = sinceLastCrawl
-	s.Cfg.RunTime.LastCrawlDuration = crawlDur
-	s.Cfg.RunTime.LastExtractDuration = extractDur
-	s.Cfg.RunTime.LastHashDuration = hashDur
+	s.Cfg.Metrics.FileNumber.WithLabelValues("total").Set(float64(ts))
+	s.Cfg.Metrics.FileNumber.WithLabelValues("audio").Set(float64(as))
+	s.Cfg.Metrics.FileNumber.WithLabelValues("stream").Set(float64(es))
 }
 
 // crawlFolder examines the files on disk and adds an entry in the in-memory representation

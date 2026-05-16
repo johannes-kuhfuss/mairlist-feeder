@@ -414,8 +414,10 @@ func (s DefaultExportService) SetMairListCommState(success bool) {
 	defer s.Cfg.RunTime.Mu.Unlock()
 	if success {
 		s.Cfg.RunTime.LastMairListCommState = fmt.Sprintf("Succeeded (%v)", time.Now().Format(dateFormat))
+		s.Cfg.Metrics.Connected.WithLabelValues("mAirList").Set(1)
 	} else {
 		s.Cfg.RunTime.LastMairListCommState = fmt.Sprintf("Failed (%v)", time.Now().Format(dateFormat))
+		s.Cfg.Metrics.Connected.WithLabelValues("mAirList").Set(0)
 	}
 }
 
@@ -479,7 +481,7 @@ func (s DefaultExportService) GetPlaylist() error {
 	// Basic Auth
 	// Returns the current playlist as XML
 	var (
-		p bool
+		playing bool
 	)
 	req, err := s.buildGetPlaylistRequest()
 	if err != nil {
@@ -491,20 +493,24 @@ func (s DefaultExportService) GetPlaylist() error {
 	}
 	if statusCode == 200 {
 		if s.Cfg.Export.MairListVersion >= 6 {
-			p, err = parseMairListPlaylistJson(data)
+			playing, err = parseMairListPlaylistJson(data)
 			if err != nil {
 				return err
 			}
 		} else {
-			p, err = parseMairListPlaylistXml(data)
+			playing, err = parseMairListPlaylistXml(data)
 			if err != nil {
 				return err
 			}
 		}
-
+		if playing {
+			s.Cfg.Metrics.MairListPlaying.WithLabelValues(s.Cfg.Export.MairListUrl).Set(1)
+		} else {
+			s.Cfg.Metrics.MairListPlaying.WithLabelValues(s.Cfg.Export.MairListUrl).Set(0)
+		}
 		s.Cfg.RunTime.Mu.Lock()
 		defer s.Cfg.RunTime.Mu.Unlock()
-		s.Cfg.RunTime.MairListPlaying = p
+		s.Cfg.RunTime.MairListPlaying = playing
 		return nil
 	}
 	logger.Error("could not get mAirList playlist", err)

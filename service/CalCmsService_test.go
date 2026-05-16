@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	metrics "github.com/johannes-kuhfuss/mairlist-feeder/Metrics"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
 	"github.com/johannes-kuhfuss/mairlist-feeder/dto"
@@ -50,8 +51,10 @@ func setupTestCal() func() {
 	config.InitConfig(config.EnvFile, &cfgCal)
 	fileRepoCal = repositories.NewFileRepository(&cfgCal)
 	calCmsService = NewCalCmsService(&cfgCal, &fileRepoCal)
+	metrics.InitMetrics(&cfgCal)
 	return func() {
 		fileRepoCal.DeleteAllData()
+		metrics.UnregisterMetrics(&cfgCal)
 	}
 }
 

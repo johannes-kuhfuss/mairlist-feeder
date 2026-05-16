@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	metrics "github.com/johannes-kuhfuss/mairlist-feeder/Metrics"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
 	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
@@ -39,11 +40,13 @@ const (
 
 func setupTestEx() func() {
 	config.InitConfig(config.EnvFile, &cfg)
+	metrics.InitMetrics(&cfg)
 	fileRepo = repositories.NewFileRepository(&cfg)
 	exportService = NewExportService(&cfg, &fileRepo)
 	return func() {
 		fileRepo.DeleteAllData()
 		fileExportList.Files = nil
+		metrics.UnregisterMetrics(&cfg)
 	}
 }
 

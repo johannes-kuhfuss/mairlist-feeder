@@ -89,8 +89,10 @@ func (s DefaultCalCmsService) setCalCmsQueryState(success bool) {
 	defer s.Cfg.RunTime.Mu.Unlock()
 	if success {
 		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Succeeded (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
+		s.Cfg.Metrics.Connected.WithLabelValues("calCMS").Set(1)
 	} else {
 		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
+		s.Cfg.Metrics.Connected.WithLabelValues("calCMS").Set(0)
 	}
 
 }
@@ -167,11 +169,9 @@ func (s DefaultCalCmsService) Query() error {
 		CalCmsPgm.Unlock()
 		fc := s.EnrichFileInformation()
 		end := time.Now().UTC()
-		dur := end.Sub(start)
-		logger.Infof("Added or updated information from calCMS for %v file(s), audio: %v, stream: %v (%v)", fc.TotalCount, fc.AudioCount, fc.StreamCount, dur.String())
-		s.Cfg.RunTime.Mu.Lock()
-		defer s.Cfg.RunTime.Mu.Unlock()
-		s.Cfg.RunTime.LastCalCmsUpdateDuration = dur
+		updateDur := end.Sub(start)
+		s.Cfg.Metrics.FastEventDurations.WithLabelValues("lastcalcmsupdate").Observe(updateDur.Seconds())
+		logger.Infof("Added or updated information from calCMS for %v file(s), audio: %v, stream: %v (%v)", fc.TotalCount, fc.AudioCount, fc.StreamCount, updateDur.String())
 		return nil
 	}
 	logger.Warn("calCMS query not enabled in configuration. Not querying")
@@ -481,11 +481,11 @@ func (s DefaultCalCmsService) countEvents(events []dto.Event) {
 			multipleCount++
 		}
 	}
-	s.Cfg.RunTime.Mu.Lock()
-	defer s.Cfg.RunTime.Mu.Unlock()
-	s.Cfg.RunTime.EventsPresent = presentCount
-	s.Cfg.RunTime.EventsMissing = missingCount
-	s.Cfg.RunTime.EventsMultiple = multipleCount
+	s.Cfg.Metrics.EventCounters.WithLabelValues("present").Set(float64(presentCount))
+	s.Cfg.Metrics.EventCounters.WithLabelValues("missing").Set(float64(missingCount))
+	s.Cfg.Metrics.EventCounters.WithLabelValues("multiple").Set(float64(multipleCount))
+	s.Cfg.Metrics.EventCounters.WithLabelValues("total").Set(float64(presentCount + missingCount + multipleCount))
+
 }
 
 func (s DefaultCalCmsService) CountRun() {

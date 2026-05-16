@@ -83,40 +83,29 @@ type AppConfig struct {
 		LongEventDurations prometheus.HistogramVec
 	}
 	RunTime struct {
-		Mu                       sync.Mutex
-		Router                   *gin.Engine
-		BgJobs                   *cron.Cron
-		ListenAddr               string
-		StartDate                time.Time
-		CrawlRunNumber           int
-		LastCrawlDate            time.Time
-		DurationSinceLastCrawl   time.Duration
-		LastCrawlDuration        time.Duration
-		LastExtractDuration      time.Duration
-		LastHashDuration         time.Duration
-		FilesInList              int
-		AudioFilesInList         int
-		StreamFilesInList        int
-		LastExportRunDate        time.Time
-		LastExportedFileDate     time.Time
-		LastExportFileName       string
-		CrawlRunning             bool
-		ExportRunning            bool
-		CleanRunning             bool
-		LastCleanDate            time.Time
-		FilesCleaned             int
-		CrawlJobId               cron.EntryID
-		ExportJobId              cron.EntryID
-		CleanJobId               cron.EntryID
-		EventJobId               cron.EntryID
-		CalCmsJobId              cron.EntryID
-		LastCalCmsState          string
-		LastCalCmsUpdateDuration time.Duration
-		LastMairListCommState    string
-		MairListPlaying          bool
-		EventsPresent            int
-		EventsMissing            int
-		EventsMultiple           int
+		Mu                    sync.Mutex
+		Router                *gin.Engine
+		BgJobs                *cron.Cron
+		ListenAddr            string
+		StartDate             time.Time
+		CrawlRunNumber        int
+		LastCrawlDate         time.Time
+		LastExportRunDate     time.Time
+		LastExportedFileDate  time.Time
+		LastExportFileName    string
+		CrawlRunning          bool
+		ExportRunning         bool
+		CleanRunning          bool
+		LastCleanDate         time.Time
+		FilesCleaned          int
+		CrawlJobId            cron.EntryID
+		ExportJobId           cron.EntryID
+		CleanJobId            cron.EntryID
+		EventJobId            cron.EntryID
+		CalCmsJobId           cron.EntryID
+		LastCalCmsState       string
+		LastMairListCommState string
+		MairListPlaying       bool
 	}
 }
 
