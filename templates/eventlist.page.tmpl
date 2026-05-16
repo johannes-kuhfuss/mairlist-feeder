@@ -30,6 +30,10 @@
                     }
                 </style>
 
+                <div class="d-flex justify-content-end mb-3">
+                    <button class="btn btn-sm btn-outline-light" type="button" id="auto-reload-toggle" aria-pressed="true">Auto reload: On</button>
+                </div>
+
                 <table class="table table-striped table-sm" id="eventlist-table">
                     <thead>
                         <tr>
@@ -100,8 +104,13 @@
 
     const tbody = table.querySelector("tbody");
     const headers = table.querySelectorAll(".sortable-header");
+    const autoReloadToggle = document.getElementById("auto-reload-toggle");
+    const sortStateKey = "eventlist-sort-state:" + window.location.pathname;
+    const autoReloadStateKey = "eventlist-auto-reload:" + window.location.pathname;
     let activeColumn = null;
     let activeDirection = "asc";
+    let autoReloadEnabled = true;
+    let autoReloadTimer = null;
 
     function getCellValue(row, columnIndex, sortType) {
       const cell = row.cells[columnIndex];
@@ -124,10 +133,98 @@
       });
     }
 
+    function saveSortState() {
+      try {
+        localStorage.setItem(sortStateKey, JSON.stringify({
+          column: activeColumn,
+          direction: activeDirection
+        }));
+      } catch (error) {
+        // Sorting still works for the current page even if browser storage is unavailable.
+      }
+    }
+
+    function loadSortState() {
+      try {
+        return JSON.parse(localStorage.getItem(sortStateKey) || "null");
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function saveAutoReloadState() {
+      try {
+        localStorage.setItem(autoReloadStateKey, JSON.stringify(autoReloadEnabled));
+      } catch (error) {
+        // The current toggle still works even if browser storage is unavailable.
+      }
+    }
+
+    function loadAutoReloadState() {
+      try {
+        const savedValue = JSON.parse(localStorage.getItem(autoReloadStateKey) || "null");
+        return typeof savedValue === "boolean" ? savedValue : window.location.pathname !== "/yesterday";
+      } catch (error) {
+        return window.location.pathname !== "/yesterday";
+      }
+    }
+
+    function updateAutoReloadToggle() {
+      if (!autoReloadToggle) {
+        return;
+      }
+
+      autoReloadToggle.textContent = autoReloadEnabled ? "Auto reload: On" : "Auto reload: Off";
+      autoReloadToggle.setAttribute("aria-pressed", autoReloadEnabled.toString());
+      autoReloadToggle.classList.toggle("btn-outline-light", autoReloadEnabled);
+      autoReloadToggle.classList.toggle("btn-outline-secondary", !autoReloadEnabled);
+    }
+
+    function scheduleAutoReload() {
+      if (autoReloadTimer !== null) {
+        window.clearTimeout(autoReloadTimer);
+        autoReloadTimer = null;
+      }
+
+      if (autoReloadEnabled) {
+        autoReloadTimer = window.setTimeout(function () {
+          location.reload();
+        }, 5000);
+      }
+    }
+
+    function sortRows(header, saveState) {
+      const columnIndex = Number.parseInt(header.dataset.sortColumn, 10);
+      const sortType = header.dataset.sortType;
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+
+      rows.sort(function (rowA, rowB) {
+        const valueA = getCellValue(rowA, columnIndex, sortType);
+        const valueB = getCellValue(rowB, columnIndex, sortType);
+        let comparison;
+
+        if (sortType === "number") {
+          comparison = valueA - valueB;
+        } else {
+          comparison = valueA.localeCompare(valueB, undefined, { numeric: true, sensitivity: "base" });
+        }
+
+        return activeDirection === "asc" ? comparison : -comparison;
+      });
+
+      rows.forEach(function (row) {
+        tbody.appendChild(row);
+      });
+      updateHeaderState(header);
+
+      if (saveState) {
+        saveSortState();
+      }
+    }
+
     headers.forEach(function (header) {
       header.addEventListener("click", function () {
         const columnIndex = Number.parseInt(header.dataset.sortColumn, 10);
-        const sortType = header.dataset.sortType;
 
         if (activeColumn === columnIndex) {
           activeDirection = activeDirection === "asc" ? "desc" : "asc";
@@ -136,31 +233,33 @@
           activeDirection = "asc";
         }
 
-        const rows = Array.from(tbody.querySelectorAll("tr"));
-        rows.sort(function (rowA, rowB) {
-          const valueA = getCellValue(rowA, columnIndex, sortType);
-          const valueB = getCellValue(rowB, columnIndex, sortType);
-          let comparison;
-
-          if (sortType === "number") {
-            comparison = valueA - valueB;
-          } else {
-            comparison = valueA.localeCompare(valueB, undefined, { numeric: true, sensitivity: "base" });
-          }
-
-          return activeDirection === "asc" ? comparison : -comparison;
-        });
-
-        rows.forEach(function (row) {
-          tbody.appendChild(row);
-        });
-        updateHeaderState(header);
+        sortRows(header, true);
       });
     });
-  })();
 
-  setTimeout(function(){
-    location.reload();}, 5000);
+    const savedSortState = loadSortState();
+    if (savedSortState && Number.isInteger(savedSortState.column)) {
+      const savedHeader = table.querySelector('.sortable-header[data-sort-column="' + savedSortState.column + '"]');
+      if (savedHeader && (savedSortState.direction === "asc" || savedSortState.direction === "desc")) {
+        activeColumn = savedSortState.column;
+        activeDirection = savedSortState.direction;
+        sortRows(savedHeader, false);
+      }
+    }
+
+    autoReloadEnabled = loadAutoReloadState();
+    updateAutoReloadToggle();
+    scheduleAutoReload();
+
+    if (autoReloadToggle) {
+      autoReloadToggle.addEventListener("click", function () {
+        autoReloadEnabled = !autoReloadEnabled;
+        saveAutoReloadState();
+        updateAutoReloadToggle();
+        scheduleAutoReload();
+      });
+    }
+  })();
 </script>
 
 {{ template "footer" .}}
