@@ -14,6 +14,7 @@ import (
 	"github.com/johannes-kuhfuss/mairlist-feeder/dto"
 	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,13 +49,14 @@ const (
 )
 
 func setupTestCal() func() {
+	registry := prometheus.NewRegistry()
 	config.InitConfig(config.EnvFile, &cfgCal)
 	fileRepoCal = repositories.NewFileRepository(&cfgCal)
 	calCmsService = NewCalCmsService(&cfgCal, &fileRepoCal)
-	metrics.InitMetrics(&cfgCal)
+	metrics.InitMetrics(&cfgCal, registry)
 	return func() {
 		fileRepoCal.DeleteAllData()
-		metrics.UnregisterMetrics(&cfgCal)
+		metrics.UnregisterMetrics(&cfgCal, registry)
 	}
 }
 

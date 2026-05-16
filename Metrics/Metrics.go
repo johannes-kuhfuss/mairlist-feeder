@@ -7,8 +7,10 @@ import (
 )
 
 // InitMetrics sets up the Prometheus metrics.
-func InitMetrics(cfg *config.AppConfig) {
-	cfg.Metrics.FileNumber = registerGaugeVec(prometheus.NewGaugeVec(prometheus.GaugeOpts{
+func InitMetrics(cfg *config.AppConfig, registry prometheus.Registerer) {
+	registry = registererOrDefault(registry)
+
+	cfg.Metrics.FileNumber = registerGaugeVec(registry, prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "coloradio",
 		Subsystem: "mairlistfeeder",
 		Name:      "file_count",
@@ -16,7 +18,7 @@ func InitMetrics(cfg *config.AppConfig) {
 	}, []string{
 		"fileCountType",
 	}))
-	cfg.Metrics.MairListPlaying = registerGaugeVec(prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	cfg.Metrics.MairListPlaying = registerGaugeVec(registry, prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "coloradio",
 		Subsystem: "mairlistfeeder",
 		Name:      "playstatus",
@@ -24,7 +26,7 @@ func InitMetrics(cfg *config.AppConfig) {
 	}, []string{
 		"mairlistname",
 	}))
-	cfg.Metrics.Connected = registerGaugeVec(prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	cfg.Metrics.Connected = registerGaugeVec(registry, prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "coloradio",
 		Subsystem: "mairlistfeeder",
 		Name:      "subsystem_connection",
@@ -32,7 +34,7 @@ func InitMetrics(cfg *config.AppConfig) {
 	}, []string{
 		"subsystemname",
 	}))
-	cfg.Metrics.EventCounters = registerGaugeVec(prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	cfg.Metrics.EventCounters = registerGaugeVec(registry, prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "coloradio",
 		Subsystem: "mairlistfeeder",
 		Name:      "event_counters",
@@ -40,7 +42,7 @@ func InitMetrics(cfg *config.AppConfig) {
 	}, []string{
 		"typename",
 	}))
-	cfg.Metrics.FastEventDurations = registerHistogramVec(prometheus.NewHistogramVec(
+	cfg.Metrics.FastEventDurations = registerHistogramVec(registry, prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: "coloradio",
 			Subsystem: "mairlistfeeder",
@@ -55,7 +57,7 @@ func InitMetrics(cfg *config.AppConfig) {
 			"eventname",
 		},
 	))
-	cfg.Metrics.LongEventDurations = registerHistogramVec(prometheus.NewHistogramVec(
+	cfg.Metrics.LongEventDurations = registerHistogramVec(registry, prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: "coloradio",
 			Subsystem: "mairlistfeeder",
@@ -82,18 +84,20 @@ func InitMetrics(cfg *config.AppConfig) {
 	))
 }
 
-// UnregisterMetrics removes the configured metrics from Prometheus' default registry.
-func UnregisterMetrics(cfg *config.AppConfig) {
-	unregister(cfg.Metrics.FileNumber)
-	unregister(cfg.Metrics.MairListPlaying)
-	unregister(cfg.Metrics.Connected)
-	unregister(cfg.Metrics.EventCounters)
-	unregister(cfg.Metrics.FastEventDurations)
-	unregister(cfg.Metrics.LongEventDurations)
+// UnregisterMetrics removes the configured metrics from the given registry.
+func UnregisterMetrics(cfg *config.AppConfig, registry prometheus.Registerer) {
+	registry = registererOrDefault(registry)
+
+	unregister(registry, cfg.Metrics.FileNumber)
+	unregister(registry, cfg.Metrics.MairListPlaying)
+	unregister(registry, cfg.Metrics.Connected)
+	unregister(registry, cfg.Metrics.EventCounters)
+	unregister(registry, cfg.Metrics.FastEventDurations)
+	unregister(registry, cfg.Metrics.LongEventDurations)
 }
 
-func registerGaugeVec(metric *prometheus.GaugeVec) *prometheus.GaugeVec {
-	if err := prometheus.Register(metric); err != nil {
+func registerGaugeVec(registry prometheus.Registerer, metric *prometheus.GaugeVec) *prometheus.GaugeVec {
+	if err := registry.Register(metric); err != nil {
 		if alreadyRegistered, ok := err.(prometheus.AlreadyRegisteredError); ok {
 			if existing, ok := alreadyRegistered.ExistingCollector.(*prometheus.GaugeVec); ok {
 				return existing
@@ -104,8 +108,8 @@ func registerGaugeVec(metric *prometheus.GaugeVec) *prometheus.GaugeVec {
 	return metric
 }
 
-func registerHistogramVec(metric *prometheus.HistogramVec) *prometheus.HistogramVec {
-	if err := prometheus.Register(metric); err != nil {
+func registerHistogramVec(registry prometheus.Registerer, metric *prometheus.HistogramVec) *prometheus.HistogramVec {
+	if err := registry.Register(metric); err != nil {
 		if alreadyRegistered, ok := err.(prometheus.AlreadyRegisteredError); ok {
 			if existing, ok := alreadyRegistered.ExistingCollector.(*prometheus.HistogramVec); ok {
 				return existing
@@ -116,8 +120,15 @@ func registerHistogramVec(metric *prometheus.HistogramVec) *prometheus.Histogram
 	return metric
 }
 
-func unregister(metric prometheus.Collector) {
+func unregister(registry prometheus.Registerer, metric prometheus.Collector) {
 	if metric != nil {
-		prometheus.Unregister(metric)
+		registry.Unregister(metric)
 	}
+}
+
+func registererOrDefault(registry prometheus.Registerer) prometheus.Registerer {
+	if registry != nil {
+		return registry
+	}
+	return prometheus.DefaultRegisterer
 }

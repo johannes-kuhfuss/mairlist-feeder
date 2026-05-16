@@ -13,6 +13,7 @@ import (
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/johannes-kuhfuss/mairlist-feeder/service"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,8 +31,9 @@ const (
 )
 
 func setupUiTest() func() {
+	registry := prometheus.NewRegistry()
 	config.InitConfig("", &cfg)
-	metrics.InitMetrics(&cfg)
+	metrics.InitMetrics(&cfg, registry)
 	repo = repositories.NewFileRepository(&cfg)
 	calCmsSvc = service.NewCalCmsService(&cfg, &repo)
 	uh = NewStatsUiHandler(&cfg, &repo, nil, nil, nil, &calCmsSvc)
@@ -40,7 +42,7 @@ func setupUiTest() func() {
 	recorder = httptest.NewRecorder()
 	return func() {
 		router = nil
-		metrics.UnregisterMetrics(&cfg)
+		metrics.UnregisterMetrics(&cfg, registry)
 	}
 }
 

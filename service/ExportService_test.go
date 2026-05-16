@@ -17,6 +17,7 @@ import (
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
 	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,14 +40,15 @@ const (
 )
 
 func setupTestEx() func() {
+	registry := prometheus.NewRegistry()
 	config.InitConfig(config.EnvFile, &cfg)
-	metrics.InitMetrics(&cfg)
+	metrics.InitMetrics(&cfg, registry)
 	fileRepo = repositories.NewFileRepository(&cfg)
 	exportService = NewExportService(&cfg, &fileRepo)
 	return func() {
 		fileRepo.DeleteAllData()
 		fileExportList.Files = nil
-		metrics.UnregisterMetrics(&cfg)
+		metrics.UnregisterMetrics(&cfg, registry)
 	}
 }
 

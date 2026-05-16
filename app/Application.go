@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/robfig/cron/v3"
 
@@ -63,7 +64,7 @@ func StartApp() {
 	}
 	initRouter()
 	initServer()
-	metrics.InitMetrics(&cfg)
+	metrics.InitMetrics(&cfg, prometheus.DefaultRegisterer)
 	wireApp()
 	mapUrls()
 	RegisterForOsSignals()
