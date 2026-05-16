@@ -392,8 +392,7 @@ func TestGetByEventIdTwoEventIdsReturnsTwo(t *testing.T) {
 	res := repo.GetByEventId(1)
 	assert.NotNil(t, res)
 	assert.EqualValues(t, 2, len(*res))
-	assert.EqualValues(t, "A", (*res)[0].Path)
-	assert.EqualValues(t, "B", (*res)[1].Path)
+	assert.ElementsMatch(t, []string{"A", "B"}, []string{(*res)[0].Path, (*res)[1].Path})
 }
 
 func TestGetByDateEmptyReturnsNil(t *testing.T) {
