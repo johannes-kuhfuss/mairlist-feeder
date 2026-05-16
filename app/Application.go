@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 	"os/signal"
@@ -156,6 +157,12 @@ func wireApp() {
 
 // mapUrls defines the handlers for the available URLs
 func mapUrls() {
+	staticRoot, err := fs.Sub(staticFiles, "static")
+	if err != nil {
+		panic(err)
+	}
+	cfg.RunTime.Router.StaticFS("/static", http.FS(staticRoot))
+
 	cfg.RunTime.Router.GET("/", statsUiHandler.StatusPage)
 	cfg.RunTime.Router.GET(fileUrl, statsUiHandler.FileListPage)
 	cfg.RunTime.Router.GET(eventUrl, statsUiHandler.EventListPage)
