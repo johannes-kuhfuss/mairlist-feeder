@@ -5,12 +5,46 @@
    <div class="container-fluid py-5">
         <div class="row">
             <div class="col">
-                <table class="table table-striped table-sm">
+                <style>
+                    .sortable-header {
+                        align-items: center;
+                        background: none;
+                        border: 0;
+                        color: inherit;
+                        display: inline-flex;
+                        font: inherit;
+                        gap: 0.35rem;
+                        padding: 0;
+                        text-align: left;
+                    }
+
+                    .sortable-header:hover,
+                    .sortable-header:focus {
+                        color: var(--bs-link-hover-color);
+                        text-decoration: underline;
+                    }
+
+                    .sort-indicator {
+                        display: inline-block;
+                        min-width: 0.75rem;
+                    }
+                </style>
+
+                <div class="row mb-3">
+                    <div class="col-auto">
+                        <label class="form-label" for="severity-filter">Severity</label>
+                        <select class="form-select form-select-sm" id="severity-filter">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                </div>
+
+                <table class="table table-striped table-sm" id="logs-table">
                     <thead>
                         <tr>
-                          <th scope="col" style="width: 12%">Date</th>
-                          <th scope="col" style="width: 5%">Severity</th>
-                          <th scope="col" style="width: 77%">Message</th>
+                          <th scope="col" style="width: 12%"><button class="sortable-header" type="button" data-sort-column="0" data-sort-type="text">Date <span class="sort-indicator" aria-hidden="true"></span></button></th>
+                          <th scope="col" style="width: 5%"><button class="sortable-header" type="button" data-sort-column="1" data-sort-type="text">Severity <span class="sort-indicator" aria-hidden="true"></span></button></th>
+                          <th scope="col" style="width: 77%"><button class="sortable-header" type="button" data-sort-column="2" data-sort-type="text">Message <span class="sort-indicator" aria-hidden="true"></span></button></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -26,6 +60,111 @@
             </div>
         </div>
     </div>
+
+<script>
+  (function () {
+    const table = document.getElementById("logs-table");
+    const severityFilter = document.getElementById("severity-filter");
+    if (!table || !severityFilter) {
+      return;
+    }
+
+    const tbody = table.querySelector("tbody");
+    const headers = table.querySelectorAll(".sortable-header");
+    let activeColumn = null;
+    let activeDirection = "asc";
+
+    function getCellValue(row, columnIndex, sortType) {
+      const cell = row.cells[columnIndex];
+      const text = cell ? cell.textContent.trim().replace(/^"|"$/g, "") : "";
+
+      if (sortType === "number") {
+        const value = Number.parseFloat(text);
+        return Number.isNaN(value) ? Number.NEGATIVE_INFINITY : value;
+      }
+
+      return text.toLocaleLowerCase();
+    }
+
+    function updateHeaderState(activeHeader) {
+      headers.forEach(function (header) {
+        const indicator = header.querySelector(".sort-indicator");
+        const isActive = header === activeHeader;
+        header.closest("th").setAttribute("aria-sort", isActive ? activeDirection : "none");
+        indicator.textContent = isActive ? (activeDirection === "asc" ? "^" : "v") : "";
+      });
+    }
+
+    function applySeverityFilter() {
+      const selectedSeverity = severityFilter.value;
+      const rows = tbody.querySelectorAll("tr");
+
+      rows.forEach(function (row) {
+        const severity = row.cells[1] ? row.cells[1].textContent.trim() : "";
+        row.hidden = selectedSeverity !== "" && severity !== selectedSeverity;
+      });
+    }
+
+    function populateSeverityFilter() {
+      const severities = new Set();
+      tbody.querySelectorAll("tr").forEach(function (row) {
+        const severity = row.cells[1] ? row.cells[1].textContent.trim() : "";
+        if (severity !== "") {
+          severities.add(severity);
+        }
+      });
+
+      Array.from(severities).sort(function (severityA, severityB) {
+        return severityA.localeCompare(severityB, undefined, { sensitivity: "base" });
+      }).forEach(function (severity) {
+        const option = document.createElement("option");
+        option.value = severity;
+        option.textContent = severity;
+        severityFilter.appendChild(option);
+      });
+    }
+
+    headers.forEach(function (header) {
+      header.addEventListener("click", function () {
+        const columnIndex = Number.parseInt(header.dataset.sortColumn, 10);
+        const sortType = header.dataset.sortType;
+
+        if (activeColumn === columnIndex) {
+          activeDirection = activeDirection === "asc" ? "desc" : "asc";
+        } else {
+          activeColumn = columnIndex;
+          activeDirection = "asc";
+        }
+
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+        rows.sort(function (rowA, rowB) {
+          const valueA = getCellValue(rowA, columnIndex, sortType);
+          const valueB = getCellValue(rowB, columnIndex, sortType);
+          let comparison;
+
+          if (sortType === "number") {
+            comparison = valueA - valueB;
+          } else {
+            comparison = valueA.localeCompare(valueB, undefined, { numeric: true, sensitivity: "base" });
+          }
+
+          return activeDirection === "asc" ? comparison : -comparison;
+        });
+
+        rows.forEach(function (row) {
+          tbody.appendChild(row);
+        });
+        updateHeaderState(header);
+        applySeverityFilter();
+      });
+    });
+
+    severityFilter.addEventListener("change", applySeverityFilter);
+
+    populateSeverityFilter();
+    applySeverityFilter();
+  })();
+</script>
 
 {{ template "footer" .}}
 

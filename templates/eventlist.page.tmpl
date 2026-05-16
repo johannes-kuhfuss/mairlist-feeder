@@ -5,20 +5,45 @@
    <div class="container-fluid py-5">
         <div class="row">
             <div class="col">
-                <table class="table table-striped table-sm">
+                <style>
+                    .sortable-header {
+                        align-items: center;
+                        background: none;
+                        border: 0;
+                        color: inherit;
+                        display: inline-flex;
+                        font: inherit;
+                        gap: 0.35rem;
+                        padding: 0;
+                        text-align: left;
+                    }
+
+                    .sortable-header:hover,
+                    .sortable-header:focus {
+                        color: var(--bs-link-hover-color);
+                        text-decoration: underline;
+                    }
+
+                    .sort-indicator {
+                        display: inline-block;
+                        min-width: 0.75rem;
+                    }
+                </style>
+
+                <table class="table table-striped table-sm" id="eventlist-table">
                     <thead>
                         <tr>
-                          <th scope="col"></th>
-                          <th scope="col">Event Id</th>
-                          <th scope="col">Title</th>
-                          <th scope="col">Start Date</th>
-                          <th scope="col">Start Time</th>
-                          <th scope="col">End Time</th>
-                          <th scope="col">Planned<br />Duration (min)</th>
-                          <th scope="col">Actual<br />Duration (min)</th>
-                          <th scope="col">Event Type</th>
-                          <th scope="col">File Present</th>
-                          <th scope="col">File Source</th>
+                          <th scope="col"><button class="sortable-header" type="button" data-sort-column="0" data-sort-type="text"><span class="sort-indicator" aria-hidden="true"></span></button></th>
+                          <th scope="col"><button class="sortable-header" type="button" data-sort-column="1" data-sort-type="number">Event Id <span class="sort-indicator" aria-hidden="true"></span></button></th>
+                          <th scope="col"><button class="sortable-header" type="button" data-sort-column="2" data-sort-type="text">Title <span class="sort-indicator" aria-hidden="true"></span></button></th>
+                          <th scope="col"><button class="sortable-header" type="button" data-sort-column="3" data-sort-type="text">Start Date <span class="sort-indicator" aria-hidden="true"></span></button></th>
+                          <th scope="col"><button class="sortable-header" type="button" data-sort-column="4" data-sort-type="text">Start Time <span class="sort-indicator" aria-hidden="true"></span></button></th>
+                          <th scope="col"><button class="sortable-header" type="button" data-sort-column="5" data-sort-type="text">End Time <span class="sort-indicator" aria-hidden="true"></span></button></th>
+                          <th scope="col"><button class="sortable-header" type="button" data-sort-column="6" data-sort-type="number">Planned<br />Duration (min) <span class="sort-indicator" aria-hidden="true"></span></button></th>
+                          <th scope="col"><button class="sortable-header" type="button" data-sort-column="7" data-sort-type="number">Actual<br />Duration (min) <span class="sort-indicator" aria-hidden="true"></span></button></th>
+                          <th scope="col"><button class="sortable-header" type="button" data-sort-column="8" data-sort-type="text">Event Type <span class="sort-indicator" aria-hidden="true"></span></button></th>
+                          <th scope="col"><button class="sortable-header" type="button" data-sort-column="9" data-sort-type="text">File Present <span class="sort-indicator" aria-hidden="true"></span></button></th>
+                          <th scope="col"><button class="sortable-header" type="button" data-sort-column="10" data-sort-type="text">File Source <span class="sort-indicator" aria-hidden="true"></span></button></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -67,6 +92,73 @@
     </div>
 
 <script>
+  (function () {
+    const table = document.getElementById("eventlist-table");
+    if (!table) {
+      return;
+    }
+
+    const tbody = table.querySelector("tbody");
+    const headers = table.querySelectorAll(".sortable-header");
+    let activeColumn = null;
+    let activeDirection = "asc";
+
+    function getCellValue(row, columnIndex, sortType) {
+      const cell = row.cells[columnIndex];
+      const text = cell ? cell.textContent.trim().replace(/^"|"$/g, "") : "";
+
+      if (sortType === "number") {
+        const value = Number.parseFloat(text);
+        return Number.isNaN(value) ? Number.NEGATIVE_INFINITY : value;
+      }
+
+      return text.toLocaleLowerCase();
+    }
+
+    function updateHeaderState(activeHeader) {
+      headers.forEach(function (header) {
+        const indicator = header.querySelector(".sort-indicator");
+        const isActive = header === activeHeader;
+        header.closest("th").setAttribute("aria-sort", isActive ? activeDirection : "none");
+        indicator.textContent = isActive ? (activeDirection === "asc" ? "^" : "v") : "";
+      });
+    }
+
+    headers.forEach(function (header) {
+      header.addEventListener("click", function () {
+        const columnIndex = Number.parseInt(header.dataset.sortColumn, 10);
+        const sortType = header.dataset.sortType;
+
+        if (activeColumn === columnIndex) {
+          activeDirection = activeDirection === "asc" ? "desc" : "asc";
+        } else {
+          activeColumn = columnIndex;
+          activeDirection = "asc";
+        }
+
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+        rows.sort(function (rowA, rowB) {
+          const valueA = getCellValue(rowA, columnIndex, sortType);
+          const valueB = getCellValue(rowB, columnIndex, sortType);
+          let comparison;
+
+          if (sortType === "number") {
+            comparison = valueA - valueB;
+          } else {
+            comparison = valueA.localeCompare(valueB, undefined, { numeric: true, sensitivity: "base" });
+          }
+
+          return activeDirection === "asc" ? comparison : -comparison;
+        });
+
+        rows.forEach(function (row) {
+          tbody.appendChild(row);
+        });
+        updateHeaderState(header);
+      });
+    });
+  })();
+
   setTimeout(function(){
     location.reload();}, 5000);
 </script>
