@@ -66,12 +66,18 @@ func initMetrics() {
 			Help:      "Duration of a long event in seconds",
 
 			Buckets: []float64{
-				30,  // 30s
-				60,  // 1m
-				120, // 2m
-				300, // 5m
-				600, // 10m
-				900, // 15m
+				30,
+				60,
+				120,
+				180,
+				240,
+				300,
+				360,
+				420,
+				480,
+				540,
+				600,
+				900,
 			},
 		},
 		[]string{
