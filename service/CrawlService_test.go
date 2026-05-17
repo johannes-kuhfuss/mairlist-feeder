@@ -300,6 +300,30 @@ func TestAnalyzeStreamDataStreamFoundReturnsNameAndId(t *testing.T) {
 	os.Remove(file)
 }
 
+func TestAnalyzeStreamDataMixedCaseMapKeyReturnsNameAndId(t *testing.T) {
+	file := "./temp.txt"
+	streamMap := make(map[string]int)
+	streamMap["StreamY"] = 55
+	os.WriteFile(file, []byte("streamy"), 0644)
+	name, id, err := analyzeStreamData(file, streamMap)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "StreamY", name)
+	assert.EqualValues(t, 55, id)
+	os.Remove(file)
+}
+
+func TestFolderDateFromPathCorrectPathReturnsFolderDate(t *testing.T) {
+	folderDate, err := folderDateFromPath("Z:\\sendungen\\2024\\09\\22\\21-00\\test.mp3", "Z:\\sendungen")
+	assert.Nil(t, err)
+	assert.EqualValues(t, "2024-09-22", folderDate)
+}
+
+func TestFolderDateFromPathShortPathReturnsError(t *testing.T) {
+	folderDate, err := folderDateFromPath("Z:\\sendungen\\2024\\test.mp3", "Z:\\sendungen")
+	assert.EqualValues(t, "", folderDate)
+	assert.NotNil(t, err)
+}
+
 func TestCheckForOrphanFilesNoFilesReturnsZero(t *testing.T) {
 	teardown := setupTestCrawl()
 	defer teardown()
@@ -339,7 +363,8 @@ func TestGenerateHashSampleFileReturnsHash(t *testing.T) {
 func TestGenHashesNoFilesReturnsZero(t *testing.T) {
 	teardown := setupTestCrawl()
 	defer teardown()
-	hc := crawlSvc.GenHashes()
+	hc, err := crawlSvc.GenHashes()
+	assert.Nil(t, err)
 	assert.EqualValues(t, 0, hc)
 }
 
@@ -350,7 +375,8 @@ func TestGenHashesOneFileReturnsOne(t *testing.T) {
 		Path: audioSampleFile,
 	}
 	crawlRepo.Store(fi1)
-	hc := crawlSvc.GenHashes()
+	hc, err := crawlSvc.GenHashes()
+	assert.Nil(t, err)
 	assert.EqualValues(t, 1, hc)
 }
 
@@ -361,6 +387,7 @@ func TestGenHasheshasErrorReturnsZero(t *testing.T) {
 		Path: "not-there",
 	}
 	crawlRepo.Store(fi1)
-	hc := crawlSvc.GenHashes()
+	hc, err := crawlSvc.GenHashes()
+	assert.NotNil(t, err)
 	assert.EqualValues(t, 0, hc)
 }

@@ -7,11 +7,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"io/fs"
 	"math"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -33,7 +34,10 @@ type Crawler interface {
 }
 
 var (
-	crmu sync.Mutex
+	crmu       sync.Mutex
+	idExp      = regexp.MustCompile(`-id\d+-`)
+	folder1Exp = regexp.MustCompile(`[\\/]+([01][0-9]|2[0-3])-(0[0-9]|[1-5][0-9])`)
+	file1Exp   = regexp.MustCompile(`^([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])\s?-\s?([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])[_ -]`)
 )
 
 // The crawl service handles the cyclical scanning of the supervised folder and the extraction and enrichment of data for all files
@@ -61,15 +65,17 @@ func (s DefaultCrawlService) Crawl() {
 	crmu.Lock()
 	defer crmu.Unlock()
 	s.Cfg.RunTime.CrawlRunning = true
+	defer func() {
+		s.Cfg.RunTime.CrawlRunning = false
+	}()
 	s.CrawlRun()
-	s.Cfg.RunTime.CrawlRunning = false
-	if s.Cfg.CalCms.QueryCalCms {
+	if s.Cfg.CalCms.QueryCalCms && s.CalSvc != nil {
 		s.CalSvc.Query()
 	}
 }
 
 // GenHashes creates a hash for the files on disk to allow for easy checking for identical files
-func (s DefaultCrawlService) GenHashes() (hashCount int) {
+func (s DefaultCrawlService) GenHashes() (hashCount int, e error) {
 	if s.Repo.Size() > 0 {
 		files := s.Repo.GetAll()
 		for _, file := range *files {
@@ -77,12 +83,12 @@ func (s DefaultCrawlService) GenHashes() (hashCount int) {
 				hash, err := generateHash(file.Path)
 				if err != nil {
 					logger.Errorf("Error when creating hash for %v. %v", file.Path, err)
-					return
+					return hashCount, err
 				}
 				file.Checksum = hash
 				if err := s.Repo.Store(file); err != nil {
 					logger.Error("Error storing file in repository", err)
-					return
+					return hashCount, err
 				}
 				hashCount++
 				logger.Infof("Added hash for file %v [%v]", file.Path, hash)
@@ -111,9 +117,10 @@ func (s DefaultCrawlService) checkForOrphanFiles() (filesRemoved int) {
 }
 
 // CrawlRun performs the crawling of the folder, the data enrichment and the hash creation
-func (s DefaultCrawlService) CrawlRun() {
+func (s DefaultCrawlService) CrawlRun() error {
 	var (
 		crawlDur, extractDur, hashDur time.Duration
+		runErr                        error
 	)
 	sinceLastCrawl := time.Since(s.Cfg.RunTime.LastCrawlDate)
 	s.Cfg.Metrics.LongEventDurations.WithLabelValues("sincelastcrawl").Observe(sinceLastCrawl.Seconds())
@@ -126,6 +133,7 @@ func (s DefaultCrawlService) CrawlRun() {
 	fileCount, err := s.crawlFolder(s.Cfg.Crawl.RootFolder, s.Cfg.Crawl.CrawlExtensions)
 	if err != nil {
 		logger.Errorf("Error crawling folder %v: . %v", s.Cfg.Crawl.RootFolder, err)
+		runErr = errors.Join(runErr, err)
 	}
 	ts := s.Repo.Size()
 	end := time.Now().UTC()
@@ -135,7 +143,10 @@ func (s DefaultCrawlService) CrawlRun() {
 	if s.Repo.NewFiles() {
 		logger.Info("Starting to extract file data...")
 		start = time.Now().UTC()
-		fc, _ := s.extractFileInfo()
+		fc, err := s.extractFileInfo()
+		if err != nil {
+			runErr = errors.Join(runErr, err)
+		}
 		end = time.Now().UTC()
 		extractDur = end.Sub(start)
 		s.Cfg.Metrics.FastEventDurations.WithLabelValues("lastextraction").Observe(extractDur.Seconds())
@@ -143,7 +154,10 @@ func (s DefaultCrawlService) CrawlRun() {
 		if s.Cfg.Crawl.GenerateHash {
 			logger.Info("Starting to add hashes for new files...")
 			start = time.Now().UTC()
-			hc := s.GenHashes()
+			hc, err := s.GenHashes()
+			if err != nil {
+				runErr = errors.Join(runErr, err)
+			}
 			end = time.Now().UTC()
 			hashDur = end.Sub(start)
 			s.Cfg.Metrics.FastEventDurations.WithLabelValues("lasthash").Observe(hashDur.Seconds())
@@ -157,57 +171,66 @@ func (s DefaultCrawlService) CrawlRun() {
 	s.Cfg.Metrics.FileNumber.WithLabelValues("total").Set(float64(ts))
 	s.Cfg.Metrics.FileNumber.WithLabelValues("audio").Set(float64(as))
 	s.Cfg.Metrics.FileNumber.WithLabelValues("stream").Set(float64(es))
+	return runErr
 }
 
 // crawlFolder examines the files on disk and adds an entry in the in-memory representation
 func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []string) (fileCount int, e error) {
 	today := helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate)
-	err := filepath.WalkDir(path.Join(rootFolder, today),
+	err := filepath.WalkDir(filepath.Join(rootFolder, today),
 		func(srcPath string, info fs.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
+			if info.IsDir() {
+				return nil
+			}
 			if misc.SliceContainsStringCI(crawlExtensions, filepath.Ext(srcPath)) {
-				newFile, _ := info.Info()
+				newFile, err := info.Info()
+				if err != nil {
+					return err
+				}
 				if s.Repo.Exists(srcPath) {
 					oldFile := s.Repo.GetByPath(srcPath)
 					if time.Time.Equal(oldFile.ModTime, newFile.ModTime()) {
 						return nil
 					}
 					logger.Infof("Modification date changed. Updating %v", oldFile.Path)
+				} else {
+					fileCount++
 				}
-				fi := s.setNewFileData(newFile, srcPath, rootFolder)
-				fileCount++
+				fi, err := s.setNewFileData(newFile, srcPath, rootFolder)
+				if err != nil {
+					return err
+				}
 				if err := s.Repo.Store(fi); err != nil {
-					logger.Error("Error while storing file in repository", err)
+					return fmt.Errorf("storing file %q in repository: %w", srcPath, err)
 				}
 			}
 			return nil
 		})
-	if err != nil {
-		return fileCount, err
-	} else {
-		return fileCount, nil
-	}
+	return fileCount, err
 }
 
 // setNewFileData updates the file data with newly extracted values
-func (s DefaultCrawlService) setNewFileData(newFile fs.FileInfo, srcPath string, rootFolder string) (fileInfo domain.FileInfo) {
+func (s DefaultCrawlService) setNewFileData(newFile fs.FileInfo, srcPath string, rootFolder string) (fileInfo domain.FileInfo, e error) {
 	fileInfo.ModTime = newFile.ModTime()
 	fileInfo.Path = srcPath
 	fileInfo.FromCalCMS = false
 	fileInfo.ScanTime = time.Now()
-	rawFolder := strings.Trim(filepath.Dir(srcPath), rootFolder)[0:10]
-	fileInfo.FolderDate = strings.Replace(rawFolder, "\\", "-", -1)
+	folderDate, err := folderDateFromPath(srcPath, rootFolder)
+	if err != nil {
+		return domain.FileInfo{}, err
+	}
+	fileInfo.FolderDate = folderDate
 	fileInfo.InfoExtracted = false
 	fileInfo.EventId = s.parseEventId(srcPath)
-	return
+	return fileInfo, nil
 }
 
 // parseEventId is a helper function that determines the calCms event id from a file's file name
 func (s DefaultCrawlService) parseEventId(srcPath string) int {
 	fileName := filepath.Base(srcPath)
-	idExp := regexp.MustCompile(`-id\d+-`)
 	if idExp.MatchString(fileName) {
 		idRawStr := idExp.FindString(fileName)
 		l := len(idRawStr)
@@ -220,15 +243,32 @@ func (s DefaultCrawlService) parseEventId(srcPath string) int {
 	return 0
 }
 
-// generateHash generates an MD5 hash for a given file
-func generateHash(path string) (hash string, e error) {
-	hasher := md5.New()
-	data, err := os.ReadFile(path)
+// folderDateFromPath extracts the YYYY-MM-DD folder date below the crawl root.
+func folderDateFromPath(srcPath string, rootFolder string) (string, error) {
+	relDir, err := filepath.Rel(rootFolder, filepath.Dir(srcPath))
 	if err != nil {
 		return "", err
 	}
-	_, err = hasher.Write(data)
+	parts := strings.Split(filepath.ToSlash(relDir), "/")
+	if len(parts) < 3 {
+		return "", fmt.Errorf("path %q does not contain a YYYY/MM/DD folder below root %q", srcPath, rootFolder)
+	}
+	folderDate := strings.Join(parts[:3], "-")
+	if _, err := time.Parse("2006-01-02", folderDate); err != nil {
+		return "", fmt.Errorf("path %q does not contain a valid YYYY/MM/DD folder below root %q: %w", srcPath, rootFolder, err)
+	}
+	return folderDate, nil
+}
+
+// generateHash generates an MD5 hash for a given file for duplicate detection, not for security.
+func generateHash(path string) (hash string, e error) {
+	hasher := md5.New()
+	file, err := os.Open(path)
 	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	if _, err = io.Copy(hasher, file); err != nil {
 		return "", err
 	}
 	return hex.EncodeToString(hasher.Sum(nil)), nil
@@ -238,29 +278,32 @@ func generateHash(path string) (hash string, e error) {
 // It also initiates the data extraction for technical metadata and streaming information
 // The extracted information is stored in the file list in-memory
 func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
-	var (
-		exErr error
-	)
 	if files := s.Repo.GetAll(); files != nil {
 		for _, file := range *files {
 			if !file.InfoExtracted {
-				var newInfo domain.FileInfo
+				var exErr error
+				newInfo := file
 
 				if helper.IsAudioFile(s.Cfg, file.Path) {
 					newInfo, exErr = s.extractAudioInfo(file)
 					fc.AudioCount++
 				}
 				if helper.IsStreamingFile(s.Cfg, file.Path) {
-					newInfo = s.extractStreamInfo(file)
+					var streamErr error
+					newInfo, streamErr = s.extractStreamInfo(file)
+					exErr = errors.Join(exErr, streamErr)
 					fc.StreamCount++
 				}
 				newInfo = s.matchFolderName(newInfo)
 				fc.TotalCount++
 				if exErr == nil {
 					newInfo.InfoExtracted = true
+				} else {
+					e = errors.Join(e, fmt.Errorf("extracting file info for %q: %w", file.Path, exErr))
 				}
 				if err := s.Repo.Store(newInfo); err != nil {
 					logger.Error("Error while storing file in repository", err)
+					e = errors.Join(e, err)
 				}
 				logExtractResult(newInfo)
 			}
@@ -286,17 +329,18 @@ func (s DefaultCrawlService) extractAudioInfo(oldInfo domain.FileInfo) (newInfo 
 }
 
 // extractStreamInfo enriches the file information with stream file specific metadata
-func (s DefaultCrawlService) extractStreamInfo(oldInfo domain.FileInfo) (newInfo domain.FileInfo) {
+func (s DefaultCrawlService) extractStreamInfo(oldInfo domain.FileInfo) (newInfo domain.FileInfo, e error) {
 	newInfo = oldInfo
 	newInfo.FileType = "Stream"
 	name, id, err := analyzeStreamData(oldInfo.Path, s.Cfg.Crawl.StreamMap)
 	if err != nil {
 		logger.Error("Could not analyze stream data", err)
+		return newInfo, err
 	} else {
 		newInfo.StreamName = name
 		newInfo.StreamId = id
 	}
-	return
+	return newInfo, nil
 }
 
 // matchFolderName determines the source of the file, either calCms or naming convention
@@ -304,10 +348,6 @@ func (s DefaultCrawlService) matchFolderName(oldInfo domain.FileInfo) (newInfo d
 	var (
 		timeData string
 	)
-	// /HH-MM (calCMS)
-	folder1Exp := regexp.MustCompile(`[\\/]+([01][0-9]|2[0-3])-(0[0-9]|[1-5][0-9])`)
-	// HHMM-HHMM
-	file1Exp := regexp.MustCompile(`^([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])\s?-\s?([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])[_ -]`)
 	newInfo = oldInfo
 	folderName := filepath.Dir(oldInfo.Path)
 	fileName := filepath.Base(oldInfo.Path)
@@ -337,7 +377,7 @@ func (s DefaultCrawlService) matchFolderName(oldInfo domain.FileInfo) (newInfo d
 	return
 }
 
-// setStartIimeDisplay formats the start stime for display purposes
+// logExtractResult logs the extracted file information.
 func logExtractResult(fi domain.FileInfo) {
 	var (
 		startTimeDisplay string
@@ -382,15 +422,14 @@ func analyzeTechMd(essencePath string, timeout int, ffprobePath string) (techMet
 	ctx := context.Background()
 	timeoutDuration := time.Duration(timeout) * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeoutDuration)
+	defer cancel()
 	// Syntax: ffprobe -show_format -print_format json -loglevel quiet <input_file>
 	cmd := exec.CommandContext(ctx, ffprobePath, "-show_format", "-print_format", "json", "-loglevel", "quiet", essencePath)
 	outJson, err := cmd.CombinedOutput()
 	if err != nil {
-		cancel()
 		logger.Error("Could not execute ffprobe", err)
 		return nil, err
 	}
-	cancel()
 	techMd, err := parseTechMd(outJson)
 	if err != nil {
 		logger.Error("Could not parse technical metadata from ffprobe", err)
@@ -408,7 +447,7 @@ func analyzeStreamData(path string, streamMap map[string]int) (streamName string
 	}
 	streamData := strings.ToLower(string(fileContents))
 	for stream, id := range streamMap {
-		if strings.Contains(streamData, stream) {
+		if strings.Contains(streamData, strings.ToLower(stream)) {
 			return stream, id, nil
 		}
 	}
