@@ -22,10 +22,10 @@ const (
 
 func setupTestClean() func() {
 	config.InitConfig(config.EnvFile, &cfgClean)
-	crawlRepo = repositories.NewFileRepository(&cfgClean)
+	cleanRepo = repositories.NewFileRepository(&cfgClean)
 	cleanSvc = NewCleanService(&cfgClean, &cleanRepo)
 	return func() {
-		crawlRepo.DeleteAllData()
+		cleanRepo.DeleteAllData()
 	}
 }
 

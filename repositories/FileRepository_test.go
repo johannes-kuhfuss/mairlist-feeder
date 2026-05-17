@@ -246,7 +246,7 @@ func TestLoadFromDiskNoFileReturnsError(t *testing.T) {
 	setupTest()
 	err := repo.LoadFromDisk("no.file")
 	assert.NotNil(t, err)
-	assert.EqualValues(t, "open no.file: The system cannot find the file specified.", err.Error())
+	assert.True(t, os.IsNotExist(err))
 }
 
 func TestLoadFromDiskWrongDataReturnsError(t *testing.T) {

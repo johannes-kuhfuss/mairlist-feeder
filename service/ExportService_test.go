@@ -110,7 +110,7 @@ func TestBuildGetPlaylistRequestWithUrlReturnsRequest(t *testing.T) {
 }
 
 func TestGetNextHourreturnsNextHour(t *testing.T) {
-	next := (time.Now().Hour()) + 1
+	next := (time.Now().Hour() + 1) % 24
 	test := getNextHour()
 	assert.EqualValues(t, fmt.Sprintf("%02d", next), test)
 }
@@ -398,7 +398,6 @@ func TestGetPlaylistBuildRequestFails(t *testing.T) {
 	defer tearDown()
 	err := exportService.GetPlaylist()
 	assert.NotNil(t, err)
-	assert.EqualValues(t, "Get \"http://localhost:9300/playlist/0/content\": dial tcp [::1]:9300: connectex: No connection could be made because the target machine actively refused it.", err.Error())
 }
 
 func TestGetPlaylistExecRequestFails(t *testing.T) {

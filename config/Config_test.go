@@ -50,7 +50,7 @@ func TestLoadConfigNoEnvFileReturnsError(t *testing.T) {
 	assert.NotNil(t, err)
 	fmt.Printf("error: %v", err)
 
-	assert.EqualValues(t, "open file_does_not_exist.txt: The system cannot find the file specified.", err.Error())
+	assert.True(t, os.IsNotExist(err))
 }
 
 func TestLoadConfigWithEnvFileReturnsNoError(t *testing.T) {

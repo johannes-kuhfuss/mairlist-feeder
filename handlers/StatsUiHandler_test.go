@@ -5,15 +5,20 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	metrics "github.com/johannes-kuhfuss/mairlist-feeder/Metrics"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
+	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/johannes-kuhfuss/mairlist-feeder/service"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/robfig/cron/v3"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,6 +29,9 @@ var (
 	router    *gin.Engine
 	recorder  *httptest.ResponseRecorder
 	calCmsSvc service.DefaultCalCmsService
+	crawlSvc  service.DefaultCrawlService
+	exportSvc service.DefaultExportService
+	cleanSvc  service.DefaultCleanService
 )
 
 const (
@@ -36,11 +44,18 @@ func setupUiTest() func() {
 	metrics.InitMetrics(&cfg, registry)
 	repo = repositories.NewFileRepository(&cfg)
 	calCmsSvc = service.NewCalCmsService(&cfg, &repo)
-	uh = NewStatsUiHandler(&cfg, &repo, nil, nil, nil, &calCmsSvc)
+	crawlSvc = service.NewCrawlService(&cfg, &repo, &calCmsSvc)
+	exportSvc = service.NewExportService(&cfg, &repo)
+	cleanSvc = service.NewCleanService(&cfg, &repo)
+	cfg.RunTime.BgJobs = cron.New()
+	crawlJobId, _ := cfg.RunTime.BgJobs.AddFunc("@every 10m", crawlSvc.Crawl)
+	cfg.RunTime.CrawlJobId = crawlJobId
+	uh = NewStatsUiHandler(&cfg, &repo, &crawlSvc, &exportSvc, &cleanSvc, &calCmsSvc)
 	router = gin.Default()
 	router.LoadHTMLGlob("../templates/*.tmpl")
 	recorder = httptest.NewRecorder()
 	return func() {
+		cfg.RunTime.BgJobs.Stop()
 		router = nil
 		metrics.UnregisterMetrics(&cfg, registry)
 	}
@@ -224,6 +239,69 @@ func TestActionExecInvalidHourReturnsError(t *testing.T) {
 
 	assert.EqualValues(t, http.StatusBadRequest, statusCode)
 	assert.EqualValues(t, "{\"message\":\"hour must be between 00 and 23\",\"statuscode\":400,\"causes\":null}", string(data))
+}
+
+func TestActionExecCrawlReturnsOk(t *testing.T) {
+	teardown := setupUiTest()
+	defer teardown()
+	router.POST(actionUrl, uh.ExecAction)
+	form := url.Values{}
+	form.Add("action", "crawl")
+
+	data, statusCode := runRequest(form)
+
+	assert.EqualValues(t, http.StatusOK, statusCode)
+	assert.EqualValues(t, "null", string(data))
+	assert.True(t, cfg.RunTime.BgJobs.Entry(cfg.RunTime.CrawlJobId).Valid())
+}
+
+func TestActionExecCleanReturnsOk(t *testing.T) {
+	teardown := setupUiTest()
+	defer teardown()
+	router.POST(actionUrl, uh.ExecAction)
+	repo.Store(domain.FileInfo{
+		Path:       "old-file",
+		FolderDate: time.Now().AddDate(0, 0, -1).Format("2006-01-02"),
+	})
+	form := url.Values{}
+	form.Add("action", "clean")
+
+	data, statusCode := runRequest(form)
+
+	assert.EqualValues(t, http.StatusOK, statusCode)
+	assert.EqualValues(t, "null", string(data))
+	assert.EqualValues(t, 1, cfg.RunTime.FilesCleaned)
+	assert.EqualValues(t, 0, repo.Size())
+}
+
+func TestActionExecExportReturnsOk(t *testing.T) {
+	teardown := setupUiTest()
+	defer teardown()
+	router.POST(actionUrl, uh.ExecAction)
+	form := url.Values{}
+	form.Add("action", "export")
+	form.Add("hour", "13")
+
+	data, statusCode := runRequest(form)
+
+	assert.EqualValues(t, http.StatusOK, statusCode)
+	assert.EqualValues(t, "null", string(data))
+}
+
+func TestActionExecExportToDiskReturnsOk(t *testing.T) {
+	teardown := setupUiTest()
+	defer teardown()
+	cfg.Misc.FileSaveFile = filepath.Join(t.TempDir(), "files.dta")
+	router.POST(actionUrl, uh.ExecAction)
+	form := url.Values{}
+	form.Add("action", "exporttodisk")
+
+	data, statusCode := runRequest(form)
+	_, statErr := os.Stat(cfg.Misc.FileSaveFile)
+
+	assert.EqualValues(t, http.StatusOK, statusCode)
+	assert.EqualValues(t, "null", string(data))
+	assert.Nil(t, statErr)
 }
 
 func TestLogsPageReturnsLogs(t *testing.T) {

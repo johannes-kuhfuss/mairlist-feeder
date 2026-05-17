@@ -30,7 +30,6 @@ func TestExportDayEventsGetErrorReturnsError(t *testing.T) {
 	file, err := exportState(eventUrl, "events")
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "", file)
-	assert.EqualValues(t, "Get \"http://:8080/events\": dial tcp :8080: connectex: No connection could be made because the target machine actively refused it.", err.Error())
 }
 
 func TestExportDayEventsNoErrorReturnsFileName(t *testing.T) {

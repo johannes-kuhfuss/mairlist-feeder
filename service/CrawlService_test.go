@@ -214,7 +214,7 @@ func TestAnalyzeTechMdWrongFfprobePathReturnsError(t *testing.T) {
 	d, e := analyzeTechMd("/here/file", 5, "/here/no/ffprobe")
 	assert.Nil(t, d)
 	assert.NotNil(t, e)
-	assert.EqualValues(t, "exec: \"/here/no/ffprobe\": executable file not found in %PATH%", e.Error())
+	assert.Contains(t, e.Error(), "executable file not found")
 }
 
 func TestAnalyzeTechMdSampleFileReturnsTechMd(t *testing.T) {
@@ -275,7 +275,7 @@ func TestAnalyzeStreamDataNoFileReturnsError(t *testing.T) {
 	streamMap := make(map[string]int)
 	_, _, err := analyzeStreamData("", streamMap)
 	assert.NotNil(t, err)
-	assert.EqualValues(t, "open : The system cannot find the file specified.", err.Error())
+	assert.True(t, os.IsNotExist(err))
 }
 
 func TestAnalyzeStreamDataStreamNotFoundReturnsError(t *testing.T) {
@@ -351,7 +351,7 @@ func TestGenerateHashNoFileReturnsError(t *testing.T) {
 	hash, err := generateHash("../no-file")
 	assert.EqualValues(t, "", hash)
 	assert.NotNil(t, err)
-	assert.EqualValues(t, "open ../no-file: The system cannot find the file specified.", err.Error())
+	assert.True(t, os.IsNotExist(err))
 }
 
 func TestGenerateHashSampleFileReturnsHash(t *testing.T) {
