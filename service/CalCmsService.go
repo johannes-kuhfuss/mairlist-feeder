@@ -29,29 +29,32 @@ type CalCmsQuerier interface {
 
 // The calCms service handles all the communication with calCms and the necessary data transformation
 type DefaultCalCmsService struct {
-	Cfg  *config.AppConfig
-	Repo *repositories.DefaultFileRepository
+	Cfg             *config.AppConfig
+	Repo            *repositories.DefaultFileRepository
+	httpClient      *http.Client
+	calCmsPgm       *safeCalCmsPgm
+	eventsYesterday *safeEvents
 }
 
-var (
-	httpCalTr     http.Transport
-	httpCalClient http.Client
-	CalCmsPgm     struct {
-		sync.RWMutex
-		data domain.CalCmsPgmData
-	}
-	EventsYesterday []dto.Event
-)
+type safeCalCmsPgm struct {
+	sync.RWMutex
+	data domain.CalCmsPgmData
+}
+
+type safeEvents struct {
+	sync.RWMutex
+	events []dto.Event
+}
 
 // InitHttpCalClient sets the defaukt values for the http client used to query calCms
-func InitHttpCalClient() {
-	httpCalTr = http.Transport{
+func InitHttpCalClient() *http.Client {
+	httpCalTr := http.Transport{
 		DisableKeepAlives:  false,
 		DisableCompression: false,
 		MaxIdleConns:       0,
 		IdleConnTimeout:    0,
 	}
-	httpCalClient = http.Client{
+	return &http.Client{
 		Transport: &httpCalTr,
 		Timeout:   5 * time.Second,
 	}
@@ -59,18 +62,20 @@ func InitHttpCalClient() {
 
 // NewCalCmsService creates a new calCms service and injects its dependencies
 func NewCalCmsService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository) DefaultCalCmsService {
-	InitHttpCalClient()
 	return DefaultCalCmsService{
-		Cfg:  cfg,
-		Repo: repo,
+		Cfg:             cfg,
+		Repo:            repo,
+		httpClient:      InitHttpCalClient(),
+		calCmsPgm:       &safeCalCmsPgm{},
+		eventsYesterday: &safeEvents{},
 	}
 }
 
 // insertData inserts new calCms data in a thread-safe manner
 func (s DefaultCalCmsService) insertData(data domain.CalCmsPgmData) {
-	CalCmsPgm.Lock()
-	defer CalCmsPgm.Unlock()
-	CalCmsPgm.data = data
+	s.calCmsPgm.Lock()
+	defer s.calCmsPgm.Unlock()
+	s.calCmsPgm.data = data
 }
 
 // calcCalCmsEndDate calculates the end date based on a given start date used to query events from calCms
@@ -128,19 +133,19 @@ func (s DefaultCalCmsService) getCalCmsEventData() (eventData []byte, e error) {
 		logger.Error("Cannot build calCMS http request", err)
 		return nil, err
 	}
-	resp, err := httpCalClient.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		s.setCalCmsQueryState(false)
 		logger.Error("Cannot execute calCMS http request", err)
 		return nil, err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		s.setCalCmsQueryState(false)
 		err := errors.New(resp.Status)
 		logger.Errorf("Received status code %v from calCMS. %v", resp.StatusCode, err)
 		return nil, err
 	}
-	defer resp.Body.Close()
 	eventData, err = io.ReadAll(resp.Body)
 	if err != nil {
 		s.setCalCmsQueryState(false)
@@ -161,12 +166,12 @@ func (s DefaultCalCmsService) Query() error {
 			logger.Error("error getting data from calCms", err)
 			return err
 		}
-		CalCmsPgm.Lock()
-		if err := json.Unmarshal(data, &CalCmsPgm.data); err != nil {
+		var calCmsData domain.CalCmsPgmData
+		if err := json.Unmarshal(data, &calCmsData); err != nil {
 			logger.Error("Cannot convert calCMS response data to Json", err)
 			return err
 		}
-		CalCmsPgm.Unlock()
+		s.insertData(calCmsData)
 		fc := s.EnrichFileInformation()
 		end := time.Now().UTC()
 		updateDur := end.Sub(start)
@@ -265,15 +270,17 @@ func (s DefaultCalCmsService) checkCalCmsEventData(file domain.FileInfo) (*dto.C
 
 // GetCalCmsEntriesForHour retrieves all event data from the calCms data that start within a given hour
 func (s DefaultCalCmsService) GetCalCmsEntriesForHour(hour string) (entries []dto.CalCmsEntry, e error) {
-	CalCmsPgm.RLock()
-	events := CalCmsPgm.data.Events
-	CalCmsPgm.RUnlock()
+	s.calCmsPgm.RLock()
+	events := append([]domain.CalCmsEvent(nil), s.calCmsPgm.data.Events...)
+	s.calCmsPgm.RUnlock()
 	if len(events) > 0 {
 		for _, event := range events {
 			if (event.Live == 0) && (strings.HasPrefix(event.StartTimeName, hour)) {
 				entry, err := s.convertEventToEntry(event)
 				if err == nil {
 					entries = append(entries, entry)
+				} else {
+					return entries, err
 				}
 			}
 		}
@@ -283,9 +290,9 @@ func (s DefaultCalCmsService) GetCalCmsEntriesForHour(hour string) (entries []dt
 
 // GetCalCmsEventDataForId retrieves all event data from the calCms data for a given Event Id
 func (s DefaultCalCmsService) GetCalCmsEventDataForId(id int) (entries []dto.CalCmsEntry, e error) {
-	CalCmsPgm.RLock()
-	events := CalCmsPgm.data.Events
-	CalCmsPgm.RUnlock()
+	s.calCmsPgm.RLock()
+	events := append([]domain.CalCmsEvent(nil), s.calCmsPgm.data.Events...)
+	s.calCmsPgm.RUnlock()
 	if len(events) > 0 {
 		for _, event := range events {
 			if event.EventID == id {
@@ -379,8 +386,10 @@ func checkHash(files *domain.FileList) (filesIdentical bool, checksumAvail bool)
 		} else {
 			if hash == "" {
 				hash = file.Checksum
-			} else {
-				filesIdentical = (hash == file.Checksum)
+				continue
+			}
+			if hash != file.Checksum {
+				return false, true
 			}
 		}
 	}
@@ -409,7 +418,12 @@ func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dt
 				ev.EventType = "Live"
 			}
 			if s.Cfg.CalCms.ShowNonCalCmsFiles {
-				files = s.Repo.GetByIdAndHour(event.EventID, ev.StartTime[0:2], s.Cfg.Export.ExportLiveItems)
+				hour, err := hourFromTimeString(ev.StartTime)
+				if err != nil {
+					logger.Errorf("Could not extract event hour from %q. %v", ev.StartTime, err)
+				} else {
+					files = s.Repo.GetByIdAndHour(event.EventID, hour, s.Cfg.Export.ExportLiveItems)
+				}
 			} else {
 				files = s.Repo.GetByEventId(event.EventID)
 			}
@@ -430,16 +444,53 @@ func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dt
 }
 
 func isCurrent(startTime, endTime string) string {
-	sth, _ := strconv.Atoi(startTime[0:2])
-	stm, _ := strconv.Atoi(startTime[2:4])
-	st := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), sth, stm, 0, 0, time.Local)
-	eth, _ := strconv.Atoi(endTime[0:2])
-	etm, _ := strconv.Atoi(endTime[2:4])
-	et := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), eth, etm, 0, 0, time.Local)
-	if time.Now().After(st) && time.Now().Before(et) {
+	now := time.Now()
+	sth, stm, err := parseCompactHourMinute(startTime)
+	if err != nil {
+		logger.Errorf("Could not parse event start time %q. %v", startTime, err)
+		return ""
+	}
+	eth, etm, err := parseCompactHourMinute(endTime)
+	if err != nil {
+		logger.Errorf("Could not parse event end time %q. %v", endTime, err)
+		return ""
+	}
+	st := time.Date(now.Year(), now.Month(), now.Day(), sth, stm, 0, 0, time.Local)
+	et := time.Date(now.Year(), now.Month(), now.Day(), eth, etm, 0, 0, time.Local)
+	if !et.After(st) {
+		et = et.AddDate(0, 0, 1)
+	}
+	if now.After(st) && now.Before(et) {
 		return "***"
 	}
 	return ""
+}
+
+func parseCompactHourMinute(timeValue string) (hour int, minute int, err error) {
+	compact := strings.ReplaceAll(timeValue, ":", "")
+	if len(compact) < 4 {
+		return 0, 0, fmt.Errorf("time value is shorter than HHMM")
+	}
+	hour, err = strconv.Atoi(compact[0:2])
+	if err != nil {
+		return 0, 0, err
+	}
+	minute, err = strconv.Atoi(compact[2:4])
+	if err != nil {
+		return 0, 0, err
+	}
+	if hour < 0 || hour > 23 || minute < 0 || minute > 59 {
+		return 0, 0, fmt.Errorf("time value is outside valid range")
+	}
+	return hour, minute, nil
+}
+
+func hourFromTimeString(timeValue string) (string, error) {
+	hour, _, err := parseCompactHourMinute(timeValue)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%02d", hour), nil
 }
 
 // GetTodayEvents orchestrates the generation of an event list for display on the web UI
@@ -496,14 +547,18 @@ func (s DefaultCalCmsService) CountRun() {
 func (s DefaultCalCmsService) SaveYesterdaysEvents() {
 	events, err := s.GetTodayEvents()
 	if err == nil {
-		EventsYesterday = events
+		s.eventsYesterday.Lock()
+		defer s.eventsYesterday.Unlock()
+		s.eventsYesterday.events = append([]dto.Event(nil), events...)
 	}
 }
 
 // GetYesterdaysEvents retrieves yesterday's event state from the local variable
 func (s DefaultCalCmsService) GetYesterdaysEvents() []dto.Event {
-	if len(EventsYesterday) > 0 {
-		return EventsYesterday
+	s.eventsYesterday.RLock()
+	defer s.eventsYesterday.RUnlock()
+	if len(s.eventsYesterday.events) > 0 {
+		return append([]dto.Event(nil), s.eventsYesterday.events...)
 	}
 	return nil
 }

@@ -735,6 +735,25 @@ func TestCheckHashTwoFilesDifferentChecksumReturnsFalse(t *testing.T) {
 	assert.EqualValues(t, true, h)
 }
 
+func TestCheckHashThreeFilesWithMiddleMismatchReturnsFalse(t *testing.T) {
+	files := domain.FileList{}
+	fi1 := domain.FileInfo{
+		Checksum: "A",
+	}
+	fi2 := domain.FileInfo{
+		Checksum: "B",
+	}
+	fi3 := domain.FileInfo{
+		Checksum: "A",
+	}
+	files = append(files, fi1)
+	files = append(files, fi2)
+	files = append(files, fi3)
+	i, h := checkHash(&files)
+	assert.EqualValues(t, false, i)
+	assert.EqualValues(t, true, h)
+}
+
 func TestCheckHashTwoFilesSameChecksumReturnsTrue(t *testing.T) {
 	files := domain.FileList{}
 	fi1 := domain.FileInfo{
@@ -854,6 +873,11 @@ func TestExtractFileInfoTwoIdenticalFilesWithHashReturnsSame(t *testing.T) {
 	assert.EqualValues(t, "Multiple (identical)", s)
 	assert.EqualValues(t, "1.0", d)
 	assert.EqualValues(t, "N/A", f)
+}
+
+func TestIsCurrentInvalidTimeReturnsEmpty(t *testing.T) {
+	assert.EqualValues(t, "", isCurrent("1", "1200"))
+	assert.EqualValues(t, "", isCurrent("1100", "99:00"))
 }
 
 func TestSetCalCmsQueryStateSuccess(t *testing.T) {
