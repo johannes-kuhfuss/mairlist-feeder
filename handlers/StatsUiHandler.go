@@ -2,13 +2,17 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"slices"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
+	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
 	"github.com/johannes-kuhfuss/mairlist-feeder/dto"
+	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/johannes-kuhfuss/mairlist-feeder/service"
 	"github.com/johannes-kuhfuss/services_utils/api_error"
@@ -53,24 +57,40 @@ func (uh *StatsUiHandler) StatusPage(c *gin.Context) {
 
 // FileListPage is the handler for the file list page
 func (uh *StatsUiHandler) FileListPage(c *gin.Context) {
-	files := dto.GetFiles(uh.Repo, uh.Cfg.CalCms.CmsUrl)
+	filterDate, filterDay, err := uh.selectedFilterDate(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	files := dto.GetFilesForDate(uh.Repo, uh.Cfg.CalCms.CmsUrl, filterDate)
 	c.HTML(http.StatusOK, "filelist.page.tmpl", gin.H{
-		"title": "File List",
-		"files": files,
+		"title":       "File List",
+		"files":       files,
+		"filterDay":   filterDay,
+		"filterRoute": "/filelist",
 	})
 }
 
 // EventListPage is the handler for the event list page
 func (uh *StatsUiHandler) EventListPage(c *gin.Context) {
+	filterDate, filterDay, dateErr := uh.selectedFilterDate(c)
+	if dateErr != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": dateErr.Error()})
+		return
+	}
 	events, err := uh.CalCmsSvc.GetTodayEvents()
 	if err != nil {
 		logger.Error("Error getting today's events", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
+	events = filterEventsByDate(events, filterDate)
 	c.HTML(http.StatusOK, "eventlist.page.tmpl", gin.H{
-		"title":  "Event List",
-		"events": events,
+		"title":       "Event List",
+		"events":      events,
+		"filterDay":   filterDay,
+		"filterRoute": "/events",
+		"showFilter":  true,
 	})
 }
 
@@ -78,9 +98,33 @@ func (uh *StatsUiHandler) EventListPage(c *gin.Context) {
 func (uh *StatsUiHandler) YesterdaysEvents(c *gin.Context) {
 	events := uh.CalCmsSvc.GetYesterdaysEvents()
 	c.HTML(http.StatusOK, "eventlist.page.tmpl", gin.H{
-		"title":  "Yesterday's Event List",
-		"events": events,
+		"title":      "Yesterday's Event List",
+		"events":     events,
+		"showFilter": false,
 	})
+}
+
+func (uh *StatsUiHandler) selectedFilterDate(c *gin.Context) (time.Time, string, error) {
+	selectedDay := c.DefaultQuery("day", "today")
+	switch selectedDay {
+	case "today":
+		return helper.DateForFolder(uh.Cfg.Misc.TestCrawl, uh.Cfg.Misc.TestDate, 0), selectedDay, nil
+	case "tomorrow":
+		return helper.DateForFolder(uh.Cfg.Misc.TestCrawl, uh.Cfg.Misc.TestDate, 1), selectedDay, nil
+	default:
+		return time.Time{}, "", errors.New("day must be today or tomorrow")
+	}
+}
+
+func filterEventsByDate(events []dto.Event, filterDate time.Time) []dto.Event {
+	filterValue := domain.FormatFolderDate(filterDate)
+	filteredEvents := make([]dto.Event, 0, len(events))
+	for _, event := range events {
+		if event.StartDate == filterValue {
+			filteredEvents = append(filteredEvents, event)
+		}
+	}
+	return filteredEvents
 }
 
 // ActionPage is the handler for the page where the user can invoke actions

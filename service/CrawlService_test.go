@@ -2,6 +2,7 @@ package service
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -270,6 +271,31 @@ func TestCrawlFolderSecondCrawl(t *testing.T) {
 	assert.EqualValues(t, 0, n2)
 	assert.EqualValues(t, 1, s1)
 	assert.EqualValues(t, 1, s2)
+}
+
+func TestCrawlFolderForDateUsesRequestedDate(t *testing.T) {
+	teardown := setupTestCrawl()
+	defer teardown()
+	root := t.TempDir()
+	today := domain.MustParseFolderDate("2024-09-23")
+	tomorrow := domain.MustParseFolderDate("2024-09-24")
+	todayDir := filepath.Join(root, "2024", "09", "23")
+	tomorrowDir := filepath.Join(root, "2024", "09", "24")
+	assert.Nil(t, os.MkdirAll(todayDir, 0755))
+	assert.Nil(t, os.MkdirAll(tomorrowDir, 0755))
+	assert.Nil(t, os.WriteFile(filepath.Join(todayDir, "today.mp3"), []byte("today"), 0644))
+	assert.Nil(t, os.WriteFile(filepath.Join(tomorrowDir, "tomorrow.mp3"), []byte("tomorrow"), 0644))
+
+	n, e := crawlSvc.crawlFolderForDate(root, []string{".mp3"}, tomorrow)
+
+	assert.Nil(t, e)
+	assert.EqualValues(t, 1, n)
+	assert.EqualValues(t, 1, crawlRepo.Size())
+	files := crawlRepo.GetByDate(tomorrow)
+	assert.NotNil(t, files)
+	assert.EqualValues(t, 1, len(*files))
+	assert.Contains(t, (*files)[0].Path, "tomorrow.mp3")
+	assert.Nil(t, crawlRepo.GetByDate(today))
 }
 
 func TestAnalyzeStreamDataNoFileReturnsError(t *testing.T) {

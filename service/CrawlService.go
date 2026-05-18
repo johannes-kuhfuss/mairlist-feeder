@@ -138,10 +138,14 @@ func (s DefaultCrawlService) CrawlRun() error {
 	logger.Infof("Starting crawl run #%v (Root Folder: %v). Time since last crawl: %v", crawlRunNumber, s.Cfg.Crawl.RootFolder, sinceLastCrawl)
 	start := time.Now().UTC()
 	filesRemoved := s.checkForOrphanFiles()
-	fileCount, err := s.crawlFolder(s.Cfg.Crawl.RootFolder, s.Cfg.Crawl.CrawlExtensions)
-	if err != nil {
-		logger.Errorf("Error crawling folder %v: . %v", s.Cfg.Crawl.RootFolder, err)
-		runErr = errors.Join(runErr, err)
+	fileCount := 0
+	for _, crawlDate := range helper.GetCrawlDates(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate) {
+		fc, err := s.crawlFolderForDate(s.Cfg.Crawl.RootFolder, s.Cfg.Crawl.CrawlExtensions, crawlDate)
+		fileCount += fc
+		if err != nil {
+			logger.Errorf("Error crawling folder %v for date %v: %v", s.Cfg.Crawl.RootFolder, domain.FormatFolderDate(crawlDate), err)
+			runErr = errors.Join(runErr, err)
+		}
 	}
 	ts := s.Repo.Size()
 	end := time.Now().UTC()
@@ -184,8 +188,20 @@ func (s DefaultCrawlService) CrawlRun() error {
 
 // crawlFolder examines the files on disk and adds an entry in the in-memory representation
 func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []string) (fileCount int, e error) {
-	today := helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate)
-	err := filepath.WalkDir(filepath.Join(rootFolder, today),
+	return s.crawlFolderForDate(rootFolder, crawlExtensions, helper.DateForFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate, 0))
+}
+
+// crawlFolderForDate examines one dated folder on disk and adds entries to the in-memory representation.
+func (s DefaultCrawlService) crawlFolderForDate(rootFolder string, crawlExtensions []string, folderDate time.Time) (fileCount int, e error) {
+	folder := helper.FolderForDate(folderDate)
+	folderPath := filepath.Join(rootFolder, folder)
+	if _, err := os.Stat(folderPath); errors.Is(err, os.ErrNotExist) {
+		logger.Infof("Crawl folder %v does not exist. Skipping.", folderPath)
+		return 0, nil
+	} else if err != nil {
+		return 0, err
+	}
+	err := filepath.WalkDir(folderPath,
 		func(srcPath string, info fs.DirEntry, err error) error {
 			if err != nil {
 				return err

@@ -15,6 +15,19 @@ func TestGetTodayFoldertest(t *testing.T) {
 	assert.EqualValues(t, folder, "2024/01/31")
 }
 
+func TestGetCrawlDatesReturnsTodayAndTomorrowForTestDate(t *testing.T) {
+	dates := GetCrawlDates(true, "2024/01/31")
+
+	assert.EqualValues(t, time.Date(2024, time.January, 31, 0, 0, 0, 0, time.Local), dates[0])
+	assert.EqualValues(t, time.Date(2024, time.February, 1, 0, 0, 0, 0, time.Local), dates[1])
+}
+
+func TestFolderForDateReturnsFolderSyntax(t *testing.T) {
+	folder := FolderForDate(time.Date(2024, time.February, 1, 0, 0, 0, 0, time.Local))
+
+	assert.EqualValues(t, "2024/02/01", folder)
+}
+
 func TestGetTodayFolderToday(t *testing.T) {
 	folder := GetTodayFolder(false, "")
 	year := fmt.Sprintf("%d", time.Now().Year())

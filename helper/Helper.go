@@ -13,25 +13,36 @@ import (
 )
 
 // GetTodayFolder returns today's date in folder syntax (YYYY/MM/DD).
-// 30 minutes before the date rolls over, GetTodayFolder returns the next day's date.
-// For testing, you can pass in a test date which is then returns to the caller
+// For testing, you can pass in a test date which is then returned to the caller.
 func GetTodayFolder(test bool, testDate string) string {
-	var year, month, day string
+	return FolderForDate(DateForFolder(test, testDate, 0))
+}
+
+// DateForFolder returns the base folder date plus an offset in days.
+func DateForFolder(test bool, testDate string, offsetDays int) time.Time {
+	baseDate := time.Now()
 	if test {
-		return testDate
+		parsedDate, err := time.ParseInLocation("2006/01/02", testDate, time.Local)
+		if err == nil {
+			baseDate = parsedDate
+		}
 	}
+	return time.Date(baseDate.Year(), baseDate.Month(), baseDate.Day(), 0, 0, 0, 0, time.Local).AddDate(0, 0, offsetDays)
+}
 
-	// Detect 23:30 and advance by one day to start returning next day's folder
-	if (time.Now().Hour() == 23) && (time.Now().Minute() >= 30) {
-		year = fmt.Sprintf("%d", time.Now().AddDate(0, 0, 1).Year())
-		month = fmt.Sprintf("%02d", time.Now().AddDate(0, 0, 1).Month())
-		day = fmt.Sprintf("%02d", time.Now().AddDate(0, 0, 1).Day())
-	} else {
-		year = fmt.Sprintf("%d", time.Now().Year())
-		month = fmt.Sprintf("%02d", time.Now().Month())
-		day = fmt.Sprintf("%02d", time.Now().Day())
+// GetCrawlDates returns the folder dates that should be crawled.
+func GetCrawlDates(test bool, testDate string) []time.Time {
+	return []time.Time{
+		DateForFolder(test, testDate, 0),
+		DateForFolder(test, testDate, 1),
 	}
+}
 
+// FolderForDate formats a date as YYYY/MM/DD for the crawl folder layout.
+func FolderForDate(date time.Time) string {
+	year := fmt.Sprintf("%d", date.Year())
+	month := fmt.Sprintf("%02d", date.Month())
+	day := fmt.Sprintf("%02d", date.Day())
 	return path.Join(year, month, day)
 }
 

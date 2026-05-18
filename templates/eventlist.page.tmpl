@@ -30,7 +30,23 @@
                     }
                 </style>
 
-                <div class="d-flex justify-content-end mb-3">
+                <div class="d-flex justify-content-between align-items-end gap-3 mb-3">
+                    {{ if .showFilter }}
+                    <form class="row g-2 align-items-end" method="get" action="{{ .filterRoute }}">
+                        <div class="col-auto">
+                            <label class="form-label mb-1" for="eventlist-day">Day</label>
+                            <select class="form-select form-select-sm" id="eventlist-day" name="day">
+                                <option value="today"{{ if eq .filterDay "today" }} selected{{ end }}>Today</option>
+                                <option value="tomorrow"{{ if eq .filterDay "tomorrow" }} selected{{ end }}>Tomorrow</option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-sm btn-outline-light" type="submit">Apply</button>
+                        </div>
+                    </form>
+                    {{ else }}
+                    <div></div>
+                    {{ end }}
                     <button class="btn btn-sm btn-outline-light" type="button" id="auto-reload-toggle" aria-pressed="true">Auto reload: On</button>
                 </div>
 

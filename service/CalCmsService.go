@@ -80,14 +80,18 @@ func (s DefaultCalCmsService) insertData(data domain.CalCmsPgmData) {
 	s.calCmsPgm.data = data
 }
 
-// calcCalCmsEndDate calculates the end date based on a given start date used to query events from calCms
-// this is used to query calCms for the day's events
+// calcCalCmsEndDate calculates the next-day end date based on a given start date.
 func calcCalCmsEndDate(startDate string) (endDate string, e error) {
+	return calcCalCmsEndDateForDays(startDate, 1)
+}
+
+// calcCalCmsEndDateForDays calculates the exclusive end date for a multi-day calCMS query.
+func calcCalCmsEndDateForDays(startDate string, days int) (endDate string, e error) {
 	sd, err := time.Parse("2006-01-02", startDate)
 	if err != nil {
 		return "", err
 	}
-	return sd.AddDate(0, 0, 1).Format("2006-01-02"), nil
+	return sd.AddDate(0, 0, days).Format("2006-01-02"), nil
 }
 
 // setCalCmsQueryState sets staus of last calCms interaction with result and time for status overview
@@ -104,22 +108,26 @@ func (s DefaultCalCmsService) setCalCmsQueryState(success bool) {
 
 }
 
-// getCalCmsEventData retrieves the today's event information from calCms
+// getCalCmsEventData retrieves the event information for the crawled date range from calCms.
 func (s DefaultCalCmsService) getCalCmsEventData() (eventData []byte, e error) {
+	return s.getCalCmsEventDataForDates(helper.GetCrawlDates(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate))
+}
+
+func (s DefaultCalCmsService) getCalCmsEventDataForDates(dates []time.Time) (eventData []byte, e error) {
 	//API doc: https://github.com/rapilodev/racalmas/blob/master/docs/event-api.md
 	//URL old: https://programm.coloradio.org/agenda/events.cgi?date=2024-04-09&template=event.json-p
 	//URL new: https://programm.coloradio.org/agenda/events.cgi?from_date=2024-10-04&from_time=00:00&till_date=2024-10-05&till_time=00:00&template=event.json-p
-	var (
-		calCmsStartDate string
-	)
+	if len(dates) == 0 {
+		return nil, errors.New("no calCMS query dates configured")
+	}
 	calUrl, err := url.Parse(s.Cfg.CalCms.CmsUrl)
 	if err != nil {
 		logger.Error("Cannot parse calCMS Url", err)
 		return nil, err
 	}
 	query := url.Values{}
-	calCmsStartDate = strings.ReplaceAll(helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate), "/", "-")
-	calCmsEndDate, err := calcCalCmsEndDate(calCmsStartDate)
+	calCmsStartDate := domain.FormatFolderDate(dates[0])
+	calCmsEndDate, err := calcCalCmsEndDateForDays(calCmsStartDate, len(dates))
 	if err != nil {
 		return nil, err
 	}
@@ -188,23 +196,20 @@ func (s DefaultCalCmsService) Query() error {
 
 // EnrichFileInformation runs through all file representations and adds information from calCms where applicable
 func (s DefaultCalCmsService) EnrichFileInformation() (fc dto.FileCounts) {
-	folderDate, err := domain.ParseFolderDate(strings.ReplaceAll(helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate), "/", "-"))
-	if err != nil {
-		logger.Error("Error converting folder date", err)
-		return fc
-	}
-	if files := s.Repo.GetByDate(folderDate); files != nil {
-		for _, file := range *files {
-			if file.EventId != 0 {
-				calCmsInfo, err := s.checkCalCmsEventData(file)
-				if err != nil {
-					logger.Errorf("Error while checking calCms event data for file %v: %v", file.Path, err)
-					continue
-				}
-				newFile, nfc := mergeInfo(file, *calCmsInfo)
-				fc.Add(nfc)
-				if err := s.Repo.Store(newFile); err != nil {
-					logger.Error("Error updating information in file repository", err)
+	for _, folderDate := range helper.GetCrawlDates(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate) {
+		if files := s.Repo.GetByDate(folderDate); files != nil {
+			for _, file := range *files {
+				if file.EventId != 0 {
+					calCmsInfo, err := s.checkCalCmsEventData(file)
+					if err != nil {
+						logger.Errorf("Error while checking calCms event data for file %v: %v", file.Path, err)
+						continue
+					}
+					newFile, nfc := mergeInfo(file, *calCmsInfo)
+					fc.Add(nfc)
+					if err := s.Repo.Store(newFile); err != nil {
+						logger.Error("Error updating information in file repository", err)
+					}
 				}
 			}
 		}
@@ -243,22 +248,29 @@ func (s DefaultCalCmsService) checkCalCmsEventData(file domain.FileInfo) (*dto.C
 	var (
 		exportLive string
 	)
-	info, err := s.GetCalCmsEventDataForId(file.EventId)
+	allInfo, err := s.GetCalCmsEventDataForId(file.EventId)
 	if err != nil {
 		return nil, err
 	}
-	calCmsDate, err := domain.ParseFolderDate(strings.ReplaceAll(helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate), "/", "-"))
-	if err != nil {
-		return nil, err
+	var info []dto.CalCmsEntry
+	normalizedFileDate := domain.NormalizeDate(file.FolderDate)
+	for _, entry := range allInfo {
+		if domain.NormalizeDate(entry.StartTime).Equal(normalizedFileDate) {
+			info = append(info, entry)
+		}
 	}
-	if (len(info) == 0) && calCmsDate.Equal(file.FolderDate) {
+	if len(info) == 0 {
+		if len(allInfo) > 0 {
+			return nil, fmt.Errorf("file has different date (%v) than calCms data (%v)", domain.FormatFolderDate(file.FolderDate), domain.FormatFolderDate(allInfo[0].StartTime))
+		}
 		return nil, fmt.Errorf("no Id %v in calCMS", file.EventId)
 	}
 	if len(info) > 1 {
 		logger.Warnf("Ambiguous information from calCMS. Found %v entries. Not adding information.", len(info))
 		return nil, errors.New("multiple matches in calCMS")
 	}
-	if !calCmsDate.Equal(file.FolderDate) {
+	calCmsDate := domain.NormalizeDate(info[0].StartTime)
+	if !calCmsDate.Equal(domain.NormalizeDate(file.FolderDate)) {
 		return nil, fmt.Errorf("file has different date (%v) than calCms data (%v)", domain.FormatFolderDate(file.FolderDate), domain.FormatFolderDate(calCmsDate))
 	}
 	if (len(info) == 1) && info[0].Live {
@@ -308,6 +320,21 @@ func (s DefaultCalCmsService) GetCalCmsEventDataForId(id int) (entries []dto.Cal
 					return entries, err
 				}
 			}
+		}
+	}
+	return entries, nil
+}
+
+// GetCalCmsEventDataForIdAndDate retrieves all event data from the calCms data for a given Event Id and date.
+func (s DefaultCalCmsService) GetCalCmsEventDataForIdAndDate(id int, folderDate time.Time) (entries []dto.CalCmsEntry, e error) {
+	allEntries, err := s.GetCalCmsEventDataForId(id)
+	if err != nil {
+		return nil, err
+	}
+	normalizedDate := domain.NormalizeDate(folderDate)
+	for _, entry := range allEntries {
+		if domain.NormalizeDate(entry.StartTime).Equal(normalizedDate) {
+			entries = append(entries, entry)
 		}
 	}
 	return entries, nil
@@ -427,10 +454,20 @@ func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dt
 				if err != nil {
 					logger.Errorf("Could not extract event hour from %q. %v", ev.StartTime, err)
 				} else {
-					files = s.Repo.GetByIdAndHour(event.EventID, hour, s.Cfg.Export.ExportLiveItems)
+					eventDate, err := domain.ParseFolderDate(ev.StartDate)
+					if err != nil {
+						logger.Errorf("Could not extract event date from %q. %v", ev.StartDate, err)
+					} else {
+						files = s.Repo.GetByIdAndDateAndHour(event.EventID, eventDate, hour, s.Cfg.Export.ExportLiveItems)
+					}
 				}
 			} else {
-				files = s.Repo.GetByEventId(event.EventID)
+				eventDate, err := domain.ParseFolderDate(ev.StartDate)
+				if err != nil {
+					logger.Errorf("Could not extract event date from %q. %v", ev.StartDate, err)
+				} else {
+					files = s.Repo.GetByEventIdAndDate(event.EventID, eventDate)
+				}
 			}
 			if files == nil {
 				if event.Live == 0 {

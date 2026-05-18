@@ -58,26 +58,45 @@ func formatEventLink(id int) bool {
 // GetFiles retrives all files maintained in the repository and formats them for display purposes
 func GetFiles(repo *repositories.DefaultFileRepository, CmsUrl string) (fileDta []FileResp) {
 	if files := repo.GetAll(); files != nil {
-		for _, file := range *files {
-			dta := FileResp{
-				Path:           file.Path,
-				ModTime:        file.ModTime.Format("2006-01-02 15:04:05"),
-				Duration:       strconv.FormatFloat(math.Round(file.Duration.Minutes()), 'f', 1, 64),
-				InfoExtracted:  strconv.FormatBool(file.InfoExtracted),
-				ScanTime:       file.ScanTime.Format("2006-01-02 15:04:05"),
-				FolderDate:     domain.FormatFolderDate(file.FolderDate),
-				RuleMatched:    file.RuleMatched,
-				EventId:        strconv.Itoa(file.EventId),
-				EventIdLink:    buildEventIdLink(CmsUrl, file.EventId),
-				CalCmsInfo:     buildCalCmsInfo(file),
-				TechMd:         buildTechMd(file),
-				StartTime:      formatTime(file.StartTime),
-				EndTime:        formatTime(file.EndTime),
-				EventLinkAvail: formatEventLink(file.EventId),
-			}
-			fileDta = append(fileDta, dta)
-		}
+		fileDta = formatFiles(*files, CmsUrl)
 	}
+	sortFiles(fileDta)
+	return
+}
+
+// GetFilesForDate retrieves files for a folder date and formats them for display.
+func GetFilesForDate(repo *repositories.DefaultFileRepository, CmsUrl string, folderDate time.Time) (fileDta []FileResp) {
+	if files := repo.GetByDate(folderDate); files != nil {
+		fileDta = formatFiles(*files, CmsUrl)
+	}
+	sortFiles(fileDta)
+	return
+}
+
+func formatFiles(files domain.FileList, CmsUrl string) (fileDta []FileResp) {
+	for _, file := range files {
+		dta := FileResp{
+			Path:           file.Path,
+			ModTime:        file.ModTime.Format("2006-01-02 15:04:05"),
+			Duration:       strconv.FormatFloat(math.Round(file.Duration.Minutes()), 'f', 1, 64),
+			InfoExtracted:  strconv.FormatBool(file.InfoExtracted),
+			ScanTime:       file.ScanTime.Format("2006-01-02 15:04:05"),
+			FolderDate:     domain.FormatFolderDate(file.FolderDate),
+			RuleMatched:    file.RuleMatched,
+			EventId:        strconv.Itoa(file.EventId),
+			EventIdLink:    buildEventIdLink(CmsUrl, file.EventId),
+			CalCmsInfo:     buildCalCmsInfo(file),
+			TechMd:         buildTechMd(file),
+			StartTime:      formatTime(file.StartTime),
+			EndTime:        formatTime(file.EndTime),
+			EventLinkAvail: formatEventLink(file.EventId),
+		}
+		fileDta = append(fileDta, dta)
+	}
+	return fileDta
+}
+
+func sortFiles(fileDta []FileResp) {
 	sort.SliceStable(fileDta, func(i, j int) bool {
 		if strings.Compare(fileDta[i].StartTime, fileDta[j].StartTime) > 0 {
 			return false
@@ -85,7 +104,6 @@ func GetFiles(repo *repositories.DefaultFileRepository, CmsUrl string) (fileDta 
 			return true
 		}
 	})
-	return
 }
 
 // buildCalCmsInfo formats information from calCms for display

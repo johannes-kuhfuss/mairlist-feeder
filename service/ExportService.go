@@ -78,20 +78,31 @@ func (s DefaultExportService) Export() {
 	s.Cfg.RunTime.Mu.Lock()
 	s.Cfg.RunTime.LastExportRunDate = time.Now()
 	s.Cfg.RunTime.Mu.Unlock()
-	nextHour := getNextHour()
-	s.ExportForHour(nextHour)
+	exportDate, nextHour := getNextExportSlot(time.Now())
+	s.ExportForDateAndHour(exportDate, nextHour)
 }
 
 // ExportAllHours exports a playlist for all hours of the day
 func (s DefaultExportService) ExportAllHours() {
+	s.ExportAllHoursForDate(helper.DateForFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate, 0))
+}
+
+// ExportAllHoursForDate exports a playlist for all hours of a specific day.
+func (s DefaultExportService) ExportAllHoursForDate(folderDate time.Time) {
 	for hour := range 24 {
-		s.ExportForHour(fmt.Sprintf("%02d", hour))
+		s.ExportForDateAndHour(folderDate, fmt.Sprintf("%02d", hour))
 	}
 }
 
 // ExportForHour exports a playlist for a given hour
 // Loads playlist into mAirList via API, if enabled
 func (s DefaultExportService) ExportForHour(hour string) {
+	s.ExportForDateAndHour(helper.DateForFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate, 0), hour)
+}
+
+// ExportForDateAndHour exports a playlist for a given folder date and hour.
+// Loads playlist into mAirList via API, if enabled.
+func (s DefaultExportService) ExportForDateAndHour(folderDate time.Time, hour string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.Cfg.RunTime.Mu.Lock()
@@ -102,12 +113,12 @@ func (s DefaultExportService) ExportForHour(hour string) {
 		s.Cfg.RunTime.ExportRunning = false
 		s.Cfg.RunTime.Mu.Unlock()
 	}()
-	if files := s.Repo.GetByHour(hour, s.Cfg.Export.ExportLiveItems); files != nil {
-		logger.Infof("Starting export for timeslot %v:00 ...", hour)
+	if files := s.Repo.GetByDateAndHour(folderDate, hour, s.Cfg.Export.ExportLiveItems); files != nil {
+		logger.Infof("Starting export for %v %v:00 ...", domain.FormatFolderDate(folderDate), hour)
 		start := time.Now().UTC()
 		sort.Sort(files)
 		s.checkTimeAndLenghth(files)
-		exportPath, err := s.ExportToPlayout(hour)
+		exportPath, err := s.ExportToPlayoutForDate(folderDate, hour)
 		if s.Cfg.Export.AppendPlaylist && exportPath != "" && err == nil {
 			req := dto.MairListRequest{
 				ReqType:  dto.MairListRequestAppendPlaylist,
@@ -120,9 +131,9 @@ func (s DefaultExportService) ExportForHour(hour string) {
 		}
 		end := time.Now().UTC()
 		dur := end.Sub(start)
-		logger.Infof("Finished exporting for timeslot %v:00 ... (%v)", hour, dur.String())
+		logger.Infof("Finished exporting for %v %v:00 ... (%v)", domain.FormatFolderDate(folderDate), hour, dur.String())
 	} else {
-		logger.Infof("No files to export for timeslot %v:00 ...", hour)
+		logger.Infof("No files to export for %v %v:00 ...", domain.FormatFolderDate(folderDate), hour)
 	}
 }
 
@@ -151,11 +162,13 @@ func (s DefaultExportService) checkTimeAndLenghth(files *domain.FileList) {
 
 // getNextHour is a helper function that returns the next hour
 func getNextHour() string {
-	nextHour := (time.Now().Hour()) + 1
-	if nextHour == 24 {
-		nextHour = 0
-	}
-	return fmt.Sprintf("%02d", nextHour)
+	_, nextHour := getNextExportSlot(time.Now())
+	return nextHour
+}
+
+func getNextExportSlot(now time.Time) (time.Time, string) {
+	next := now.Add(time.Hour)
+	return domain.NormalizeDate(next), fmt.Sprintf("%02d", next.Hour())
 }
 
 // createIndexFromTime is a helper function that returns the time in HH:MM format
@@ -234,6 +247,11 @@ func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengt
 
 // ExportToPlayout writes a ".tpi" playlist to disk for a given hour
 func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string, err error) {
+	return s.ExportToPlayoutForDate(helper.DateForFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate, 0), hour)
+}
+
+// ExportToPlayoutForDate writes a ".tpi" playlist to disk for a given date and hour.
+func (s DefaultExportService) ExportToPlayoutForDate(folderDate time.Time, hour string) (exportedFile string, err error) {
 	// write export list ot mAirlist-compatible file
 	// Documentation: https://wiki.mairlist.com/reference:text_playlist_import_format_specification
 	// Tab separated
@@ -244,8 +262,8 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 	/// 4 - Line data = full path file name, database Id
 	/// 5 - Optional values = omitted here
 	if size := len(s.exportFiles.Files); size > 0 {
-		logger.Infof("Exporting %v elements to mAirList for slot %v:00", size, hour)
-		exportPath, err := s.setExportPath(hour)
+		logger.Infof("Exporting %v elements to mAirList for slot %v %v:00", size, domain.FormatFolderDate(folderDate), hour)
+		exportPath, err := s.setExportPathForDate(folderDate, hour)
 		if err != nil {
 			logger.Error("Error when setting export path", err)
 			return "", err
@@ -259,7 +277,7 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 		}
 		return "", err
 	}
-	logger.Infof("No elements to export for slot %v:00.", hour)
+	logger.Infof("No elements to export for slot %v %v:00.", domain.FormatFolderDate(folderDate), hour)
 	return "", nil
 }
 
@@ -334,12 +352,15 @@ func setStartTime(startTime time.Time, hour string) time.Time {
 
 // setExportPath is a helper function creating the export path for the ".tpi" playlist file
 func (s DefaultExportService) setExportPath(hour string) (exportPath string, e error) {
+	return s.setExportPathForDate(helper.DateForFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate, 0), hour)
+}
+
+func (s DefaultExportService) setExportPathForDate(folderDate time.Time, hour string) (exportPath string, e error) {
 	var exportFileName string
 	if s.Cfg.Misc.TestCrawl {
 		exportFileName = "Test_" + hour + ".tpi"
 	} else {
-		exportDate := helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate)
-		exportFileName = strings.ReplaceAll(exportDate, "/", "-") + "-" + hour + ".tpi"
+		exportFileName = domain.FormatFolderDate(folderDate) + "-" + hour + ".tpi"
 	}
 	expPath := path.Join(s.Cfg.Export.ExportFolder, exportFileName)
 	absExpPath, err := filepath.Abs(expPath)

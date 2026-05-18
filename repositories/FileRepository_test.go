@@ -231,6 +231,30 @@ func TestGetForHourLiveCheck(t *testing.T) {
 	assert.EqualValues(t, 2, len(*res2))
 }
 
+func TestGetByDateAndHourOnlyReturnsRequestedDate(t *testing.T) {
+	setupTest()
+	folderDate := domain.MustParseFolderDate("2024-09-17")
+	nextDate := domain.MustParseFolderDate("2024-09-18")
+	fi1 := domain.FileInfo{
+		Path:       "A",
+		StartTime:  helper.TimeFromHourAndMinuteAndDate(12, 0, folderDate),
+		FolderDate: folderDate,
+	}
+	fi2 := domain.FileInfo{
+		Path:       "B",
+		StartTime:  helper.TimeFromHourAndMinuteAndDate(12, 0, nextDate),
+		FolderDate: nextDate,
+	}
+	repo.Store(fi1)
+	repo.Store(fi2)
+
+	res := repo.GetByDateAndHour(nextDate, "12", false)
+
+	assert.NotNil(t, res)
+	assert.EqualValues(t, 1, len(*res))
+	assert.EqualValues(t, "B", (*res)[0].Path)
+}
+
 func TestSaveToDiskSavesToDisk(t *testing.T) {
 	setupTest()
 	fi1 := domain.FileInfo{
@@ -434,6 +458,30 @@ func TestGetByEventIdTwoEventIdsReturnsTwo(t *testing.T) {
 	assert.NotNil(t, res)
 	assert.EqualValues(t, 2, len(*res))
 	assert.ElementsMatch(t, []string{"A", "B"}, []string{(*res)[0].Path, (*res)[1].Path})
+}
+
+func TestGetByEventIdAndDateOnlyReturnsRequestedDate(t *testing.T) {
+	setupTest()
+	folderDate := domain.MustParseFolderDate("2024-09-17")
+	nextDate := domain.MustParseFolderDate("2024-09-18")
+	fi1 := domain.FileInfo{
+		Path:       "A",
+		EventId:    1,
+		FolderDate: folderDate,
+	}
+	fi2 := domain.FileInfo{
+		Path:       "B",
+		EventId:    1,
+		FolderDate: nextDate,
+	}
+	repo.Store(fi1)
+	repo.Store(fi2)
+
+	res := repo.GetByEventIdAndDate(1, nextDate)
+
+	assert.NotNil(t, res)
+	assert.EqualValues(t, 1, len(*res))
+	assert.EqualValues(t, "B", (*res)[0].Path)
 }
 
 func TestGetByDateEmptyReturnsNil(t *testing.T) {

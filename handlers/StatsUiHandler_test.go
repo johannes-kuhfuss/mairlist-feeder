@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -110,6 +111,68 @@ func TestFileListPageReturnsFileListPage(t *testing.T) {
 	assert.EqualValues(t, http.StatusOK, res.StatusCode)
 	assert.Nil(t, err)
 	assert.True(t, containsTitle)
+}
+
+func TestFileListPageDefaultsToTodayFilter(t *testing.T) {
+	teardown := setupUiTest()
+	defer teardown()
+	cfg.Misc.TestCrawl = true
+	cfg.Misc.TestDate = "2024/09/17"
+	repo.Store(domain.FileInfo{Path: "today-file", FolderDate: domain.MustParseFolderDate("2024-09-17")})
+	repo.Store(domain.FileInfo{Path: "tomorrow-file", FolderDate: domain.MustParseFolderDate("2024-09-18")})
+	router.GET("/filelist", uh.FileListPage)
+	request := httptest.NewRequest(http.MethodGet, "/filelist", nil)
+
+	router.ServeHTTP(recorder, request)
+	res := recorder.Result()
+	defer res.Body.Close()
+	data, err := io.ReadAll(res.Body)
+	body := string(data)
+
+	assert.EqualValues(t, http.StatusOK, res.StatusCode)
+	assert.Nil(t, err)
+	assert.Contains(t, body, `option value="today" selected`)
+	assert.Contains(t, body, "today-file")
+	assert.NotContains(t, body, "tomorrow-file")
+}
+
+func TestFileListPageUsesDateQueryFilter(t *testing.T) {
+	teardown := setupUiTest()
+	defer teardown()
+	cfg.Misc.TestCrawl = true
+	cfg.Misc.TestDate = "2024/09/17"
+	repo.Store(domain.FileInfo{Path: "today-file", FolderDate: domain.MustParseFolderDate("2024-09-17")})
+	repo.Store(domain.FileInfo{Path: "tomorrow-file", FolderDate: domain.MustParseFolderDate("2024-09-18")})
+	router.GET("/filelist", uh.FileListPage)
+	request := httptest.NewRequest(http.MethodGet, "/filelist?day=tomorrow", nil)
+
+	router.ServeHTTP(recorder, request)
+	res := recorder.Result()
+	defer res.Body.Close()
+	data, err := io.ReadAll(res.Body)
+	body := string(data)
+
+	assert.EqualValues(t, http.StatusOK, res.StatusCode)
+	assert.Nil(t, err)
+	assert.Contains(t, body, `option value="tomorrow" selected`)
+	assert.NotContains(t, body, "today-file")
+	assert.Contains(t, body, "tomorrow-file")
+}
+
+func TestFileListPageRejectsUnknownDayFilter(t *testing.T) {
+	teardown := setupUiTest()
+	defer teardown()
+	router.GET("/filelist", uh.FileListPage)
+	request := httptest.NewRequest(http.MethodGet, "/filelist?day=next-week", nil)
+
+	router.ServeHTTP(recorder, request)
+	res := recorder.Result()
+	defer res.Body.Close()
+	data, err := io.ReadAll(res.Body)
+
+	assert.EqualValues(t, http.StatusBadRequest, res.StatusCode)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "{\"message\":\"day must be today or tomorrow\"}", string(data))
 }
 
 func TestActionPageReturnsAction(t *testing.T) {
@@ -359,6 +422,106 @@ func TestEventsPageReturnsEvents(t *testing.T) {
 	assert.EqualValues(t, http.StatusOK, res.StatusCode)
 	assert.Nil(t, err)
 	assert.True(t, containsTitle)
+}
+
+func TestEventsPageDefaultsToTodayFilter(t *testing.T) {
+	teardown := setupUiTest()
+	defer teardown()
+	cfg.Misc.TestCrawl = true
+	cfg.Misc.TestDate = "2024/09/17"
+	seedUiEvents(t)
+	router.GET("/events", uh.EventListPage)
+	request := httptest.NewRequest(http.MethodGet, "/events", nil)
+
+	router.ServeHTTP(recorder, request)
+	res := recorder.Result()
+	defer res.Body.Close()
+	data, err := io.ReadAll(res.Body)
+	body := string(data)
+
+	assert.EqualValues(t, http.StatusOK, res.StatusCode)
+	assert.Nil(t, err)
+	assert.Contains(t, body, `option value="today" selected`)
+	assert.Contains(t, body, "Today Event")
+	assert.NotContains(t, body, "Tomorrow Event")
+}
+
+func TestEventsPageUsesDateQueryFilter(t *testing.T) {
+	teardown := setupUiTest()
+	defer teardown()
+	cfg.Misc.TestCrawl = true
+	cfg.Misc.TestDate = "2024/09/17"
+	seedUiEvents(t)
+	router.GET("/events", uh.EventListPage)
+	request := httptest.NewRequest(http.MethodGet, "/events?day=tomorrow", nil)
+
+	router.ServeHTTP(recorder, request)
+	res := recorder.Result()
+	defer res.Body.Close()
+	data, err := io.ReadAll(res.Body)
+	body := string(data)
+
+	assert.EqualValues(t, http.StatusOK, res.StatusCode)
+	assert.Nil(t, err)
+	assert.Contains(t, body, `option value="tomorrow" selected`)
+	assert.NotContains(t, body, "Today Event")
+	assert.Contains(t, body, "Tomorrow Event")
+}
+
+func TestEventsPageRejectsUnknownDayFilter(t *testing.T) {
+	teardown := setupUiTest()
+	defer teardown()
+	router.GET("/events", uh.EventListPage)
+	request := httptest.NewRequest(http.MethodGet, "/events?day=next-week", nil)
+
+	router.ServeHTTP(recorder, request)
+	res := recorder.Result()
+	defer res.Body.Close()
+	data, err := io.ReadAll(res.Body)
+
+	assert.EqualValues(t, http.StatusBadRequest, res.StatusCode)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "{\"message\":\"day must be today or tomorrow\"}", string(data))
+}
+
+func seedUiEvents(t *testing.T) {
+	t.Helper()
+	calCmsData := domain.CalCmsPgmData{
+		Events: []domain.CalCmsEvent{
+			{
+				EventID:       1,
+				FullTitle:     "Today Event",
+				StartDate:     "2024-09-17",
+				StartTime:     "1100",
+				EndTime:       "1200",
+				Duration:      "01:00:00",
+				StartDatetime: "2024-09-17T11:00:00",
+				EndDatetime:   "2024-09-17T12:00:00",
+			},
+			{
+				EventID:       2,
+				FullTitle:     "Tomorrow Event",
+				StartDate:     "2024-09-18",
+				StartTime:     "1100",
+				EndTime:       "1200",
+				Duration:      "01:00:00",
+				StartDatetime: "2024-09-18T11:00:00",
+				EndDatetime:   "2024-09-18T12:00:00",
+			},
+		},
+	}
+	respData, err := json.Marshal(calCmsData)
+	assert.Nil(t, err)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(respData)
+	}))
+	t.Cleanup(srv.Close)
+	cfg.CalCms.CmsUrl = srv.URL
+	cfg.CalCms.QueryCalCms = true
+	_, err = calCmsSvc.RefreshTodayEvents()
+	assert.Nil(t, err)
 }
 
 func TestYesterdayPageReturnsYesterdaysEvents(t *testing.T) {

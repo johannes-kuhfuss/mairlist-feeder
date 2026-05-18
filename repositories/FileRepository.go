@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
@@ -24,8 +23,10 @@ type FileRepository interface {
 	StreamSize() int
 	GetByPath(string) *domain.FileInfo
 	GetByEventId(int) *domain.FileList
+	GetByEventIdAndDate(int, time.Time) *domain.FileList
 	GetAll() *domain.FileList
 	GetByHour(string, bool) *domain.FileList
+	GetByDateAndHour(time.Time, string, bool) *domain.FileList
 	Store(domain.FileInfo) error
 	Delete(string) error
 	SaveToDisk(string) error
@@ -117,6 +118,26 @@ func (fr DefaultFileRepository) GetByEventId(eventId int) *domain.FileList {
 	return nil
 }
 
+// GetByEventIdAndDate returns file data matching a calCMS event id and folder date.
+func (fr DefaultFileRepository) GetByEventIdAndDate(eventId int, folderDate time.Time) *domain.FileList {
+	var list domain.FileList
+	if fr.Size() == 0 {
+		return nil
+	}
+	normalizedDate := domain.NormalizeDate(folderDate)
+	fr.files.RLock()
+	defer fr.files.RUnlock()
+	for _, file := range fr.files.Files {
+		if file.EventId == eventId && file.FolderDate.Equal(normalizedDate) {
+			list = append(list, file)
+		}
+	}
+	if len(list) > 0 {
+		return &list
+	}
+	return nil
+}
+
 // GetByDate returns all file data from the repository for a specific folder date. Returns nil if repository is empty or no files match
 func (fr DefaultFileRepository) GetByDate(folderDate time.Time) *domain.FileList {
 	var list domain.FileList
@@ -152,19 +173,24 @@ func (fr DefaultFileRepository) GetAll() *domain.FileList {
 
 // GetByHour returns all files' information that fall into a given start hour. If no files match, the methods returns nil
 func (fr DefaultFileRepository) GetByHour(hour string, includeLive bool) *domain.FileList {
+	return fr.GetByDateAndHour(helper.DateForFolder(fr.Cfg.Misc.TestCrawl, fr.Cfg.Misc.TestDate, 0), hour, includeLive)
+}
+
+// GetByDateAndHour returns all files for a folder date that fall into a given start hour.
+func (fr DefaultFileRepository) GetByDateAndHour(folderDate time.Time, hour string, includeLive bool) *domain.FileList {
 	var list domain.FileList
 	if fr.Size() == 0 {
 		return nil
 	}
-	folderDate, err := domain.ParseFolderDate(strings.Replace(helper.GetTodayFolder(fr.Cfg.Misc.TestCrawl, fr.Cfg.Misc.TestDate), "/", "-", -1))
+	hi, err := strconv.Atoi(hour)
 	if err != nil {
 		return nil
 	}
+	normalizedDate := domain.NormalizeDate(folderDate)
 	fr.files.RLock()
 	defer fr.files.RUnlock()
 	for _, file := range fr.files.Files {
-		hi, _ := strconv.Atoi(hour)
-		if (!file.StartTime.IsZero()) && (file.StartTime.Hour() == hi) && file.FolderDate.Equal(folderDate) {
+		if (!file.StartTime.IsZero()) && (file.StartTime.Hour() == hi) && file.FolderDate.Equal(normalizedDate) {
 			if (!file.EventIsLive) || (file.EventIsLive && includeLive) {
 				list = append(list, file)
 			}
@@ -200,9 +226,14 @@ func mergeFileList(fl1, fl2 *domain.FileList) domain.FileList {
 
 // GetByIdAndHour gets all elements form the list that either match an eventId or a particular hour
 func (fr DefaultFileRepository) GetByIdAndHour(eventId int, hour string, includeLive bool) *domain.FileList {
+	return fr.GetByIdAndDateAndHour(eventId, helper.DateForFolder(fr.Cfg.Misc.TestCrawl, fr.Cfg.Misc.TestDate, 0), hour, includeLive)
+}
+
+// GetByIdAndDateAndHour gets all elements that either match an eventId or a particular hour on the same folder date.
+func (fr DefaultFileRepository) GetByIdAndDateAndHour(eventId int, folderDate time.Time, hour string, includeLive bool) *domain.FileList {
 	var list domain.FileList
-	files1 := fr.GetByEventId(eventId)
-	files2 := fr.GetByHour(hour, includeLive)
+	files1 := fr.GetByEventIdAndDate(eventId, folderDate)
+	files2 := fr.GetByDateAndHour(folderDate, hour, includeLive)
 	list = mergeFileList(files1, files2)
 	if len(list) > 0 {
 		return &list

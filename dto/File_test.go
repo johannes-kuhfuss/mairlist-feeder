@@ -95,6 +95,28 @@ func TestGetFilesTwoFilesReturnsFileData(t *testing.T) {
 	assert.EqualValues(t, folderDate, res[1].FolderDate)
 }
 
+func TestGetFilesForDateOnlyReturnsRequestedDate(t *testing.T) {
+	setupTest()
+	fi1 := domain.FileInfo{
+		Path:       "A",
+		StartTime:  helper.TimeFromHourAndMinute(11, 0),
+		FolderDate: domain.MustParseFolderDate("2023-12-31"),
+	}
+	fi2 := domain.FileInfo{
+		Path:       "B",
+		StartTime:  helper.TimeFromHourAndMinute(12, 0),
+		FolderDate: domain.MustParseFolderDate("2024-01-01"),
+	}
+	repo.Store(fi1)
+	repo.Store(fi2)
+
+	res := GetFilesForDate(&repo, "", domain.MustParseFolderDate("2024-01-01"))
+
+	assert.EqualValues(t, 1, len(res))
+	assert.EqualValues(t, "B", res[0].Path)
+	assert.EqualValues(t, "2024-01-01", res[0].FolderDate)
+}
+
 func TestBuildCalCmsInfoReturnsInfo1(t *testing.T) {
 	fi1 := domain.FileInfo{
 		Path:                "A",

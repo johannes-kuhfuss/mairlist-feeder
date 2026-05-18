@@ -115,6 +115,15 @@ func TestGetNextHourreturnsNextHour(t *testing.T) {
 	assert.EqualValues(t, fmt.Sprintf("%02d", next), test)
 }
 
+func TestGetNextExportSlotAfter23ReturnsTomorrowMidnight(t *testing.T) {
+	now := time.Date(2024, time.September, 17, 23, 30, 0, 0, time.Local)
+
+	exportDate, hour := getNextExportSlot(now)
+
+	assert.EqualValues(t, domain.MustParseFolderDate("2024-09-18"), exportDate)
+	assert.EqualValues(t, "00", hour)
+}
+
 func TestCheckTimeNoEndTime(t *testing.T) {
 	type checkData struct {
 		ok   bool
@@ -260,6 +269,19 @@ func TestSetExportPathRegularReturnsPath(t *testing.T) {
 	s, _ := exportService.setExportPath(hour)
 	assert.NotNil(t, s)
 	file := time.Now().Format("2006-01-02") + "-" + hour + ".tpi"
+	tp := path.Join(exportService.Cfg.Export.ExportFolder, file)
+
+	assert.EqualValues(t, strings.Replace(tp, "/", "\\", -1), s)
+}
+
+func TestSetExportPathForDateRegularReturnsPathForRequestedDate(t *testing.T) {
+	tearDown := setupTestEx()
+	defer tearDown()
+	hour := "00"
+	folderDate := domain.MustParseFolderDate("2024-09-18")
+	s, _ := exportService.setExportPathForDate(folderDate, hour)
+	assert.NotNil(t, s)
+	file := "2024-09-18-" + hour + ".tpi"
 	tp := path.Join(exportService.Cfg.Export.ExportFolder, file)
 
 	assert.EqualValues(t, strings.Replace(tp, "/", "\\", -1), s)

@@ -301,8 +301,10 @@ func TestCheckCalCmsDataDifferingDatesReturnsError(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	setupEvents()
+	fi := fi1
+	fi.EventId = 1
 
-	_, err := calCmsService.checkCalCmsEventData(fi1)
+	_, err := calCmsService.checkCalCmsEventData(fi)
 
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "file has different date (2024-09-17) than calCms data")
@@ -314,7 +316,7 @@ func TestCheckCalCmsDataNoMatchingOnSameDayDataReturnsError(t *testing.T) {
 	setupEvents()
 
 	calCmsService.Cfg.Misc.TestCrawl = true
-	calCmsService.Cfg.Misc.TestDate = folderDateSlash
+	calCmsService.Cfg.Misc.TestDate = "2024/04/01"
 
 	_, err := calCmsService.checkCalCmsEventData(fi1)
 
@@ -354,14 +356,14 @@ func TestCheckCalCmsDataDoubleMatchReturnsError(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    domain.MustParseFolderDate(folderDateDash),
+		FolderDate:    domain.MustParseFolderDate("2024-04-01"),
 		RuleMatched:   "",
 		EventId:       1,
 		CalCmsTitle:   "",
 	}
 
 	calCmsService.Cfg.Misc.TestCrawl = true
-	calCmsService.Cfg.Misc.TestDate = folderDateSlash
+	calCmsService.Cfg.Misc.TestDate = "2024/04/01"
 
 	_, err := calCmsService.checkCalCmsEventData(fi)
 
@@ -395,13 +397,13 @@ func TestCheckCalCmsDataIsLiveReturnsData(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    domain.MustParseFolderDate(folderDateDash),
+		FolderDate:    domain.MustParseFolderDate("2024-04-01"),
 		RuleMatched:   "",
 		EventId:       1,
 		CalCmsTitle:   "",
 	}
 	calCmsService.Cfg.Misc.TestCrawl = true
-	calCmsService.Cfg.Misc.TestDate = folderDateSlash
+	calCmsService.Cfg.Misc.TestDate = "2024/04/01"
 
 	res, err := calCmsService.checkCalCmsEventData(fi)
 
@@ -440,14 +442,14 @@ func TestCheckCalCmsDataDataOkReturnsData(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    domain.MustParseFolderDate(folderDateDash),
+		FolderDate:    domain.MustParseFolderDate("2024-04-01"),
 		RuleMatched:   "",
 		EventId:       1,
 		CalCmsTitle:   "",
 	}
 
 	calCmsService.Cfg.Misc.TestCrawl = true
-	calCmsService.Cfg.Misc.TestDate = folderDateSlash
+	calCmsService.Cfg.Misc.TestDate = "2024/04/01"
 
 	res, err := calCmsService.checkCalCmsEventData(fi)
 
@@ -491,7 +493,7 @@ func TestEnrichFileInformationOneFileReturnsEnriched(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    domain.MustParseFolderDate(folderDateDash),
+		FolderDate:    domain.MustParseFolderDate("2024-04-01"),
 		RuleMatched:   "",
 		EventId:       1234,
 		CalCmsTitle:   "",
@@ -500,7 +502,7 @@ func TestEnrichFileInformationOneFileReturnsEnriched(t *testing.T) {
 	fileRepoCal.Store(fi)
 
 	calCmsService.Cfg.Misc.TestCrawl = true
-	calCmsService.Cfg.Misc.TestDate = folderDateSlash
+	calCmsService.Cfg.Misc.TestDate = "2024/04/01"
 
 	n := calCmsService.EnrichFileInformation()
 
@@ -534,7 +536,7 @@ func TestEnrichFileInformationOneStreamReturnsEnriched(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    domain.MustParseFolderDate(folderDateDash),
+		FolderDate:    domain.MustParseFolderDate("2024-04-01"),
 		RuleMatched:   "",
 		EventId:       1234,
 		CalCmsTitle:   "",
@@ -544,7 +546,7 @@ func TestEnrichFileInformationOneStreamReturnsEnriched(t *testing.T) {
 	fileRepoCal.Store(fi)
 
 	calCmsService.Cfg.Misc.TestCrawl = true
-	calCmsService.Cfg.Misc.TestDate = folderDateSlash
+	calCmsService.Cfg.Misc.TestDate = "2024/04/01"
 
 	n := calCmsService.EnrichFileInformation()
 
@@ -568,6 +570,8 @@ func TestGetCalCmsDatahttpRequestReturnsData(t *testing.T) {
 	defer teardown()
 	respData, _ := os.ReadFile(calCmsResponseFile)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.EqualValues(t, "2024-09-17", r.URL.Query().Get("from_date"))
+		assert.EqualValues(t, "2024-09-19", r.URL.Query().Get("till_date"))
 		w.WriteHeader(http.StatusOK)
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(respData)
