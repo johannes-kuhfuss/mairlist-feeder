@@ -2,6 +2,7 @@
 package app
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -60,8 +61,8 @@ func exportState(urlPath, filePrefix string) (fileName string, e error) {
 		logger.Error("error creating export file path", err)
 		return "", err
 	}
-	if !strings.HasPrefix(absWritePath, cfg.Export.ExportFolder) {
-		return "", err
+	if !isPathWithin(absWritePath, cfg.Export.ExportFolder) {
+		return "", errors.New("invalid export path")
 	}
 	file, err := os.Create(absWritePath)
 	if err != nil {
@@ -74,4 +75,16 @@ func exportState(urlPath, filePrefix string) (fileName string, e error) {
 		return "", err
 	}
 	return absWritePath, nil
+}
+
+func isPathWithin(candidate string, root string) bool {
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return false
+	}
+	rel, err := filepath.Rel(absRoot, candidate)
+	if err != nil {
+		return false
+	}
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel))
 }

@@ -35,6 +35,8 @@ var (
 	appEnd         chan os.Signal
 	ctx            context.Context
 	cancel         context.CancelFunc
+	appCtx         context.Context
+	appCancel      context.CancelFunc
 	statsUiHandler handlers.StatsUiHandler
 	fileRepo       repositories.DefaultFileRepository
 	crawlService   service.DefaultCrawlService
@@ -69,13 +71,16 @@ func StartApp() {
 	wireApp()
 	mapUrls()
 	RegisterForOsSignals()
+	appCtx, appCancel = context.WithCancel(context.Background())
 	scheduleBgJobs()
 	go startServer()
 	if cfg.Export.QueryMairListStatus {
-		go exportService.QueryStatus()
+		go exportService.QueryStatus(appCtx)
 	}
 	crawlService.Crawl()
-	calCmsService.GetTodayEvents()
+	if _, err := calCmsService.RefreshTodayEvents(); err != nil {
+		logger.Error("Error refreshing today's events", err)
+	}
 
 	<-appEnd
 	cleanUp()
@@ -134,10 +139,10 @@ func initServer() {
 		Addr:              cfg.RunTime.ListenAddr,
 		Handler:           cfg.RunTime.Router,
 		ReadTimeout:       5 * time.Second,
-		ReadHeaderTimeout: 0,
+		ReadHeaderTimeout: 5 * time.Second,
 		WriteTimeout:      5 * time.Second,
 		IdleTimeout:       120 * time.Second,
-		MaxHeaderBytes:    0,
+		MaxHeaderBytes:    http.DefaultMaxHeaderBytes,
 	}
 	if cfg.Server.UseTls {
 		server.TLSConfig = &tlsConfig
@@ -254,6 +259,9 @@ func startServer() {
 // cleanUp tries to clean up when the program is stopped
 func cleanUp() {
 	logger.Info("Cleaning up...")
+	if appCancel != nil {
+		appCancel()
+	}
 	cfg.RunTime.BgJobs.Stop()
 	shutdownTime := time.Duration(cfg.Server.GracefulShutdownTime) * time.Second
 	ctx, cancel = context.WithTimeout(context.Background(), shutdownTime)

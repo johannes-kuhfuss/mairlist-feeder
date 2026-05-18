@@ -33,6 +33,7 @@ type DefaultCalCmsService struct {
 	Repo            *repositories.DefaultFileRepository
 	httpClient      *http.Client
 	calCmsPgm       *safeCalCmsPgm
+	eventsToday     *safeEvents
 	eventsYesterday *safeEvents
 }
 
@@ -67,6 +68,7 @@ func NewCalCmsService(cfg *config.AppConfig, repo *repositories.DefaultFileRepos
 		Repo:            repo,
 		httpClient:      InitHttpCalClient(),
 		calCmsPgm:       &safeCalCmsPgm{},
+		eventsToday:     &safeEvents{},
 		eventsYesterday: &safeEvents{},
 	}
 }
@@ -493,8 +495,8 @@ func hourFromTimeString(timeValue string) (string, error) {
 	return fmt.Sprintf("%02d", hour), nil
 }
 
-// GetTodayEvents orchestrates the generation of an event list for display on the web UI
-func (s DefaultCalCmsService) GetTodayEvents() ([]dto.Event, error) {
+// RefreshTodayEvents updates the cached event list for display on the web UI.
+func (s DefaultCalCmsService) RefreshTodayEvents() ([]dto.Event, error) {
 	var (
 		calCmsData domain.CalCmsPgmData
 	)
@@ -508,13 +510,27 @@ func (s DefaultCalCmsService) GetTodayEvents() ([]dto.Event, error) {
 			logger.Error("Cannot convert calCMS response data to Json", err)
 			return nil, err
 		}
+		s.insertData(calCmsData)
 		el := s.convertEvent(calCmsData)
+		s.eventsToday.Lock()
+		s.eventsToday.events = append([]dto.Event(nil), el...)
+		s.eventsToday.Unlock()
 		s.countEvents(el)
 		return el, nil
 	} else {
 		logger.Warn("calCMS query not enabled in configuration. Not querying.")
 		return nil, nil
 	}
+}
+
+// GetTodayEvents returns the cached event list for display on the web UI.
+func (s DefaultCalCmsService) GetTodayEvents() ([]dto.Event, error) {
+	s.eventsToday.RLock()
+	defer s.eventsToday.RUnlock()
+	if len(s.eventsToday.events) > 0 {
+		return append([]dto.Event(nil), s.eventsToday.events...), nil
+	}
+	return nil, nil
 }
 
 // countEvents counts the events with their file status
@@ -540,7 +556,9 @@ func (s DefaultCalCmsService) countEvents(events []dto.Event) {
 }
 
 func (s DefaultCalCmsService) CountRun() {
-	s.GetTodayEvents()
+	if _, err := s.RefreshTodayEvents(); err != nil {
+		logger.Error("error refreshing today's events", err)
+	}
 }
 
 // SaveYesterdaysEvents saves the current event state to the local variable

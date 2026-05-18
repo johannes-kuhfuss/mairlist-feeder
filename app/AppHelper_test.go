@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -48,4 +49,11 @@ func TestExportDayEventsNoErrorReturnsFileName(t *testing.T) {
 	assert.Nil(t, noFile)
 	time.Sleep(1 * time.Second)
 	os.Remove(fileName)
+}
+
+func TestIsPathWithinRejectsSiblingDirectory(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "export")
+	candidate := root + "2"
+
+	assert.False(t, isPathWithin(candidate, root))
 }

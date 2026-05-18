@@ -64,9 +64,13 @@ func (s DefaultCrawlService) Crawl() {
 	}
 	crmu.Lock()
 	defer crmu.Unlock()
+	s.Cfg.RunTime.Mu.Lock()
 	s.Cfg.RunTime.CrawlRunning = true
+	s.Cfg.RunTime.Mu.Unlock()
 	defer func() {
+		s.Cfg.RunTime.Mu.Lock()
 		s.Cfg.RunTime.CrawlRunning = false
+		s.Cfg.RunTime.Mu.Unlock()
 	}()
 	s.CrawlRun()
 	if s.Cfg.CalCms.QueryCalCms && s.CalSvc != nil {
@@ -124,10 +128,13 @@ func (s DefaultCrawlService) CrawlRun() error {
 	)
 	sinceLastCrawl := time.Since(s.Cfg.RunTime.LastCrawlDate)
 	s.Cfg.Metrics.LongEventDurations.WithLabelValues("sincelastcrawl").Observe(sinceLastCrawl.Seconds())
+	s.Cfg.RunTime.Mu.Lock()
 	s.Cfg.RunTime.CrawlRunNumber++
 	s.Cfg.RunTime.LastCrawlDate = time.Now()
+	crawlRunNumber := s.Cfg.RunTime.CrawlRunNumber
+	s.Cfg.RunTime.Mu.Unlock()
 
-	logger.Infof("Starting crawl run #%v (Root Folder: %v). Time since last crawl: %v", s.Cfg.RunTime.CrawlRunNumber, s.Cfg.Crawl.RootFolder, sinceLastCrawl)
+	logger.Infof("Starting crawl run #%v (Root Folder: %v). Time since last crawl: %v", crawlRunNumber, s.Cfg.Crawl.RootFolder, sinceLastCrawl)
 	start := time.Now().UTC()
 	filesRemoved := s.checkForOrphanFiles()
 	fileCount, err := s.crawlFolder(s.Cfg.Crawl.RootFolder, s.Cfg.Crawl.CrawlExtensions)
@@ -139,7 +146,7 @@ func (s DefaultCrawlService) CrawlRun() error {
 	end := time.Now().UTC()
 	crawlDur = end.Sub(start)
 	s.Cfg.Metrics.FastEventDurations.WithLabelValues("lastcrawl").Observe(crawlDur.Seconds())
-	logger.Infof("Finished crawl run #%v. Removed %v orphaned file(s). Added %v new file(s). %v file(s) in list total. (%v)", s.Cfg.RunTime.CrawlRunNumber, filesRemoved, fileCount, ts, crawlDur.String())
+	logger.Infof("Finished crawl run #%v. Removed %v orphaned file(s). Added %v new file(s). %v file(s) in list total. (%v)", crawlRunNumber, filesRemoved, fileCount, ts, crawlDur.String())
 	if s.Repo.NewFiles() {
 		logger.Info("Starting to extract file data...")
 		start = time.Now().UTC()

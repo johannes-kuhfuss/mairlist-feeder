@@ -56,7 +56,12 @@ func (uh *StatsUiHandler) FileListPage(c *gin.Context) {
 
 // EventListPage is the handler for the event list page
 func (uh *StatsUiHandler) EventListPage(c *gin.Context) {
-	events, _ := uh.CalCmsSvc.GetTodayEvents()
+	events, err := uh.CalCmsSvc.GetTodayEvents()
+	if err != nil {
+		logger.Error("Error getting today's events", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
 	c.HTML(http.StatusOK, "eventlist.page.tmpl", gin.H{
 		"title":  "Event List",
 		"events": events,
@@ -124,7 +129,11 @@ func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 			uh.ExportSvc.ExportForHour(hour)
 		}
 	case "exporttodisk":
-		uh.Repo.SaveToDisk(uh.Cfg.Misc.FileSaveFile)
+		if err := uh.Repo.SaveToDisk(uh.Cfg.Misc.FileSaveFile); err != nil {
+			logger.Error("Error saving repository to disk", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
 	case "clean":
 		uh.CleanSvc.Clean()
 	}

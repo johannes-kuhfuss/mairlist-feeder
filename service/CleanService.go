@@ -55,7 +55,9 @@ func (s DefaultCleanService) Clean() {
 	if err != nil {
 		logger.Error("Error while cleaning repository", err)
 	}
+	s.Cfg.RunTime.Mu.Lock()
 	s.Cfg.RunTime.FilesCleaned = filesCleaned
+	s.Cfg.RunTime.Mu.Unlock()
 	end := time.Now().UTC()
 	dur := end.Sub(start)
 	logger.Infof("File list cleaned-up. Removed %v entries. (%v)", filesCleaned, dur.String())
@@ -68,12 +70,18 @@ func (s DefaultCleanService) CleanRun() (filesCleaned int, e error) {
 	)
 	clmu.Lock()
 	defer clmu.Unlock()
+	s.Cfg.RunTime.Mu.Lock()
 	s.Cfg.RunTime.CleanRunning = true
 	s.Cfg.RunTime.LastCleanDate = time.Now()
+	s.Cfg.RunTime.Mu.Unlock()
+	defer func() {
+		s.Cfg.RunTime.Mu.Lock()
+		s.Cfg.RunTime.CleanRunning = false
+		s.Cfg.RunTime.Mu.Unlock()
+	}()
 	if files := s.Repo.GetAll(); files != nil {
 		filesCleaned, errorCounter = s.checkAndClean(files)
 	}
-	s.Cfg.RunTime.CleanRunning = false
 	if errorCounter == 0 {
 		return filesCleaned, nil
 	} else {

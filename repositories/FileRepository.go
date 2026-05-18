@@ -23,7 +23,7 @@ type FileRepository interface {
 	GetByPath(string) *domain.FileInfo
 	GetByEventId(int) *domain.FileList
 	GetAll() *domain.FileList
-	GetForHour(string, bool) *domain.FileList
+	GetByHour(string, bool) *domain.FileList
 	Store(domain.FileInfo) error
 	Delete(string) error
 	SaveToDisk(string) error
@@ -33,41 +33,40 @@ type FileRepository interface {
 }
 
 type DefaultFileRepository struct {
-	Cfg *config.AppConfig
+	Cfg   *config.AppConfig
+	files *domain.SafeFileList
 }
-
-var (
-	fileList domain.SafeFileList
-)
 
 // NewFileRepository creates a new file repository. You need to pass in the configuration
 func NewFileRepository(cfg *config.AppConfig) DefaultFileRepository {
-	fileList.Files = make(map[string]domain.FileInfo)
 	return DefaultFileRepository{
 		Cfg: cfg,
+		files: &domain.SafeFileList{
+			Files: make(map[string]domain.FileInfo),
+		},
 	}
 }
 
 // Exists checks whether a file identified by its path exists in the repository
 func (fr DefaultFileRepository) Exists(filePath string) bool {
-	fileList.RLock()
-	defer fileList.RUnlock()
-	_, ok := fileList.Files[filePath]
+	fr.files.RLock()
+	defer fr.files.RUnlock()
+	_, ok := fr.files.Files[filePath]
 	return ok
 }
 
 // Size returns the number of files stored in the repository
 func (fr DefaultFileRepository) Size() int {
-	fileList.RLock()
-	defer fileList.RUnlock()
-	return len(fileList.Files)
+	fr.files.RLock()
+	defer fr.files.RUnlock()
+	return len(fr.files.Files)
 }
 
 // SizeOfType returns the number of files of the specified fileType
 func (fr DefaultFileRepository) sizeOfType(fileType string) (count int) {
-	fileList.RLock()
-	defer fileList.RUnlock()
-	for _, f := range fileList.Files {
+	fr.files.RLock()
+	defer fr.files.RUnlock()
+	for _, f := range fr.files.Files {
 		if f.FileType == fileType {
 			count++
 		}
@@ -91,9 +90,9 @@ func (fr DefaultFileRepository) GetByPath(filePath string) *domain.FileInfo {
 	if !fr.Exists(filePath) {
 		return nil
 	}
-	fileList.RLock()
-	defer fileList.RUnlock()
-	fi = fileList.Files[filePath]
+	fr.files.RLock()
+	defer fr.files.RUnlock()
+	fi = fr.files.Files[filePath]
 	return &fi
 }
 
@@ -103,9 +102,9 @@ func (fr DefaultFileRepository) GetByEventId(eventId int) *domain.FileList {
 	if fr.Size() == 0 {
 		return nil
 	}
-	fileList.RLock()
-	defer fileList.RUnlock()
-	for _, file := range fileList.Files {
+	fr.files.RLock()
+	defer fr.files.RUnlock()
+	for _, file := range fr.files.Files {
 		if file.EventId == eventId {
 			list = append(list, file)
 		}
@@ -122,9 +121,9 @@ func (fr DefaultFileRepository) GetByDate(folderDate string) *domain.FileList {
 	if fr.Size() == 0 {
 		return nil
 	}
-	fileList.RLock()
-	defer fileList.RUnlock()
-	for _, file := range fileList.Files {
+	fr.files.RLock()
+	defer fr.files.RUnlock()
+	for _, file := range fr.files.Files {
 		if file.FolderDate == folderDate {
 			list = append(list, file)
 		}
@@ -141,9 +140,9 @@ func (fr DefaultFileRepository) GetAll() *domain.FileList {
 	if fr.Size() == 0 {
 		return nil
 	}
-	fileList.RLock()
-	defer fileList.RUnlock()
-	for _, file := range fileList.Files {
+	fr.files.RLock()
+	defer fr.files.RUnlock()
+	for _, file := range fr.files.Files {
 		list = append(list, file)
 	}
 	return &list
@@ -156,9 +155,9 @@ func (fr DefaultFileRepository) GetByHour(hour string, includeLive bool) *domain
 		return nil
 	}
 	folderDate := strings.Replace(helper.GetTodayFolder(fr.Cfg.Misc.TestCrawl, fr.Cfg.Misc.TestDate), "/", "-", -1)
-	fileList.RLock()
-	defer fileList.RUnlock()
-	for _, file := range fileList.Files {
+	fr.files.RLock()
+	defer fr.files.RUnlock()
+	for _, file := range fr.files.Files {
 		hi, _ := strconv.Atoi(hour)
 		if (!file.StartTime.IsZero()) && (file.StartTime.Hour() == hi) && (file.FolderDate == folderDate) {
 			if (!file.EventIsLive) || (file.EventIsLive && includeLive) {
@@ -211,9 +210,9 @@ func (fr DefaultFileRepository) Store(fi domain.FileInfo) error {
 	if fi.Path == "" {
 		return errors.New("cannot add item with empty path to list")
 	}
-	fileList.Lock()
-	defer fileList.Unlock()
-	fileList.Files[fi.Path] = fi
+	fr.files.Lock()
+	defer fr.files.Unlock()
+	fr.files.Files[fi.Path] = fi
 	return nil
 }
 
@@ -222,18 +221,18 @@ func (fr DefaultFileRepository) Delete(filePath string) error {
 	if !fr.Exists(filePath) {
 		return fmt.Errorf("item with path %v does not exist", filePath)
 	}
-	fileList.Lock()
-	defer fileList.Unlock()
-	delete(fileList.Files, filePath)
+	fr.files.Lock()
+	defer fr.files.Unlock()
+	delete(fr.files.Files, filePath)
 	return nil
 }
 
 // SaveToDisk writes the repository's contents to a specified file on disk
 func (fr DefaultFileRepository) SaveToDisk(fileName string) error {
 	logger.Info("Saving files data to disk...")
-	fileList.RLock()
-	defer fileList.RUnlock()
-	b, err := json.Marshal(fileList.Files)
+	fr.files.RLock()
+	defer fr.files.RUnlock()
+	b, err := json.Marshal(fr.files.Files)
 	if err != nil {
 		logger.Error("Error while converting file list to JSON", err)
 		return err
@@ -242,7 +241,7 @@ func (fr DefaultFileRepository) SaveToDisk(fileName string) error {
 		logger.Error("Error while writing files data to disk", err)
 		return err
 	}
-	logger.Infof("Saved files data to disk (%v items)", len(fileList.Files))
+	logger.Infof("Saved files data to disk (%v items)", len(fr.files.Files))
 	return nil
 }
 
@@ -259,18 +258,18 @@ func (fr DefaultFileRepository) LoadFromDisk(fileName string) error {
 		logger.Error("Error while converting files data to json", err)
 		return err
 	}
-	fileList.Lock()
-	defer fileList.Unlock()
-	fileList.Files = fileDta
-	logger.Infof("Read files data from disk (%v items)", len(fileList.Files))
+	fr.files.Lock()
+	defer fr.files.Unlock()
+	fr.files.Files = fileDta
+	logger.Infof("Read files data from disk (%v items)", len(fr.files.Files))
 	return nil
 }
 
 // DeleteAllData removes all entries from the repository
 func (fr DefaultFileRepository) DeleteAllData() {
-	fileList.Lock()
-	defer fileList.Unlock()
-	fileList.Files = make(map[string]domain.FileInfo)
+	fr.files.Lock()
+	defer fr.files.Unlock()
+	fr.files.Files = make(map[string]domain.FileInfo)
 }
 
 // NewFiles returns true, if there are file entries in the repository for which additional information hasn't been extracted

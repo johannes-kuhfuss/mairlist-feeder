@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -47,7 +48,6 @@ func setupTestEx() func() {
 	exportService = NewExportService(&cfg, &fileRepo)
 	return func() {
 		fileRepo.DeleteAllData()
-		fileExportList.Files = nil
 		metrics.UnregisterMetrics(&cfg, registry)
 	}
 }
@@ -265,6 +265,13 @@ func TestSetExportPathRegularReturnsPath(t *testing.T) {
 	assert.EqualValues(t, strings.Replace(tp, "/", "\\", -1), s)
 }
 
+func TestIsPathWithinRejectsSiblingDirectory(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "export")
+	candidate := root + "2"
+
+	assert.False(t, isPathWithin(candidate, root))
+}
+
 func TestCheckTimeAndLenghthOneFile(t *testing.T) {
 	var files domain.FileList
 	tearDown := setupTestEx()
@@ -275,9 +282,9 @@ func TestCheckTimeAndLenghthOneFile(t *testing.T) {
 		EndTime:   helper.TimeFromHourAndMinute(15, 0),
 	}
 	files = append(files, fi)
-	assert.EqualValues(t, 0, len(fileExportList.Files))
+	assert.EqualValues(t, 0, len(exportService.exportFiles.Files))
 	exportService.checkTimeAndLenghth(&files)
-	assert.EqualValues(t, 1, len(fileExportList.Files))
+	assert.EqualValues(t, 1, len(exportService.exportFiles.Files))
 }
 
 func TestCheckTimeAndLenghthOneFileSame(t *testing.T) {
@@ -291,12 +298,12 @@ func TestCheckTimeAndLenghthOneFileSame(t *testing.T) {
 		EndTime:   helper.TimeFromHourAndMinute(15, 0),
 	}
 	files = append(files, fi)
-	assert.EqualValues(t, 0, len(fileExportList.Files))
+	assert.EqualValues(t, 0, len(exportService.exportFiles.Files))
 	exportService.checkTimeAndLenghth(&files)
-	assert.EqualValues(t, 1, len(fileExportList.Files))
+	assert.EqualValues(t, 1, len(exportService.exportFiles.Files))
 	exportService.checkTimeAndLenghth(&files)
-	assert.EqualValues(t, 1, len(fileExportList.Files))
-	assert.EqualValues(t, "A", fileExportList.Files["14:00"].Path)
+	assert.EqualValues(t, 1, len(exportService.exportFiles.Files))
+	assert.EqualValues(t, "A", exportService.exportFiles.Files["14:00"].Path)
 }
 
 func TestCheckTimeAndLenghthOneFileNewer(t *testing.T) {
@@ -318,13 +325,13 @@ func TestCheckTimeAndLenghthOneFileNewer(t *testing.T) {
 		ModTime:   time.Now().AddDate(0, 0, -1),
 	}
 	files = append(files, fi1)
-	assert.EqualValues(t, 0, len(fileExportList.Files))
+	assert.EqualValues(t, 0, len(exportService.exportFiles.Files))
 	exportService.checkTimeAndLenghth(&files)
-	assert.EqualValues(t, 1, len(fileExportList.Files))
+	assert.EqualValues(t, 1, len(exportService.exportFiles.Files))
 	files = append(files, fi2)
 	exportService.checkTimeAndLenghth(&files)
-	assert.EqualValues(t, 1, len(fileExportList.Files))
-	assert.EqualValues(t, "A", fileExportList.Files["14:00"].Path)
+	assert.EqualValues(t, 1, len(exportService.exportFiles.Files))
+	assert.EqualValues(t, "A", exportService.exportFiles.Files["14:00"].Path)
 }
 
 func TestExportToPlayoutNoFilesNoExport(t *testing.T) {
@@ -346,7 +353,7 @@ func TestExportToPlayoutOneFilesExport(t *testing.T) {
 		EndTime:    helper.TimeFromHourAndMinute(14, 0),
 		SlotLength: 60.0,
 	}
-	fileExportList.Files["13:00"] = fi
+	exportService.exportFiles.Files["13:00"] = fi
 	file, err := exportService.ExportToPlayout("13")
 	assert.Nil(t, err)
 	readFile, _ := os.Open(file)

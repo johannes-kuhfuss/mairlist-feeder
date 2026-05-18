@@ -3,6 +3,7 @@ package service
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -42,25 +43,21 @@ const (
 
 // The export service handles the export of information to mAirList
 type DefaultExportService struct {
-	Cfg  *config.AppConfig
-	Repo *repositories.DefaultFileRepository
+	Cfg         *config.AppConfig
+	Repo        *repositories.DefaultFileRepository
+	exportFiles *domain.SafeFileList
+	httpClient  *http.Client
 }
 
-var (
-	fileExportList domain.SafeFileList
-	httpExTr       http.Transport
-	httpExClient   http.Client
-)
-
 // InitHttpExClient sets the default values for the http client used to interact with mAirlist
-func InitHttpExClient() {
-	httpExTr = http.Transport{
+func InitHttpExClient() *http.Client {
+	httpExTr := http.Transport{
 		DisableKeepAlives:  false,
 		DisableCompression: false,
 		MaxIdleConns:       0,
 		IdleConnTimeout:    0,
 	}
-	httpExClient = http.Client{
+	return &http.Client{
 		Transport: &httpExTr,
 		Timeout:   5 * time.Second,
 	}
@@ -68,17 +65,21 @@ func InitHttpExClient() {
 
 // NewExportService creates a new export service and injects its dependencies
 func NewExportService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository) DefaultExportService {
-	fileExportList.Files = make(map[string]domain.FileInfo)
-	InitHttpExClient()
 	return DefaultExportService{
 		Cfg:  cfg,
 		Repo: repo,
+		exportFiles: &domain.SafeFileList{
+			Files: make(map[string]domain.FileInfo),
+		},
+		httpClient: InitHttpExClient(),
 	}
 }
 
 // Export orchestrates the export of data to mAirList
 func (s DefaultExportService) Export() {
+	s.Cfg.RunTime.Mu.Lock()
 	s.Cfg.RunTime.LastExportRunDate = time.Now()
+	s.Cfg.RunTime.Mu.Unlock()
 	nextHour := getNextHour()
 	s.ExportForHour(nextHour)
 }
@@ -95,7 +96,14 @@ func (s DefaultExportService) ExportAllHours() {
 func (s DefaultExportService) ExportForHour(hour string) {
 	exmu.Lock()
 	defer exmu.Unlock()
+	s.Cfg.RunTime.Mu.Lock()
 	s.Cfg.RunTime.ExportRunning = true
+	s.Cfg.RunTime.Mu.Unlock()
+	defer func() {
+		s.Cfg.RunTime.Mu.Lock()
+		s.Cfg.RunTime.ExportRunning = false
+		s.Cfg.RunTime.Mu.Unlock()
+	}()
 	if files := s.Repo.GetByHour(hour, s.Cfg.Export.ExportLiveItems); files != nil {
 		logger.Infof("Starting export for timeslot %v:00 ...", hour)
 		start := time.Now().UTC()
@@ -118,7 +126,6 @@ func (s DefaultExportService) ExportForHour(hour string) {
 	} else {
 		logger.Infof("No files to export for timeslot %v:00 ...", hour)
 	}
-	s.Cfg.RunTime.ExportRunning = false
 }
 
 // checkTimeAndLenghth determines suitability of files for playout, based on their length
@@ -129,16 +136,16 @@ func (s DefaultExportService) checkTimeAndLenghth(files *domain.FileList) {
 		logger.Infof("File: %v, ModDate: %v, IsOK: %v, Info: %v", file.Path, file.ModTime, lengthOk, info)
 		if lengthOk {
 			file.SlotLength = slotLen
-			preFile, exists := fileExportList.Files[createIndexFromTime(file.StartTime)]
+			preFile, exists := s.exportFiles.Files[createIndexFromTime(file.StartTime)]
 			if exists {
 				if preFile.ModTime.After(file.ModTime) {
 					logger.Infof("Existing file %v is newer than file %v. Not updating.", preFile.Path, file.Path)
 				} else {
 					logger.Infof("Existing file %v is older than file %v. Updating.", preFile.Path, file.Path)
-					fileExportList.Files[createIndexFromTime(file.StartTime)] = file
+					s.exportFiles.Files[createIndexFromTime(file.StartTime)] = file
 				}
 			} else {
-				fileExportList.Files[createIndexFromTime(file.StartTime)] = file
+				s.exportFiles.Files[createIndexFromTime(file.StartTime)] = file
 			}
 		}
 	}
@@ -238,7 +245,7 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 	/// 3 - line type = F (file), I (database item)
 	/// 4 - Line data = full path file name, database Id
 	/// 5 - Optional values = omitted here
-	if size := len(fileExportList.Files); size > 0 {
+	if size := len(s.exportFiles.Files); size > 0 {
 		logger.Infof("Exporting %v elements to mAirList for slot %v:00", size, hour)
 		exportPath, err := s.setExportPath(hour)
 		if err != nil {
@@ -246,8 +253,10 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 			return "", err
 		}
 		if err := s.WritePlaylist(exportPath); err == nil {
+			s.Cfg.RunTime.Mu.Lock()
 			s.Cfg.RunTime.LastExportFileName = exportPath
 			s.Cfg.RunTime.LastExportedFileDate = time.Now()
+			s.Cfg.RunTime.Mu.Unlock()
 			return exportPath, nil
 		}
 		return "", err
@@ -262,15 +271,16 @@ func (s DefaultExportService) WritePlaylist(exportPath string) error {
 		startTime   time.Time
 		line        string
 	)
-	exportFile, err := os.OpenFile(exportPath, os.O_CREATE, 0644)
-	dataWriter := bufio.NewWriter(exportFile)
+	exportFile, err := os.OpenFile(exportPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		logger.Error("Error when creating playlist file for mAirlist", err)
 		return err
 	}
 	defer exportFile.Close()
+	dataWriter := bufio.NewWriter(exportFile)
+	writtenEntries := make([]string, 0, len(s.exportFiles.Files))
 	s.writeStartComment(dataWriter)
-	for time, file := range fileExportList.Files {
+	for time, file := range s.exportFiles.Files {
 		startTime = setStartTime(startTime, time)
 		if file.FromCalCMS && !file.EndTime.IsZero() {
 			plannedDur := file.EndTime.Sub(file.StartTime).Minutes()
@@ -285,15 +295,22 @@ func (s DefaultExportService) WritePlaylist(exportPath string) error {
 		default:
 			line = fmt.Sprintf("%v\tH\tF\t%v\n", listTime, file.Path)
 		}
-		if err := s.writeLine(dataWriter, line); err == nil {
-			delete(fileExportList.Files, createIndexFromTime(file.StartTime))
+		if err := s.writeLine(dataWriter, line); err != nil {
+			return err
 		}
+		writtenEntries = append(writtenEntries, createIndexFromTime(file.StartTime))
 	}
 	if s.Cfg.Export.TerminateAfterDuration {
 		s.WriteStopper(dataWriter, startTime, totalLength)
 	}
 	s.writeEndComment(dataWriter)
-	dataWriter.Flush()
+	if err := dataWriter.Flush(); err != nil {
+		logger.Error("Error flushing playlist file for mAirlist", err)
+		return err
+	}
+	for _, entry := range writtenEntries {
+		delete(s.exportFiles.Files, entry)
+	}
 	return nil
 }
 
@@ -325,10 +342,22 @@ func (s DefaultExportService) setExportPath(hour string) (exportPath string, e e
 	if err != nil {
 		return "", err
 	}
-	if !strings.HasPrefix(absExpPath, s.Cfg.Export.ExportFolder) {
+	if !isPathWithin(absExpPath, s.Cfg.Export.ExportFolder) {
 		return "", errors.New("invalid export path")
 	}
 	return absExpPath, nil
+}
+
+func isPathWithin(candidate string, root string) bool {
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return false
+	}
+	rel, err := filepath.Rel(absRoot, candidate)
+	if err != nil {
+		return false
+	}
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel))
 }
 
 // writeStartComment is a helper function creating the ".tpi" file's start comment
@@ -423,7 +452,7 @@ func (s DefaultExportService) SetMairListCommState(success bool) {
 
 // execRequest executes the request against mAirList and returns the data
 func (s DefaultExportService) execRequest(req *http.Request) (respData []byte, respStatus int, err error) {
-	resp, err := httpExClient.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		s.SetMairListCommState(false)
 		return nil, 0, err
@@ -551,10 +580,23 @@ func parseMairListPlaylistJson(playlistData []byte) (playing bool, e error) {
 	return false, nil
 }
 
-func (s DefaultExportService) QueryStatus() {
+func (s DefaultExportService) QueryStatus(ctx context.Context) {
 	logger.Info("Starting to query mAirList Playlist Status...")
+	ticker := time.NewTicker(time.Duration(s.Cfg.Export.StatusQueryCycleSec) * time.Second)
+	defer ticker.Stop()
 	for {
-		s.GetPlaylist()
-		time.Sleep(time.Duration(s.Cfg.Export.StatusQueryCycleSec) * time.Second)
+		select {
+		case <-ctx.Done():
+			logger.Info("Stopped querying mAirList Playlist Status")
+			return
+		default:
+			s.GetPlaylist()
+		}
+		select {
+		case <-ctx.Done():
+			logger.Info("Stopped querying mAirList Playlist Status")
+			return
+		case <-ticker.C:
+		}
 	}
 }

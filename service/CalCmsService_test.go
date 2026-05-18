@@ -687,10 +687,14 @@ func TestGetEventsReturnsdata(t *testing.T) {
 	cfgCal.Misc.TestCrawl = true
 	cfgCal.Misc.TestDate = "2024/09/24"
 	cfgCal.CalCms.QueryCalCms = true
-	ev, err := calCmsService.GetTodayEvents()
+	ev, err := calCmsService.RefreshTodayEvents()
 	assert.Nil(t, err)
 	assert.EqualValues(t, 8, len(ev))
 	assert.EqualValues(t, "Morgenmagazin - der Freien Radios", ev[0].Title)
+
+	cachedEvents, err := calCmsService.GetTodayEvents()
+	assert.Nil(t, err)
+	assert.EqualValues(t, ev, cachedEvents)
 }
 
 func TestCheckHashNoFilesReturnsFalse(t *testing.T) {
