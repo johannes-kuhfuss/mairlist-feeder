@@ -77,7 +77,7 @@ func (a *Application) exportState(urlPath, filePrefix string) (fileName string, 
 	return absWritePath, nil
 }
 
-func isPathWithin(candidate string, root string) bool {
+func isPathWithin(candidate, root string) bool {
 	absRoot, err := filepath.Abs(root)
 	if err != nil {
 		return false

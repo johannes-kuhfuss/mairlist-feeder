@@ -33,8 +33,6 @@ type Application struct {
 	cfg            config.AppConfig
 	server         http.Server
 	appEnd         chan os.Signal
-	ctx            context.Context
-	cancel         context.CancelFunc
 	appCtx         context.Context
 	appCancel      context.CancelFunc
 	statsUiHandler handlers.StatsUiHandler
@@ -88,12 +86,9 @@ func (a *Application) Start() {
 	}
 
 	<-a.appEnd
-	a.cleanUp()
-	if a.cancel != nil {
-		defer a.cancel()
-	}
-
-	if err := a.server.Shutdown(a.ctx); err != nil {
+	shutdownCtx, shutdownCancel := a.cleanUp()
+	defer shutdownCancel()
+	if err := a.server.Shutdown(shutdownCtx); err != nil {
 		logger.Error("Graceful shutdown failed", err)
 	} else {
 		logger.Info("Graceful shutdown finished")
@@ -264,24 +259,25 @@ func (a *Application) startServer() {
 	}
 }
 
-// cleanUp tries to clean up when the program is stopped
-func (a *Application) cleanUp() {
+// cleanUp tries to clean up when the program is stopped and returns the shutdown timeout context.
+func (a *Application) cleanUp() (context.Context, context.CancelFunc) {
 	logger.Info("Cleaning up...")
 	if a.appCancel != nil {
 		a.appCancel()
 	}
 	shutdownTime := time.Duration(a.cfg.Server.GracefulShutdownTime) * time.Second
-	a.ctx, a.cancel = context.WithTimeout(context.Background(), shutdownTime)
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), shutdownTime)
 	if a.cfg.RunTime.BgJobs != nil {
 		cronCtx := a.cfg.RunTime.BgJobs.Stop()
 		select {
 		case <-cronCtx.Done():
 			logger.Info("Background jobs stopped")
-		case <-a.ctx.Done():
+		case <-shutdownCtx.Done():
 			logger.Warn("Timed out waiting for background jobs to stop")
 		}
 	}
 	defer func() {
 		logger.Info("Cleaned up")
 	}()
+	return shutdownCtx, shutdownCancel
 }

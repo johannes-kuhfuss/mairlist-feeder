@@ -373,7 +373,7 @@ func (s DefaultExportService) setExportPathForDate(folderDate time.Time, hour st
 	return absExpPath, nil
 }
 
-func isPathWithin(candidate string, root string) bool {
+func isPathWithin(candidate, root string) bool {
 	absRoot, err := filepath.Abs(root)
 	if err != nil {
 		return false

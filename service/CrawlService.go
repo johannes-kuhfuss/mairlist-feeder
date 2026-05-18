@@ -268,7 +268,7 @@ func (s DefaultCrawlService) parseEventId(srcPath string) int {
 }
 
 // folderDateFromPath extracts the YYYY-MM-DD folder date below the crawl root.
-func folderDateFromPath(srcPath string, rootFolder string) (time.Time, error) {
+func folderDateFromPath(srcPath, rootFolder string) (time.Time, error) {
 	relDir, err := filepath.Rel(rootFolder, filepath.Dir(srcPath))
 	if err != nil {
 		return time.Time{}, err
