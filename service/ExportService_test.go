@@ -372,6 +372,38 @@ func TestExportToPlayoutOneFilesExport(t *testing.T) {
 	assert.GreaterOrEqual(t, time.Now(), exportService.Cfg.RunTime.LastExportedFileDate)
 }
 
+func TestWritePlaylistWritesEntriesInTimeOrder(t *testing.T) {
+	var fileLines []string
+	tearDown := setupTestEx()
+	defer tearDown()
+	exportService.exportFiles.Files["14:00"] = domain.FileInfo{
+		Path:       "B",
+		Duration:   3600,
+		StartTime:  helper.TimeFromHourAndMinute(14, 0),
+		SlotLength: 60.0,
+	}
+	exportService.exportFiles.Files["13:00"] = domain.FileInfo{
+		Path:       "A",
+		Duration:   3600,
+		StartTime:  helper.TimeFromHourAndMinute(13, 0),
+		SlotLength: 60.0,
+	}
+	file := filepath.Join(t.TempDir(), "playlist.tpi")
+
+	err := exportService.WritePlaylist(file)
+
+	assert.Nil(t, err)
+	readFile, _ := os.Open(file)
+	fileScanner := bufio.NewScanner(readFile)
+	fileScanner.Split(bufio.ScanLines)
+	for fileScanner.Scan() {
+		fileLines = append(fileLines, fileScanner.Text())
+	}
+	readFile.Close()
+	assert.EqualValues(t, "13:00:00\tH\tF\tA", fileLines[1])
+	assert.EqualValues(t, "14:00:00\tH\tF\tB", fileLines[2])
+}
+
 func TestParseMairListPlaylistXmlWrongXMLReturnsError(t *testing.T) {
 	plfile, _ := os.Open("../samples/mairlist_playlist_error.xml")
 	defer plfile.Close()

@@ -251,7 +251,7 @@ func TestActionExecCrawlReturnsOk(t *testing.T) {
 	data, statusCode := runRequest(form)
 
 	assert.EqualValues(t, http.StatusOK, statusCode)
-	assert.EqualValues(t, "null", string(data))
+	assert.EqualValues(t, "{\"status\":\"ok\",\"action\":\"crawl\",\"message\":\"Crawl completed.\"}", string(data))
 	assert.True(t, cfg.RunTime.BgJobs.Entry(cfg.RunTime.CrawlJobId).Valid())
 }
 
@@ -269,7 +269,7 @@ func TestActionExecCleanReturnsOk(t *testing.T) {
 	data, statusCode := runRequest(form)
 
 	assert.EqualValues(t, http.StatusOK, statusCode)
-	assert.EqualValues(t, "null", string(data))
+	assert.EqualValues(t, "{\"status\":\"ok\",\"action\":\"clean\",\"message\":\"Clean-up completed.\"}", string(data))
 	assert.EqualValues(t, 1, cfg.RunTime.FilesCleaned)
 	assert.EqualValues(t, 0, repo.Size())
 }
@@ -285,7 +285,7 @@ func TestActionExecExportReturnsOk(t *testing.T) {
 	data, statusCode := runRequest(form)
 
 	assert.EqualValues(t, http.StatusOK, statusCode)
-	assert.EqualValues(t, "null", string(data))
+	assert.EqualValues(t, "{\"status\":\"ok\",\"action\":\"export\",\"message\":\"Export completed for hour 13.\"}", string(data))
 }
 
 func TestActionExecExportToDiskReturnsOk(t *testing.T) {
@@ -300,7 +300,7 @@ func TestActionExecExportToDiskReturnsOk(t *testing.T) {
 	_, statErr := os.Stat(cfg.Misc.FileSaveFile)
 
 	assert.EqualValues(t, http.StatusOK, statusCode)
-	assert.EqualValues(t, "null", string(data))
+	assert.EqualValues(t, "{\"status\":\"ok\",\"action\":\"exporttodisk\",\"message\":\"File list saved to disk.\"}", string(data))
 	assert.Nil(t, statErr)
 }
 

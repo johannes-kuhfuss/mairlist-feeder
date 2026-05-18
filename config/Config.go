@@ -104,6 +104,8 @@ type AppConfig struct {
 		EventJobId            cron.EntryID
 		CalCmsJobId           cron.EntryID
 		LastCalCmsState       string
+		LastCalCmsRefreshDate time.Time
+		LastCalCmsRefreshErr  string
 		LastMairListCommState string
 		MairListPlaying       bool
 	}
@@ -123,7 +125,43 @@ func InitConfig(file string, config *AppConfig) error {
 		return fmt.Errorf("could not initialize configuration: %v", err.Error())
 	}
 	setDefaults(config)
+	if err := validateConfig(config); err != nil {
+		return err
+	}
 	log.Print("Configuration initialized")
+	return nil
+}
+
+func validateConfig(config *AppConfig) error {
+	if config.Server.GracefulShutdownTime <= 0 {
+		return fmt.Errorf("graceful shutdown time must be greater than 0")
+	}
+	if config.Crawl.CrawlCycleMin <= 0 {
+		return fmt.Errorf("crawl cycle must be greater than 0")
+	}
+	if config.Export.ExportMinute < 0 || config.Export.ExportMinute > 59 {
+		return fmt.Errorf("export minute must be between 0 and 59")
+	}
+	if config.Export.StatusQueryCycleSec <= 0 {
+		return fmt.Errorf("status query cycle must be greater than 0")
+	}
+	if config.Server.UseTls {
+		if _, err := os.Stat(config.Server.CertFile); err != nil {
+			return fmt.Errorf("TLS certificate file is not accessible: %w", err)
+		}
+		if _, err := os.Stat(config.Server.KeyFile); err != nil {
+			return fmt.Errorf("TLS key file is not accessible: %w", err)
+		}
+	}
+	if config.Crawl.RootFolder != "" {
+		info, err := os.Stat(config.Crawl.RootFolder)
+		if err != nil {
+			return fmt.Errorf("root folder is not accessible: %w", err)
+		}
+		if !info.IsDir() {
+			return fmt.Errorf("root folder must be a directory")
+		}
+	}
 	return nil
 }
 

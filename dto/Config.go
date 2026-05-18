@@ -47,6 +47,8 @@ type ConfigResp struct {
 	FilesCleaned               string
 	GenHashes                  string
 	LastCalCmsState            string
+	LastCalCmsRefreshDate      string
+	LastCalCmsRefreshError     string
 	LastMairListCommState      string
 	ExportDayEvents            string
 	MairListPlayingState       string
@@ -130,6 +132,8 @@ func GetConfig(cfg *config.AppConfig) (resp ConfigResp) {
 		FilesCleaned:               strconv.Itoa(cfg.RunTime.FilesCleaned),
 		GenHashes:                  strconv.FormatBool(cfg.Crawl.GenerateHash),
 		LastCalCmsState:            cfg.RunTime.LastCalCmsState,
+		LastCalCmsRefreshDate:      convertDate(cfg.RunTime.LastCalCmsRefreshDate),
+		LastCalCmsRefreshError:     formatEmpty(cfg.RunTime.LastCalCmsRefreshErr),
 		LastMairListCommState:      cfg.RunTime.LastMairListCommState,
 		ExportDayEvents:            strconv.FormatBool(cfg.CalCms.ExportDayEvents),
 		MairListPlayingState:       strconv.FormatBool(cfg.RunTime.MairListPlaying),
@@ -157,4 +161,11 @@ func GetConfig(cfg *config.AppConfig) (resp ConfigResp) {
 	resp.NextExportDate = getNextJobDate(cfg, cfg.RunTime.ExportJobId)
 	resp.StreamFileMapping = getStreamMappings(cfg.Crawl.StreamMap)
 	return
+}
+
+func formatEmpty(value string) string {
+	if value == "" {
+		return "N/A"
+	}
+	return value
 }

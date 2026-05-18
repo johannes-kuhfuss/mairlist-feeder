@@ -15,12 +15,16 @@ import (
 )
 
 func setupHelperTest() {
-	config.InitConfig(config.EnvFile, &cfg)
-	cfg.RunTime.ListenAddr = fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
+	testApp = Application{}
+	config.InitConfig(config.EnvFile, &testApp.cfg)
+	testApp.cfg.RunTime.ListenAddr = fmt.Sprintf("%s:%s", testApp.cfg.Server.Host, testApp.cfg.Server.Port)
 }
 
+var testApp Application
+
 func TestExportDayEventsNoConfigReturnsError(t *testing.T) {
-	file, err := exportState(eventUrl, "events")
+	testApp = Application{}
+	file, err := testApp.exportState(eventUrl, "events")
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "", file)
 	assert.EqualValues(t, "Get \"http:///events\": http: no Host in request URL", err.Error())
@@ -28,7 +32,7 @@ func TestExportDayEventsNoConfigReturnsError(t *testing.T) {
 
 func TestExportDayEventsGetErrorReturnsError(t *testing.T) {
 	setupHelperTest()
-	file, err := exportState(eventUrl, "events")
+	file, err := testApp.exportState(eventUrl, "events")
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "", file)
 }
@@ -42,8 +46,8 @@ func TestExportDayEventsNoErrorReturnsFileName(t *testing.T) {
 	}))
 	defer srv.Close()
 	u, _ := url.Parse(srv.URL)
-	cfg.RunTime.ListenAddr = u.Hostname() + ":" + u.Port()
-	fileName, err := exportState(eventUrl, "events")
+	testApp.cfg.RunTime.ListenAddr = u.Hostname() + ":" + u.Port()
+	fileName, err := testApp.exportState(eventUrl, "events")
 	_, noFile := os.Stat(fileName)
 	assert.Nil(t, err)
 	assert.Nil(t, noFile)

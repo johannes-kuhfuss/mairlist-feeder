@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -90,4 +91,44 @@ func TestCheckFilePathWeirdPathReturnsCorrectPath(t *testing.T) {
 	testPath := "C:\\TEMP\\..\\..\\..\\etc"
 	checkFilePath(&testPath)
 	assert.EqualValues(t, "C:\\etc", testPath)
+}
+
+func TestValidateConfigInvalidExportMinuteReturnsError(t *testing.T) {
+	var cfg AppConfig
+	cfg.Server.GracefulShutdownTime = 10
+	cfg.Crawl.CrawlCycleMin = 10
+	cfg.Export.ExportMinute = 60
+	cfg.Export.StatusQueryCycleSec = 5
+
+	err := validateConfig(&cfg)
+
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "export minute must be between 0 and 59", err.Error())
+}
+
+func TestValidateConfigInvalidRootFolderReturnsError(t *testing.T) {
+	var cfg AppConfig
+	cfg.Server.GracefulShutdownTime = 10
+	cfg.Crawl.CrawlCycleMin = 10
+	cfg.Export.ExportMinute = 59
+	cfg.Export.StatusQueryCycleSec = 5
+	cfg.Crawl.RootFolder = filepath.Join(t.TempDir(), "missing")
+
+	err := validateConfig(&cfg)
+
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "root folder is not accessible")
+}
+
+func TestValidateConfigValidRootFolderReturnsNoError(t *testing.T) {
+	var cfg AppConfig
+	cfg.Server.GracefulShutdownTime = 10
+	cfg.Crawl.CrawlCycleMin = 10
+	cfg.Export.ExportMinute = 59
+	cfg.Export.StatusQueryCycleSec = 5
+	cfg.Crawl.RootFolder = t.TempDir()
+
+	err := validateConfig(&cfg)
+
+	assert.Nil(t, err)
 }

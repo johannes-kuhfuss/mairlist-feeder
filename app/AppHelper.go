@@ -16,15 +16,15 @@ import (
 )
 
 // ExportDayDataRun runs the export job
-func ExportDayDataRun() {
-	calCmsService.SaveYesterdaysEvents()
-	file, err := exportState(eventUrl, "events")
+func (a *Application) ExportDayDataRun() {
+	a.calCmsService.SaveYesterdaysEvents()
+	file, err := a.exportState(eventUrl, "events")
 	if err != nil {
 		logger.Error("Error exporting day's event state", err)
 	} else {
 		logger.Infof("Exported day's event state into file %v", file)
 	}
-	file, err = exportState(fileUrl, "filelist")
+	file, err = a.exportState(fileUrl, "filelist")
 	if err != nil {
 		logger.Error("Error exporting day's file list state", err)
 	} else {
@@ -34,14 +34,14 @@ func ExportDayDataRun() {
 
 // exportState exports an HTML file containing the event view or the file view of the day
 // This represents the status for the day, so you can retroactively check for which event files were present
-func exportState(urlPath, filePrefix string) (fileName string, e error) {
+func (a *Application) exportState(urlPath, filePrefix string) (fileName string, e error) {
 	u := url.URL{}
-	if cfg.Server.UseTls {
+	if a.cfg.Server.UseTls {
 		u.Scheme = "https"
 	} else {
 		u.Scheme = "http"
 	}
-	u.Host = cfg.RunTime.ListenAddr
+	u.Host = a.cfg.RunTime.ListenAddr
 	u.Path = urlPath
 	resp, err := http.Get(u.String())
 	if err != nil {
@@ -55,13 +55,13 @@ func exportState(urlPath, filePrefix string) (fileName string, e error) {
 		return "", err
 	}
 	exportFileName := filePrefix + "_" + time.Now().Format("2006-01-02") + ".html"
-	writePath := path.Join(cfg.Export.ExportFolder, exportFileName)
+	writePath := path.Join(a.cfg.Export.ExportFolder, exportFileName)
 	absWritePath, err := filepath.Abs(writePath)
 	if err != nil {
 		logger.Error("error creating export file path", err)
 		return "", err
 	}
-	if !isPathWithin(absWritePath, cfg.Export.ExportFolder) {
+	if !isPathWithin(absWritePath, a.cfg.Export.ExportFolder) {
 		return "", errors.New("invalid export path")
 	}
 	file, err := os.Create(absWritePath)

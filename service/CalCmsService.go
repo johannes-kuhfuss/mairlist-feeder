@@ -504,10 +504,12 @@ func (s DefaultCalCmsService) RefreshTodayEvents() ([]dto.Event, error) {
 		data, err := s.getCalCmsEventData()
 		if err != nil {
 			logger.Error("error getting data from calCms", err)
+			s.setTodayRefreshState(err)
 			return nil, err
 		}
 		if err := json.Unmarshal(data, &calCmsData); err != nil {
 			logger.Error("Cannot convert calCMS response data to Json", err)
+			s.setTodayRefreshState(err)
 			return nil, err
 		}
 		s.insertData(calCmsData)
@@ -516,11 +518,23 @@ func (s DefaultCalCmsService) RefreshTodayEvents() ([]dto.Event, error) {
 		s.eventsToday.events = append([]dto.Event(nil), el...)
 		s.eventsToday.Unlock()
 		s.countEvents(el)
+		s.setTodayRefreshState(nil)
 		return el, nil
 	} else {
 		logger.Warn("calCMS query not enabled in configuration. Not querying.")
 		return nil, nil
 	}
+}
+
+func (s DefaultCalCmsService) setTodayRefreshState(err error) {
+	s.Cfg.RunTime.Mu.Lock()
+	defer s.Cfg.RunTime.Mu.Unlock()
+	s.Cfg.RunTime.LastCalCmsRefreshDate = time.Now()
+	if err != nil {
+		s.Cfg.RunTime.LastCalCmsRefreshErr = err.Error()
+		return
+	}
+	s.Cfg.RunTime.LastCalCmsRefreshErr = ""
 }
 
 // GetTodayEvents returns the cached event list for display on the web UI.

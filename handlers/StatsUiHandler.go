@@ -24,6 +24,12 @@ type StatsUiHandler struct {
 	CalCmsSvc *service.DefaultCalCmsService
 }
 
+type actionResponse struct {
+	Status  string `json:"status"`
+	Action  string `json:"action"`
+	Message string `json:"message"`
+}
+
 // NewStatsUiHandler creates a new web UI handler and injects its dependencies
 func NewStatsUiHandler(cfg *config.AppConfig, repo *repositories.DefaultFileRepository, crs *service.DefaultCrawlService, exs *service.DefaultExportService, cls *service.DefaultCleanService, csv *service.DefaultCalCmsService) StatsUiHandler {
 	return StatsUiHandler{
@@ -122,11 +128,14 @@ func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 	case "crawl":
 		uh.CrawlSvc.Crawl()
 		uh.resetCrawl()
+		c.JSON(http.StatusOK, actionResponse{Status: "ok", Action: action, Message: "Crawl completed."})
 	case "export":
 		if hour == "" {
 			uh.ExportSvc.ExportAllHours()
+			c.JSON(http.StatusOK, actionResponse{Status: "ok", Action: action, Message: "Export completed for all hours."})
 		} else {
 			uh.ExportSvc.ExportForHour(hour)
+			c.JSON(http.StatusOK, actionResponse{Status: "ok", Action: action, Message: "Export completed for hour " + hour + "."})
 		}
 	case "exporttodisk":
 		if err := uh.Repo.SaveToDisk(uh.Cfg.Misc.FileSaveFile); err != nil {
@@ -134,10 +143,11 @@ func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
+		c.JSON(http.StatusOK, actionResponse{Status: "ok", Action: action, Message: "File list saved to disk."})
 	case "clean":
 		uh.CleanSvc.Clean()
+		c.JSON(http.StatusOK, actionResponse{Status: "ok", Action: action, Message: "Clean-up completed."})
 	}
-	c.JSON(http.StatusOK, nil)
 }
 
 // validateAction filters the actions tring and only allows valid actions

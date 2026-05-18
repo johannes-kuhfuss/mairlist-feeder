@@ -280,15 +280,21 @@ func (s DefaultExportService) WritePlaylist(exportPath string) error {
 	dataWriter := bufio.NewWriter(exportFile)
 	writtenEntries := make([]string, 0, len(s.exportFiles.Files))
 	s.writeStartComment(dataWriter)
-	for time, file := range s.exportFiles.Files {
-		startTime = setStartTime(startTime, time)
+	keys := make([]string, 0, len(s.exportFiles.Files))
+	for timeKey := range s.exportFiles.Files {
+		keys = append(keys, timeKey)
+	}
+	sort.Strings(keys)
+	for _, timeKey := range keys {
+		file := s.exportFiles.Files[timeKey]
+		startTime = setStartTime(startTime, timeKey)
 		if file.FromCalCMS && !file.EndTime.IsZero() {
 			plannedDur := file.EndTime.Sub(file.StartTime).Minutes()
 			totalLength = totalLength + plannedDur
 		} else {
 			totalLength = totalLength + file.SlotLength
 		}
-		listTime := time + ":00"
+		listTime := timeKey + ":00"
 		switch file.FileType {
 		case "Stream":
 			line = fmt.Sprintf("%v\tH\tI\t%v\n", listTime, file.StreamId)
