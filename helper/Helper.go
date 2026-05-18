@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"path"
 	"path/filepath"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
-	"github.com/johannes-kuhfuss/services_utils/misc"
 )
 
 // GetTodayFolder returns today's date in folder syntax (YYYY/MM/DD).
@@ -46,10 +47,12 @@ func TimeFromHourAndMinuteAndDate(hour, minute int, fd time.Time) time.Time {
 
 // IsAudioFile returns true, if a file's extension is in the configured audio file extensions
 func IsAudioFile(cfg *config.AppConfig, path string) bool {
-	return misc.SliceContainsStringCI(cfg.Crawl.AudioFileExtensions, filepath.Ext(path))
+	return slices.ContainsFunc(cfg.Crawl.AudioFileExtensions, func(s string) bool { return strings.EqualFold(s, filepath.Ext(path)) })
+	//return misc.SliceContainsStringCI(cfg.Crawl.AudioFileExtensions, filepath.Ext(path))
 }
 
 // IsStreamingFile returns true, if a file's extension is in the configured streaming file extensions
 func IsStreamingFile(cfg *config.AppConfig, path string) bool {
-	return misc.SliceContainsStringCI(cfg.Crawl.StreamingFileExtensions, filepath.Ext(path))
+	return slices.ContainsFunc(cfg.Crawl.StreamingFileExtensions, func(s string) bool { return strings.EqualFold(s, filepath.Ext(path)) })
+	//return misc.SliceContainsStringCI(cfg.Crawl.StreamingFileExtensions, filepath.Ext(path))
 }

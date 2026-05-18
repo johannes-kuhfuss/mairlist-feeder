@@ -9,6 +9,7 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -20,7 +21,6 @@ import (
 	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/johannes-kuhfuss/services_utils/logger"
-	"github.com/johannes-kuhfuss/services_utils/misc"
 )
 
 type CalCmsQuerier interface {
@@ -405,7 +405,7 @@ func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dt
 		files *domain.FileList
 	)
 	for _, event := range calCmsData.Events {
-		if !misc.SliceContainsString(s.Cfg.CalCms.EventExclusion, event.Skey) {
+		if !slices.Contains(s.Cfg.CalCms.EventExclusion, event.Skey) {
 			var ev dto.Event
 			ev.CurrentEvent = isCurrent(event.StartTime, event.EndTime)
 			ev.EventId = strconv.Itoa(event.EventID)

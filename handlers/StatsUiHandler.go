@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"net/http"
+	"slices"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -12,7 +13,6 @@ import (
 	"github.com/johannes-kuhfuss/mairlist-feeder/service"
 	"github.com/johannes-kuhfuss/services_utils/api_error"
 	"github.com/johannes-kuhfuss/services_utils/logger"
-	"github.com/johannes-kuhfuss/services_utils/misc"
 )
 
 type StatsUiHandler struct {
@@ -153,7 +153,7 @@ func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 // validateAction filters the actions tring and only allows valid actions
 func validateAction(action string) api_error.ApiErr {
 	actions := []string{"crawl", "export", "clean", "exporttodisk"}
-	if misc.SliceContainsString(actions, action) {
+	if slices.Contains(actions, action) {
 		return nil
 	} else {
 		return api_error.NewBadRequestError("unknown action")

@@ -15,6 +15,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -26,7 +27,6 @@ import (
 	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/johannes-kuhfuss/services_utils/logger"
-	"github.com/johannes-kuhfuss/services_utils/misc"
 )
 
 type Crawler interface {
@@ -193,7 +193,7 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []st
 			if info.IsDir() {
 				return nil
 			}
-			if misc.SliceContainsStringCI(crawlExtensions, filepath.Ext(srcPath)) {
+			if slices.ContainsFunc(crawlExtensions, func(s string) bool { return strings.EqualFold(s, filepath.Ext(srcPath)) }) {
 				newFile, err := info.Info()
 				if err != nil {
 					return err
