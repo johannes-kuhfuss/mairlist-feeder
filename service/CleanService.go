@@ -16,14 +16,11 @@ type Cleaner interface {
 	Clean()
 }
 
-var (
-	clmu sync.Mutex
-)
-
 // The clean service handles the cyclical clean-up of the file list kept in memory
 type DefaultCleanService struct {
 	Cfg  *config.AppConfig
 	Repo *repositories.DefaultFileRepository
+	mu   *sync.Mutex
 }
 
 // NewCleanService creates a new cleaning service and injects its dependencies
@@ -31,6 +28,7 @@ func NewCleanService(cfg *config.AppConfig, repo *repositories.DefaultFileReposi
 	return DefaultCleanService{
 		Cfg:  cfg,
 		Repo: repo,
+		mu:   &sync.Mutex{},
 	}
 }
 
@@ -68,8 +66,8 @@ func (s DefaultCleanService) CleanRun() (filesCleaned int, e error) {
 	var (
 		errorCounter int
 	)
-	clmu.Lock()
-	defer clmu.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.Cfg.RunTime.Mu.Lock()
 	s.Cfg.RunTime.CleanRunning = true
 	s.Cfg.RunTime.LastCleanDate = time.Now()

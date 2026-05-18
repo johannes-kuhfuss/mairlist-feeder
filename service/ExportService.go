@@ -33,10 +33,6 @@ type Exporter interface {
 	Export()
 }
 
-var (
-	exmu sync.Mutex
-)
-
 const (
 	dateFormat = "2006-01-02 15:04:05 -0700 MST"
 )
@@ -47,6 +43,7 @@ type DefaultExportService struct {
 	Repo        *repositories.DefaultFileRepository
 	exportFiles *domain.SafeFileList
 	httpClient  *http.Client
+	mu          *sync.Mutex
 }
 
 // InitHttpExClient sets the default values for the http client used to interact with mAirlist
@@ -72,6 +69,7 @@ func NewExportService(cfg *config.AppConfig, repo *repositories.DefaultFileRepos
 			Files: make(map[string]domain.FileInfo),
 		},
 		httpClient: InitHttpExClient(),
+		mu:         &sync.Mutex{},
 	}
 }
 
@@ -94,8 +92,8 @@ func (s DefaultExportService) ExportAllHours() {
 // ExportForHour exports a playlist for a given hour
 // Loads playlist into mAirList via API, if enabled
 func (s DefaultExportService) ExportForHour(hour string) {
-	exmu.Lock()
-	defer exmu.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.Cfg.RunTime.Mu.Lock()
 	s.Cfg.RunTime.ExportRunning = true
 	s.Cfg.RunTime.Mu.Unlock()

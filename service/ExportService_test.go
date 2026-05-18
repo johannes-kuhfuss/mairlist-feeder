@@ -372,6 +372,45 @@ func TestExportToPlayoutOneFilesExport(t *testing.T) {
 	assert.GreaterOrEqual(t, time.Now(), exportService.Cfg.RunTime.LastExportedFileDate)
 }
 
+func TestWritePlaylistFailureKeepsQueuedEntries(t *testing.T) {
+	tearDown := setupTestEx()
+	defer tearDown()
+	exportService.exportFiles.Files["13:00"] = domain.FileInfo{
+		Path:       "A",
+		Duration:   3600,
+		StartTime:  helper.TimeFromHourAndMinute(13, 0),
+		SlotLength: 60.0,
+	}
+	file := filepath.Join(t.TempDir(), "missing", "playlist.tpi")
+
+	err := exportService.WritePlaylist(file)
+
+	assert.NotNil(t, err)
+	assert.EqualValues(t, 1, len(exportService.exportFiles.Files))
+	assert.EqualValues(t, "A", exportService.exportFiles.Files["13:00"].Path)
+}
+
+func TestWritePlaylistTruncatesExistingFile(t *testing.T) {
+	tearDown := setupTestEx()
+	defer tearDown()
+	exportService.exportFiles.Files["13:00"] = domain.FileInfo{
+		Path:       "A",
+		Duration:   3600,
+		StartTime:  helper.TimeFromHourAndMinute(13, 0),
+		SlotLength: 60.0,
+	}
+	file := filepath.Join(t.TempDir(), "playlist.tpi")
+	os.WriteFile(file, []byte("stale data that must be removed"), 0644)
+
+	err := exportService.WritePlaylist(file)
+	data, readErr := os.ReadFile(file)
+
+	assert.Nil(t, err)
+	assert.Nil(t, readErr)
+	assert.Contains(t, string(data), "13:00:00\tH\tF\tA")
+	assert.NotContains(t, string(data), "stale data")
+}
+
 func TestWritePlaylistWritesEntriesInTimeOrder(t *testing.T) {
 	var fileLines []string
 	tearDown := setupTestEx()

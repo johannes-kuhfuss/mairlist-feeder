@@ -34,7 +34,6 @@ type Crawler interface {
 }
 
 var (
-	crmu       sync.Mutex
 	idExp      = regexp.MustCompile(`-id\d+-`)
 	folder1Exp = regexp.MustCompile(`[\\/]+([01][0-9]|2[0-3])-(0[0-9]|[1-5][0-9])`)
 	file1Exp   = regexp.MustCompile(`^([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])\s?-\s?([01][0-9]|2[0-3])(0[0-9]|[1-5][0-9])[_ -]`)
@@ -45,6 +44,7 @@ type DefaultCrawlService struct {
 	Cfg    *config.AppConfig
 	Repo   *repositories.DefaultFileRepository
 	CalSvc CalCmsQuerier
+	mu     *sync.Mutex
 }
 
 // NewCrawlService creates a new crawling service and injects its dependencies
@@ -53,6 +53,7 @@ func NewCrawlService(cfg *config.AppConfig, repo *repositories.DefaultFileReposi
 		Cfg:    cfg,
 		Repo:   repo,
 		CalSvc: calSvc,
+		mu:     &sync.Mutex{},
 	}
 }
 
@@ -62,8 +63,8 @@ func (s DefaultCrawlService) Crawl() {
 		logger.Warn("No root folder given. Not running")
 		return
 	}
-	crmu.Lock()
-	defer crmu.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.Cfg.RunTime.Mu.Lock()
 	s.Cfg.RunTime.CrawlRunning = true
 	s.Cfg.RunTime.Mu.Unlock()

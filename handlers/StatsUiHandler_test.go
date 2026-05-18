@@ -129,6 +129,28 @@ func TestActionPageReturnsAction(t *testing.T) {
 	assert.True(t, containsTitle)
 }
 
+func TestActionPageContainsFeedbackUi(t *testing.T) {
+	teardown := setupUiTest()
+	defer teardown()
+	router.GET(actionUrl, uh.ActionPage)
+	request := httptest.NewRequest(http.MethodGet, actionUrl, nil)
+
+	router.ServeHTTP(recorder, request)
+	res := recorder.Result()
+	defer res.Body.Close()
+	data, err := io.ReadAll(res.Body)
+	body := string(data)
+
+	assert.EqualValues(t, http.StatusOK, res.StatusCode)
+	assert.Nil(t, err)
+	assert.Contains(t, body, `id="status"`)
+	assert.Contains(t, body, `role="status"`)
+	assert.Contains(t, body, `await fetch("/actions"`)
+	assert.Contains(t, body, `alert alert-success`)
+	assert.Contains(t, body, `alert alert-danger`)
+	assert.Contains(t, body, `data.message || "Action completed."`)
+}
+
 func TestValidateHourHourEmptyReturnsNoError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()

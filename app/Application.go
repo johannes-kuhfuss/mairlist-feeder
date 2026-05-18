@@ -89,6 +89,9 @@ func (a *Application) Start() {
 
 	<-a.appEnd
 	a.cleanUp()
+	if a.cancel != nil {
+		defer a.cancel()
+	}
 
 	if err := a.server.Shutdown(a.ctx); err != nil {
 		logger.Error("Graceful shutdown failed", err)
@@ -267,12 +270,17 @@ func (a *Application) cleanUp() {
 	if a.appCancel != nil {
 		a.appCancel()
 	}
-	if a.cfg.RunTime.BgJobs != nil {
-		a.cfg.RunTime.BgJobs.Stop()
-	}
 	shutdownTime := time.Duration(a.cfg.Server.GracefulShutdownTime) * time.Second
 	a.ctx, a.cancel = context.WithTimeout(context.Background(), shutdownTime)
-	defer a.cancel()
+	if a.cfg.RunTime.BgJobs != nil {
+		cronCtx := a.cfg.RunTime.BgJobs.Stop()
+		select {
+		case <-cronCtx.Done():
+			logger.Info("Background jobs stopped")
+		case <-a.ctx.Done():
+			logger.Warn("Timed out waiting for background jobs to stop")
+		}
+	}
 	defer func() {
 		logger.Info("Cleaned up")
 	}()

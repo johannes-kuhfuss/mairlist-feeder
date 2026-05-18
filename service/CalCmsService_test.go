@@ -697,6 +697,89 @@ func TestGetEventsReturnsdata(t *testing.T) {
 	assert.EqualValues(t, ev, cachedEvents)
 }
 
+func TestGetTodayEventsUsesCacheWithoutHttpRequest(t *testing.T) {
+	teardown := setupTestCal()
+	defer teardown()
+	respData, _ := os.ReadFile(calCmsResponseFile)
+	requestCount := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		w.WriteHeader(http.StatusOK)
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(respData)
+	}))
+	defer srv.Close()
+	cfgCal.CalCms.CmsUrl = srv.URL
+	cfgCal.Misc.TestCrawl = true
+	cfgCal.Misc.TestDate = "2024/09/24"
+	cfgCal.CalCms.QueryCalCms = true
+	ev, err := calCmsService.RefreshTodayEvents()
+	assert.Nil(t, err)
+	assert.EqualValues(t, 1, requestCount)
+
+	cachedEvents, err := calCmsService.GetTodayEvents()
+
+	assert.Nil(t, err)
+	assert.EqualValues(t, ev, cachedEvents)
+	assert.EqualValues(t, 1, requestCount)
+}
+
+func TestRefreshTodayEventsUpdatesRefreshState(t *testing.T) {
+	teardown := setupTestCal()
+	defer teardown()
+	respData, _ := os.ReadFile(calCmsResponseFile)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(respData)
+	}))
+	defer srv.Close()
+	cfgCal.CalCms.CmsUrl = srv.URL
+	cfgCal.Misc.TestCrawl = true
+	cfgCal.Misc.TestDate = "2024/09/24"
+	cfgCal.CalCms.QueryCalCms = true
+
+	_, err := calCmsService.RefreshTodayEvents()
+
+	assert.Nil(t, err)
+	assert.False(t, cfgCal.RunTime.LastCalCmsRefreshDate.IsZero())
+	assert.EqualValues(t, "", cfgCal.RunTime.LastCalCmsRefreshErr)
+}
+
+func TestRefreshTodayEventsFailureKeepsCachedEventsAndSetsError(t *testing.T) {
+	teardown := setupTestCal()
+	defer teardown()
+	respData, _ := os.ReadFile(calCmsResponseFile)
+	fail := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if fail {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Add("Content-Type", "application/json")
+		w.Write(respData)
+	}))
+	defer srv.Close()
+	cfgCal.CalCms.CmsUrl = srv.URL
+	cfgCal.Misc.TestCrawl = true
+	cfgCal.Misc.TestDate = "2024/09/24"
+	cfgCal.CalCms.QueryCalCms = true
+	ev, err := calCmsService.RefreshTodayEvents()
+	assert.Nil(t, err)
+	fail = true
+
+	failedEvents, err := calCmsService.RefreshTodayEvents()
+	cachedEvents, cacheErr := calCmsService.GetTodayEvents()
+
+	assert.Nil(t, failedEvents)
+	assert.NotNil(t, err)
+	assert.Nil(t, cacheErr)
+	assert.EqualValues(t, ev, cachedEvents)
+	assert.EqualValues(t, "500 Internal Server Error", cfgCal.RunTime.LastCalCmsRefreshErr)
+	assert.False(t, cfgCal.RunTime.LastCalCmsRefreshDate.IsZero())
+}
+
 func TestCheckHashNoFilesReturnsFalse(t *testing.T) {
 	files := domain.FileList{}
 	i, h := checkHash(&files)

@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -28,6 +29,18 @@ func setupTest() {
 func TestNewFileRepositoryCreatesEmptyList(t *testing.T) {
 	setupTest()
 	assert.EqualValues(t, 0, repo.Size())
+}
+
+func TestNewFileRepositoryInstancesDoNotShareData(t *testing.T) {
+	repo1 := NewFileRepository(&cfg)
+	repo2 := NewFileRepository(&cfg)
+
+	err := repo1.Store(domain.FileInfo{Path: "A"})
+
+	assert.Nil(t, err)
+	assert.EqualValues(t, 1, repo1.Size())
+	assert.EqualValues(t, 0, repo2.Size())
+	assert.Nil(t, repo2.GetByPath("A"))
 }
 
 func TestGetByPathEmptyListReturnsNil(t *testing.T) {
@@ -240,6 +253,29 @@ func TestSaveToDiskSavesToDisk(t *testing.T) {
 	assert.EqualValues(t, 0, sizeBefore)
 	assert.EqualValues(t, 3, sizeAfter)
 	os.Remove(testFile)
+}
+
+func TestSaveToDiskReplacesExistingFileAndCleansTempFile(t *testing.T) {
+	setupTest()
+	dir := t.TempDir()
+	fileName := filepath.Join(dir, "files.dta")
+	os.WriteFile(fileName, []byte("old data"), 0644)
+	fi := domain.FileInfo{
+		Path:      "A",
+		StartTime: helper.TimeFromHourAndMinute(11, 0),
+	}
+	repo.Store(fi)
+
+	err := repo.SaveToDisk(fileName)
+	matches, globErr := filepath.Glob(filepath.Join(dir, "files.dta.*.tmp"))
+	data, readErr := os.ReadFile(fileName)
+
+	assert.Nil(t, err)
+	assert.Nil(t, globErr)
+	assert.Empty(t, matches)
+	assert.Nil(t, readErr)
+	assert.Contains(t, string(data), "\"A\"")
+	assert.NotContains(t, string(data), "old data")
 }
 
 func TestLoadFromDiskNoFileReturnsError(t *testing.T) {

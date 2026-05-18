@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -237,11 +238,46 @@ func (fr DefaultFileRepository) SaveToDisk(fileName string) error {
 		logger.Error("Error while converting file list to JSON", err)
 		return err
 	}
-	if err := os.WriteFile(fileName, b, 0644); err != nil {
+	if err := writeFileAtomic(fileName, b, 0644); err != nil {
 		logger.Error("Error while writing files data to disk", err)
 		return err
 	}
 	logger.Infof("Saved files data to disk (%v items)", len(fr.files.Files))
+	return nil
+}
+
+func writeFileAtomic(fileName string, data []byte, perm os.FileMode) error {
+	dir := filepath.Dir(fileName)
+	base := filepath.Base(fileName)
+	tmpFile, err := os.CreateTemp(dir, base+".*.tmp")
+	if err != nil {
+		return err
+	}
+	tmpName := tmpFile.Name()
+	defer os.Remove(tmpName)
+	if _, err := tmpFile.Write(data); err != nil {
+		tmpFile.Close()
+		return err
+	}
+	if err := tmpFile.Chmod(perm); err != nil {
+		tmpFile.Close()
+		return err
+	}
+	if err := tmpFile.Sync(); err != nil {
+		tmpFile.Close()
+		return err
+	}
+	if err := tmpFile.Close(); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpName, fileName); err != nil {
+		if removeErr := os.Remove(fileName); removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) {
+			return removeErr
+		}
+		if renameErr := os.Rename(tmpName, fileName); renameErr != nil {
+			return renameErr
+		}
+	}
 	return nil
 }
 
