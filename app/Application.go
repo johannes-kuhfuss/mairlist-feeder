@@ -32,7 +32,6 @@ import (
 type Application struct {
 	cfg            config.AppConfig
 	server         http.Server
-	appEnd         chan os.Signal
 	appCtx         context.Context
 	appCancel      context.CancelFunc
 	statsUiHandler handlers.StatsUiHandler
@@ -74,7 +73,6 @@ func (a *Application) Start() {
 	a.wireApp()
 	a.mapUrls()
 	a.RegisterForOsSignals()
-	a.appCtx, a.appCancel = context.WithCancel(context.Background())
 	a.scheduleBgJobs()
 	go a.startServer()
 	if a.cfg.Export.QueryMairListStatus {
@@ -85,7 +83,7 @@ func (a *Application) Start() {
 		logger.Error("Error refreshing today's events", err)
 	}
 
-	<-a.appEnd
+	<-a.appCtx.Done()
 	shutdownCtx, shutdownCancel := a.cleanUp()
 	defer shutdownCancel()
 	if err := a.server.Shutdown(shutdownCtx); err != nil {
@@ -184,8 +182,7 @@ func (a *Application) mapUrls() {
 
 // RegisterForOsSignals listens for OS signals terminating the program and sends an internal signal to start cleanup
 func (a *Application) RegisterForOsSignals() {
-	a.appEnd = make(chan os.Signal, 1)
-	signal.Notify(a.appEnd, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	a.appCtx, a.appCancel = signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 }
 
 // scheduleBgJobs schedules all jobs running in the background, e.g. cleaning yesterday's items from the list
