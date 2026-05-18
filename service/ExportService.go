@@ -110,7 +110,7 @@ func (s DefaultExportService) ExportForHour(hour string) {
 		exportPath, err := s.ExportToPlayout(hour)
 		if s.Cfg.Export.AppendPlaylist && exportPath != "" && err == nil {
 			req := dto.MairListRequest{
-				ReqType:  "appendpl",
+				ReqType:  dto.MairListRequestAppendPlaylist,
 				FileName: exportPath,
 			}
 			err := s.ExecuteMairListRequest(req)
@@ -166,9 +166,9 @@ func createIndexFromTime(t1 time.Time) string {
 // checkTime is a helper function that compares available time information such as start time, end time, etc.
 // It classifies the entry into a slot length and calculates differences between the actual file length and the presumed slot length
 // Finally it makes a determination whether the file's length is OK to play the file
-func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengthOk bool, slot float64, info string) {
+func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengthOk bool, slot time.Duration, info string) {
 	var (
-		lengthSlot   float64
+		lengthSlot   time.Duration
 		slotDelta    float64
 		plannedDur   float64
 		durDelta     float64
@@ -176,7 +176,7 @@ func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengt
 		detail       string
 		lenStr       string
 	)
-	roundedDurationMin := math.Round(fi.Duration / 60)
+	roundedDurationMin := math.Round(fi.Duration.Minutes())
 	is30Min := (roundedDurationMin >= 30.0-shortDelta) && (roundedDurationMin <= 30.0+longDelta)
 	is45Min := (roundedDurationMin >= 45.0-shortDelta) && (roundedDurationMin <= 45.0+longDelta)
 	is60Min := (roundedDurationMin >= 60.0-shortDelta) && (roundedDurationMin <= 60.0+longDelta)
@@ -185,26 +185,26 @@ func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengt
 	isLonger := (roundedDurationMin > 120.0+longDelta)
 	switch {
 	case is30Min:
-		lengthSlot = 30.0
+		lengthSlot = 30 * time.Minute
 		slotDelta = roundedDurationMin - 30.0
 	case is45Min:
-		lengthSlot = 45.0
+		lengthSlot = 45 * time.Minute
 		slotDelta = roundedDurationMin - 45.0
 	case is60Min:
-		lengthSlot = 60.0
+		lengthSlot = 60 * time.Minute
 		slotDelta = roundedDurationMin - 60.0
 	case is90Min:
-		lengthSlot = 90.0
+		lengthSlot = 90 * time.Minute
 		slotDelta = roundedDurationMin - 90.0
 	case is120Min:
-		lengthSlot = 120.0
+		lengthSlot = 120 * time.Minute
 		slotDelta = roundedDurationMin - 120.0
 	case isLonger:
-		lengthSlot = roundedDurationMin
+		lengthSlot = time.Duration(roundedDurationMin) * time.Minute
 		slotDelta = 0.0
 		logger.Warnf("Detected very long file: %v with length %vmin. Please verify.", fi.Path, roundedDurationMin)
 	default:
-		lengthSlot = 0.0
+		lengthSlot = 0
 		slotDelta = 0.0
 	}
 	if !fi.EndTime.IsZero() {
@@ -215,8 +215,8 @@ func checkTime(fi domain.FileInfo, shortDelta float64, longDelta float64) (lengt
 		plannedAvail = false
 	}
 	lOk := is30Min || is45Min || is60Min || is90Min || is120Min || isLonger
-	if lengthSlot > 0.0 {
-		lenStr = strconv.Itoa(int(math.Round(lengthSlot))) + "min"
+	if lengthSlot > 0 {
+		lenStr = strconv.Itoa(int(math.Round(lengthSlot.Minutes()))) + "min"
 
 	} else {
 		lenStr = "N/A"
@@ -265,7 +265,7 @@ func (s DefaultExportService) ExportToPlayout(hour string) (exportedFile string,
 
 func (s DefaultExportService) WritePlaylist(exportPath string) error {
 	var (
-		totalLength float64
+		totalLength time.Duration
 		startTime   time.Time
 		line        string
 	)
@@ -287,14 +287,14 @@ func (s DefaultExportService) WritePlaylist(exportPath string) error {
 		file := s.exportFiles.Files[timeKey]
 		startTime = setStartTime(startTime, timeKey)
 		if file.FromCalCMS && !file.EndTime.IsZero() {
-			plannedDur := file.EndTime.Sub(file.StartTime).Minutes()
+			plannedDur := file.EndTime.Sub(file.StartTime)
 			totalLength = totalLength + plannedDur
 		} else {
 			totalLength = totalLength + file.SlotLength
 		}
 		listTime := timeKey + ":00"
 		switch file.FileType {
-		case "Stream":
+		case domain.FileTypeStream:
 			line = fmt.Sprintf("%v\tH\tI\t%v\n", listTime, file.StreamId)
 		default:
 			line = fmt.Sprintf("%v\tH\tF\t%v\n", listTime, file.Path)
@@ -371,9 +371,8 @@ func (s DefaultExportService) writeStartComment(w *bufio.Writer) {
 }
 
 // WriteStopper is a helper function adding an end element to the ".tpi" file
-func (s DefaultExportService) WriteStopper(w *bufio.Writer, startTime time.Time, tlen float64) {
-	dur := time.Duration(tlen * float64(time.Minute))
-	eh := startTime.Add(dur)
+func (s DefaultExportService) WriteStopper(w *bufio.Writer, startTime time.Time, tlen time.Duration) {
+	eh := startTime.Add(tlen)
 	line := fmt.Sprintf("%v\tH\tD\tEnd of block\n", eh.Format("15:04:05"))
 	s.writeLine(w, line)
 }
@@ -397,12 +396,12 @@ func (s DefaultExportService) writeLine(w *bufio.Writer, line string) error {
 func (s DefaultExportService) ExecuteMairListRequest(req dto.MairListRequest) error {
 	// ReqType = appendpl, getpl
 	switch req.ReqType {
-	case "appendpl":
+	case dto.MairListRequestAppendPlaylist:
 		err := s.AppendPlaylist(req.FileName)
 		if err != nil {
 			return err
 		}
-	case "getpl":
+	case dto.MairListRequestGetPlaylist:
 		err := s.GetPlaylist()
 		if err != nil {
 			return err

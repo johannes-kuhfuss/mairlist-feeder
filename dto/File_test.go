@@ -24,7 +24,7 @@ var (
 		FromCalCMS:          false,
 		InfoExtracted:       false,
 		ScanTime:            time.Time{},
-		FolderDate:          folderDate,
+		FolderDate:          domain.MustParseFolderDate(folderDate),
 		RuleMatched:         "",
 		EventId:             0,
 		CalCmsTitle:         "",
@@ -58,13 +58,13 @@ func TestGetFilesTwoFilesReturnsFileData(t *testing.T) {
 	fi1 := domain.FileInfo{
 		Path:                "A",
 		ModTime:             time.Time{},
-		Duration:            3600,
+		Duration:            time.Hour,
 		StartTime:           helper.TimeFromHourAndMinute(11, 0),
 		EndTime:             time.Time{},
 		FromCalCMS:          false,
 		InfoExtracted:       false,
 		ScanTime:            time.Time{},
-		FolderDate:          folderDate,
+		FolderDate:          domain.MustParseFolderDate(folderDate),
 		RuleMatched:         "None",
 		EventId:             1,
 		CalCmsTitle:         "",
@@ -73,13 +73,13 @@ func TestGetFilesTwoFilesReturnsFileData(t *testing.T) {
 	fi2 := domain.FileInfo{
 		Path:                "B",
 		ModTime:             time.Time{},
-		Duration:            3600,
+		Duration:            time.Hour,
 		StartTime:           time.Time{},
 		EndTime:             helper.TimeFromHourAndMinute(13, 0),
 		FromCalCMS:          false,
 		InfoExtracted:       false,
 		ScanTime:            time.Time{},
-		FolderDate:          folderDate,
+		FolderDate:          domain.MustParseFolderDate(folderDate),
 		RuleMatched:         "None",
 		EventId:             0,
 		CalCmsTitle:         "",
@@ -99,13 +99,13 @@ func TestBuildCalCmsInfoReturnsInfo1(t *testing.T) {
 	fi1 := domain.FileInfo{
 		Path:                "A",
 		ModTime:             time.Time{},
-		Duration:            3600,
+		Duration:            time.Hour,
 		StartTime:           helper.TimeFromHourAndMinute(11, 0),
 		EndTime:             time.Time{},
 		FromCalCMS:          true,
 		InfoExtracted:       true,
 		ScanTime:            time.Time{},
-		FolderDate:          folderDate,
+		FolderDate:          domain.MustParseFolderDate(folderDate),
 		RuleMatched:         "None",
 		EventId:             1,
 		CalCmsTitle:         "myTitle",
@@ -119,13 +119,13 @@ func TestBuildCalCmsInfoReturnsInfo2(t *testing.T) {
 	fi1 := domain.FileInfo{
 		Path:                "A",
 		ModTime:             time.Time{},
-		Duration:            3600,
+		Duration:            time.Hour,
 		StartTime:           helper.TimeFromHourAndMinute(11, 0),
 		EndTime:             time.Time{},
 		FromCalCMS:          false,
 		InfoExtracted:       true,
 		ScanTime:            time.Time{},
-		FolderDate:          folderDate,
+		FolderDate:          domain.MustParseFolderDate(folderDate),
 		RuleMatched:         "None",
 		EventId:             1,
 		CalCmsTitle:         "",
@@ -143,14 +143,14 @@ func TestBuildTechMdDefault(t *testing.T) {
 func TestBuildTechMdAudioChecksum(t *testing.T) {
 	fis.FormatName = "MyFormat"
 	fis.BitRate = 123
-	fis.FileType = "Audio"
+	fis.FileType = domain.FileTypeAudio
 	fis.Checksum = "ABC"
 	info := buildTechMd(fis)
 	assert.EqualValues(t, "MyFormat @ 123kbps [ABC]", info)
 }
 
 func TestBuildTechMdStream(t *testing.T) {
-	fis.FileType = "Stream"
+	fis.FileType = domain.FileTypeStream
 	fis.StreamId = 123
 	fis.StreamName = "MyStream"
 	fis.Checksum = ""

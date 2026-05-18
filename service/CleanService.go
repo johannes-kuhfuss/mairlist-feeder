@@ -33,14 +33,12 @@ func NewCleanService(cfg *config.AppConfig, repo *repositories.DefaultFileReposi
 }
 
 // isYesterdayOrOlder is a helper function which checks each entry and determines whether this entry can be purged from the list
-func isYesterdayOrOlder(folderDate string) (bool, error) {
-	const dateLayout = "2006-01-02"
-	fileDate, err := time.Parse(dateLayout, folderDate)
-	if err != nil {
-		logger.Error("Could not convert date", err)
-		return false, err
+func isYesterdayOrOlder(folderDate time.Time) (bool, error) {
+	if folderDate.IsZero() {
+		return false, errors.New("folder date is empty")
 	}
-	today := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC)
+	fileDate := time.Date(folderDate.Year(), folderDate.Month(), folderDate.Day(), 0, 0, 0, 0, time.Local)
+	today := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Local)
 	diff := today.Sub(fileDate).Hours() / 24
 	return diff >= 1, nil
 }

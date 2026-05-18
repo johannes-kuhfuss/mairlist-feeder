@@ -252,18 +252,18 @@ func (s DefaultCrawlService) parseEventId(srcPath string) int {
 }
 
 // folderDateFromPath extracts the YYYY-MM-DD folder date below the crawl root.
-func folderDateFromPath(srcPath string, rootFolder string) (string, error) {
+func folderDateFromPath(srcPath string, rootFolder string) (time.Time, error) {
 	relDir, err := filepath.Rel(rootFolder, filepath.Dir(srcPath))
 	if err != nil {
-		return "", err
+		return time.Time{}, err
 	}
 	parts := strings.Split(filepath.ToSlash(relDir), "/")
 	if len(parts) < 3 {
-		return "", fmt.Errorf("path %q does not contain a YYYY/MM/DD folder below root %q", srcPath, rootFolder)
+		return time.Time{}, fmt.Errorf("path %q does not contain a YYYY/MM/DD folder below root %q", srcPath, rootFolder)
 	}
-	folderDate := strings.Join(parts[:3], "-")
-	if _, err := time.Parse("2006-01-02", folderDate); err != nil {
-		return "", fmt.Errorf("path %q does not contain a valid YYYY/MM/DD folder below root %q: %w", srcPath, rootFolder, err)
+	folderDate, err := domain.ParseFolderDate(strings.Join(parts[:3], "-"))
+	if err != nil {
+		return time.Time{}, fmt.Errorf("path %q does not contain a valid YYYY/MM/DD folder below root %q: %w", srcPath, rootFolder, err)
 	}
 	return folderDate, nil
 }
@@ -323,13 +323,13 @@ func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
 // extractAudioInfo enriches the file information with audio file specific metadata
 func (s DefaultCrawlService) extractAudioInfo(oldInfo domain.FileInfo) (newInfo domain.FileInfo, e error) {
 	newInfo = oldInfo
-	newInfo.FileType = "Audio"
+	newInfo.FileType = domain.FileTypeAudio
 	techMd, err := analyzeTechMd(oldInfo.Path, s.Cfg.Crawl.FfProbeTimeOut, s.Cfg.Crawl.FfprobePath)
 	if err != nil {
 		logger.Error("Could not analyze file length", err)
 		return newInfo, err
 	} else {
-		newInfo.Duration = techMd.DurationSec
+		newInfo.Duration = techMd.Duration
 		newInfo.BitRate = techMd.BitRate
 		newInfo.FormatName = techMd.FormatName
 	}
@@ -339,7 +339,7 @@ func (s DefaultCrawlService) extractAudioInfo(oldInfo domain.FileInfo) (newInfo 
 // extractStreamInfo enriches the file information with stream file specific metadata
 func (s DefaultCrawlService) extractStreamInfo(oldInfo domain.FileInfo) (newInfo domain.FileInfo, e error) {
 	newInfo = oldInfo
-	newInfo.FileType = "Stream"
+	newInfo.FileType = domain.FileTypeStream
 	name, id, err := analyzeStreamData(oldInfo.Path, s.Cfg.Crawl.StreamMap)
 	if err != nil {
 		logger.Error("Could not analyze stream data", err)
@@ -396,17 +396,17 @@ func logExtractResult(fi domain.FileInfo) {
 		startTimeDisplay = fi.StartTime.Format("15:04")
 	}
 	switch fi.FileType {
-	case "Stream":
+	case domain.FileTypeStream:
 		logger.Infof("Time Slot: % v, File: %v (Stream Descriptor)", startTimeDisplay, fi.Path)
 	default:
-		roundedDurationMin := math.Round(fi.Duration / 60)
+		roundedDurationMin := math.Round(fi.Duration.Minutes())
 		logger.Infof("Time Slot: % v, File: %v - Length (min): %v", startTimeDisplay, fi.Path, roundedDurationMin)
 	}
 
 }
 
 // convertTime is a helper function to convert time information extracted from the file names into a time.Time
-func convertTime(t1str, t2str, folderDate string) (t time.Time, e error) {
+func convertTime(t1str, t2str string, folderDate time.Time) (t time.Time, e error) {
 	t1, err := strconv.Atoi(t1str)
 	if err != nil {
 		logger.Error("converting start time error", err)
@@ -417,12 +417,7 @@ func convertTime(t1str, t2str, folderDate string) (t time.Time, e error) {
 		logger.Error("converting end time error", err)
 		return time.Time{}, err
 	}
-	fd, err := time.Parse("2006-01-02", folderDate)
-	if err != nil {
-		logger.Error("converting folder date error", err)
-		return time.Time{}, err
-	}
-	return helper.TimeFromHourAndMinuteAndDate(t1, t2, fd), nil
+	return helper.TimeFromHourAndMinuteAndDate(t1, t2, folderDate), nil
 }
 
 // analyzeTechMd runs ffprobe to extract technical metadata from audio files
@@ -476,7 +471,7 @@ func parseTechMd(ffprobedata []byte) (techMetadata *dto.TechnicalMetadata, err e
 		return nil, err
 	}
 	bitRateRaw, _ := strconv.ParseFloat(result.Format.BitRate, 64)
-	techMd.DurationSec = durFloat
+	techMd.Duration = time.Duration(durFloat * float64(time.Second))
 	techMd.BitRate = int64(math.Round(bitRateRaw / float64(1024)))
 	techMd.FormatName = result.Format.FormatLongName
 	return &techMd, nil

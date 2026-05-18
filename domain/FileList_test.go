@@ -33,3 +33,14 @@ func TestSortedReturnsSorted(t *testing.T) {
 	assert.EqualValues(t, "B", fl[0].Path)
 	assert.EqualValues(t, "A", fl[1].Path)
 }
+
+func TestParseFolderDateReturnsNormalizedDate(t *testing.T) {
+	date, err := ParseFolderDate("2024-09-22")
+	assert.Nil(t, err)
+	assert.EqualValues(t, time.Date(2024, time.September, 22, 0, 0, 0, 0, time.Local), date)
+}
+
+func TestFormatFolderDateReturnsDateString(t *testing.T) {
+	date := time.Date(2024, time.September, 22, 13, 15, 0, 0, time.Local)
+	assert.EqualValues(t, "2024-09-22", FormatFolderDate(date))
+}

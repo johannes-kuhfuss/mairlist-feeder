@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
@@ -64,7 +65,7 @@ func (fr DefaultFileRepository) Size() int {
 }
 
 // SizeOfType returns the number of files of the specified fileType
-func (fr DefaultFileRepository) sizeOfType(fileType string) (count int) {
+func (fr DefaultFileRepository) sizeOfType(fileType domain.FileType) (count int) {
 	fr.files.RLock()
 	defer fr.files.RUnlock()
 	for _, f := range fr.files.Files {
@@ -77,12 +78,12 @@ func (fr DefaultFileRepository) sizeOfType(fileType string) (count int) {
 
 // AudioSize returns the number of audio files (as identified by their file extension) stored in the repository
 func (fr DefaultFileRepository) AudioSize() int {
-	return fr.sizeOfType("Audio")
+	return fr.sizeOfType(domain.FileTypeAudio)
 }
 
 // StreamSize returns the number of stream files (as identified by their file extension) stored in the repository
 func (fr DefaultFileRepository) StreamSize() int {
-	return fr.sizeOfType("Stream")
+	return fr.sizeOfType(domain.FileTypeStream)
 }
 
 // GetByPath returns a file's information where the file is identified by its path. If no file matches, the methods returns nil
@@ -117,7 +118,7 @@ func (fr DefaultFileRepository) GetByEventId(eventId int) *domain.FileList {
 }
 
 // GetByDate returns all file data from the repository for a specific folder date. Returns nil if repository is empty or no files match
-func (fr DefaultFileRepository) GetByDate(folderDate string) *domain.FileList {
+func (fr DefaultFileRepository) GetByDate(folderDate time.Time) *domain.FileList {
 	var list domain.FileList
 	if fr.Size() == 0 {
 		return nil
@@ -125,7 +126,7 @@ func (fr DefaultFileRepository) GetByDate(folderDate string) *domain.FileList {
 	fr.files.RLock()
 	defer fr.files.RUnlock()
 	for _, file := range fr.files.Files {
-		if file.FolderDate == folderDate {
+		if file.FolderDate.Equal(domain.NormalizeDate(folderDate)) {
 			list = append(list, file)
 		}
 	}
@@ -155,12 +156,15 @@ func (fr DefaultFileRepository) GetByHour(hour string, includeLive bool) *domain
 	if fr.Size() == 0 {
 		return nil
 	}
-	folderDate := strings.Replace(helper.GetTodayFolder(fr.Cfg.Misc.TestCrawl, fr.Cfg.Misc.TestDate), "/", "-", -1)
+	folderDate, err := domain.ParseFolderDate(strings.Replace(helper.GetTodayFolder(fr.Cfg.Misc.TestCrawl, fr.Cfg.Misc.TestDate), "/", "-", -1))
+	if err != nil {
+		return nil
+	}
 	fr.files.RLock()
 	defer fr.files.RUnlock()
 	for _, file := range fr.files.Files {
 		hi, _ := strconv.Atoi(hour)
-		if (!file.StartTime.IsZero()) && (file.StartTime.Hour() == hi) && (file.FolderDate == folderDate) {
+		if (!file.StartTime.IsZero()) && (file.StartTime.Hour() == hi) && file.FolderDate.Equal(folderDate) {
 			if (!file.EventIsLive) || (file.EventIsLive && includeLive) {
 				list = append(list, file)
 			}

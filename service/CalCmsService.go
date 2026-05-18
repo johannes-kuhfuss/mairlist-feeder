@@ -188,7 +188,11 @@ func (s DefaultCalCmsService) Query() error {
 
 // EnrichFileInformation runs through all file representations and adds information from calCms where applicable
 func (s DefaultCalCmsService) EnrichFileInformation() (fc dto.FileCounts) {
-	folderDate := strings.ReplaceAll(helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate), "/", "-")
+	folderDate, err := domain.ParseFolderDate(strings.ReplaceAll(helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate), "/", "-"))
+	if err != nil {
+		logger.Error("Error converting folder date", err)
+		return fc
+	}
 	if files := s.Repo.GetByDate(folderDate); files != nil {
 		for _, file := range *files {
 			if file.EventId != 0 {
@@ -222,18 +226,14 @@ func mergeInfo(oldFileInfo domain.FileInfo, calCmsInfo dto.CalCmsEntry) (newFile
 	newFileInfo.EndTime = calCmsInfo.EndTime
 	newFileInfo.CalCmsTitle = calCmsInfo.Title
 	newFileInfo.CalCmsInfoExtracted = true
-	if oldFileInfo.FileType == "Audio" {
+	if oldFileInfo.FileType == domain.FileTypeAudio {
 		fc.AudioCount++
 	}
-	if (oldFileInfo.FileType == "Stream") && (oldFileInfo.StreamId != 0) {
-		newFileInfo.Duration = float64(calCmsInfo.Duration.Seconds())
+	if (oldFileInfo.FileType == domain.FileTypeStream) && (oldFileInfo.StreamId != 0) {
+		newFileInfo.Duration = calCmsInfo.Duration
 		fc.StreamCount++
 	}
-	if calCmsInfo.Live != 0 {
-		newFileInfo.EventIsLive = true
-	} else {
-		newFileInfo.EventIsLive = false
-	}
+	newFileInfo.EventIsLive = calCmsInfo.Live
 	fc.TotalCount++
 	return
 }
@@ -247,18 +247,21 @@ func (s DefaultCalCmsService) checkCalCmsEventData(file domain.FileInfo) (*dto.C
 	if err != nil {
 		return nil, err
 	}
-	calCmsDate := strings.ReplaceAll(helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate), "/", "-")
-	if (len(info) == 0) && (calCmsDate == file.FolderDate) {
+	calCmsDate, err := domain.ParseFolderDate(strings.ReplaceAll(helper.GetTodayFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate), "/", "-"))
+	if err != nil {
+		return nil, err
+	}
+	if (len(info) == 0) && calCmsDate.Equal(file.FolderDate) {
 		return nil, fmt.Errorf("no Id %v in calCMS", file.EventId)
 	}
 	if len(info) > 1 {
 		logger.Warnf("Ambiguous information from calCMS. Found %v entries. Not adding information.", len(info))
 		return nil, errors.New("multiple matches in calCMS")
 	}
-	if calCmsDate != file.FolderDate {
-		return nil, fmt.Errorf("file has different date (%v) than calCms data (%v)", file.FolderDate, calCmsDate)
+	if !calCmsDate.Equal(file.FolderDate) {
+		return nil, fmt.Errorf("file has different date (%v) than calCms data (%v)", domain.FormatFolderDate(file.FolderDate), domain.FormatFolderDate(calCmsDate))
 	}
-	if (len(info) == 1) && (info[0].Live == 1) {
+	if (len(info) == 1) && info[0].Live {
 		if s.Cfg.Export.ExportLiveItems {
 			exportLive = "Per configuration setting Live items will be exported."
 		} else {
@@ -328,7 +331,7 @@ func (s DefaultCalCmsService) convertEventToEntry(event domain.CalCmsEvent) (ent
 	}
 	entry.Duration = entry.EndTime.Sub(entry.StartTime)
 	entry.EventId = event.EventID
-	entry.Live = event.Live
+	entry.Live = event.Live != 0
 	return entry, nil
 }
 
@@ -357,13 +360,13 @@ func extractFileInfo(files *domain.FileList, hashEnabled bool) (fileStatus strin
 		} else {
 			fs = "Manual"
 		}
-		return "Present", strconv.FormatFloat(math.Round((*files)[0].Duration/60), 'f', 1, 64), fs
+		return "Present", strconv.FormatFloat(math.Round((*files)[0].Duration.Minutes()), 'f', 1, 64), fs
 	}
 	if hashEnabled {
 		filesIdentical, checksumAvail := checkHash(files)
 		switch {
 		case checksumAvail && filesIdentical:
-			return "Multiple (identical)", strconv.FormatFloat(math.Round((*files)[0].Duration/60), 'f', 1, 64), "N/A"
+			return "Multiple (identical)", strconv.FormatFloat(math.Round((*files)[0].Duration.Minutes()), 'f', 1, 64), "N/A"
 		case checksumAvail && !filesIdentical:
 			return "Multiple (different)", "N/A", "N/A"
 		default:

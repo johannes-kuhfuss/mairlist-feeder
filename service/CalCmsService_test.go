@@ -31,7 +31,7 @@ var (
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    folderDateDash,
+		FolderDate:    domain.MustParseFolderDate(folderDateDash),
 		RuleMatched:   "",
 		EventId:       0,
 		CalCmsTitle:   "",
@@ -270,7 +270,7 @@ func TestCheckCalCmsDataWrongDataReturnsError(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    "",
+		FolderDate:    time.Time{},
 		RuleMatched:   "",
 		EventId:       1,
 		CalCmsTitle:   "",
@@ -354,7 +354,7 @@ func TestCheckCalCmsDataDoubleMatchReturnsError(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    folderDateDash,
+		FolderDate:    domain.MustParseFolderDate(folderDateDash),
 		RuleMatched:   "",
 		EventId:       1,
 		CalCmsTitle:   "",
@@ -395,7 +395,7 @@ func TestCheckCalCmsDataIsLiveReturnsData(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    folderDateDash,
+		FolderDate:    domain.MustParseFolderDate(folderDateDash),
 		RuleMatched:   "",
 		EventId:       1,
 		CalCmsTitle:   "",
@@ -411,7 +411,7 @@ func TestCheckCalCmsDataIsLiveReturnsData(t *testing.T) {
 	st2, _ := time.ParseInLocation(parseDate, event.EndDatetime, time.Local)
 	assert.EqualValues(t, fmt.Sprintf("%02d:%02d", st1.Hour(), st1.Minute()), res.StartTime.Format("15:04"))
 	assert.EqualValues(t, fmt.Sprintf("%02d:%02d", st2.Hour(), st2.Minute()), res.EndTime.Format("15:04"))
-	assert.EqualValues(t, res.Live, 1)
+	assert.True(t, res.Live)
 }
 
 func TestCheckCalCmsDataDataOkReturnsData(t *testing.T) {
@@ -440,7 +440,7 @@ func TestCheckCalCmsDataDataOkReturnsData(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    folderDateDash,
+		FolderDate:    domain.MustParseFolderDate(folderDateDash),
 		RuleMatched:   "",
 		EventId:       1,
 		CalCmsTitle:   "",
@@ -491,7 +491,7 @@ func TestEnrichFileInformationOneFileReturnsEnriched(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    folderDateDash,
+		FolderDate:    domain.MustParseFolderDate(folderDateDash),
 		RuleMatched:   "",
 		EventId:       1234,
 		CalCmsTitle:   "",
@@ -534,7 +534,7 @@ func TestEnrichFileInformationOneStreamReturnsEnriched(t *testing.T) {
 		FromCalCMS:    false,
 		InfoExtracted: false,
 		ScanTime:      time.Time{},
-		FolderDate:    folderDateDash,
+		FolderDate:    domain.MustParseFolderDate(folderDateDash),
 		RuleMatched:   "",
 		EventId:       1234,
 		CalCmsTitle:   "",
@@ -868,7 +868,7 @@ func TestExtractFileInfoOneFilesNoHashReturnsDuration(t *testing.T) {
 	files := domain.FileList{}
 	fi1 := domain.FileInfo{
 		Checksum: "A",
-		Duration: 60.0,
+		Duration: time.Minute,
 	}
 	files = append(files, fi1)
 	s, d, f := extractFileInfo(&files, false)
@@ -881,7 +881,7 @@ func TestExtractFileInfoOnecalCmsFilesNoHashReturnsDuration(t *testing.T) {
 	files := domain.FileList{}
 	fi1 := domain.FileInfo{
 		Checksum:   "A",
-		Duration:   60.0,
+		Duration:   time.Minute,
 		FromCalCMS: true,
 		EventId:    5,
 	}
@@ -896,11 +896,11 @@ func TestExtractFileInfoTwoFilesNoHashReturnsNoDuration(t *testing.T) {
 	files := domain.FileList{}
 	fi1 := domain.FileInfo{
 		Checksum: "A",
-		Duration: 60.0,
+		Duration: time.Minute,
 	}
 	fi2 := domain.FileInfo{
 		Checksum: "B",
-		Duration: 60.0,
+		Duration: time.Minute,
 	}
 	files = append(files, fi1)
 	files = append(files, fi2)
@@ -913,10 +913,10 @@ func TestExtractFileInfoTwoFilesNoHashReturnsNoDuration(t *testing.T) {
 func TestExtractFileInfoTwoFilesHashMissingReturnsNoDuration(t *testing.T) {
 	files := domain.FileList{}
 	fi1 := domain.FileInfo{
-		Duration: 60.0,
+		Duration: time.Minute,
 	}
 	fi2 := domain.FileInfo{
-		Duration: 60.0,
+		Duration: time.Minute,
 	}
 	files = append(files, fi1)
 	files = append(files, fi2)
@@ -930,11 +930,11 @@ func TestExtractFileInfoTwoDifferentFilesWithHashReturnsDifferent(t *testing.T) 
 	files := domain.FileList{}
 	fi1 := domain.FileInfo{
 		Checksum: "A",
-		Duration: 60.0,
+		Duration: time.Minute,
 	}
 	fi2 := domain.FileInfo{
 		Checksum: "B",
-		Duration: 60.0,
+		Duration: time.Minute,
 	}
 	files = append(files, fi1)
 	files = append(files, fi2)
@@ -948,11 +948,11 @@ func TestExtractFileInfoTwoIdenticalFilesWithHashReturnsSame(t *testing.T) {
 	files := domain.FileList{}
 	fi1 := domain.FileInfo{
 		Checksum: "A",
-		Duration: 60.0,
+		Duration: time.Minute,
 	}
 	fi2 := domain.FileInfo{
 		Checksum: "A",
-		Duration: 60.0,
+		Duration: time.Minute,
 	}
 	files = append(files, fi1)
 	files = append(files, fi2)
@@ -1019,7 +1019,7 @@ func TestMergeInfoAudio(t *testing.T) {
 		EndTime:   time.Date(2024, 11, 11, 2, 2, 3, 0, time.Local),
 		Duration:  0,
 		EventId:   0,
-		Live:      0,
+		Live:      false,
 	}
 	ni, ct := mergeInfo(oi, ci)
 	assert.EqualValues(t, 1, ct.TotalCount)
@@ -1044,13 +1044,13 @@ func TestMergeInfoStream(t *testing.T) {
 		EndTime:   time.Date(2024, 11, 11, 2, 2, 3, 0, time.Local),
 		Duration:  time.Duration(60 * time.Second),
 		EventId:   3,
-		Live:      0,
+		Live:      false,
 	}
 	ni, ct := mergeInfo(oi, ci)
 	assert.EqualValues(t, 1, ct.TotalCount)
 	assert.EqualValues(t, 0, ct.AudioCount)
 	assert.EqualValues(t, 1, ct.StreamCount)
-	assert.EqualValues(t, 60.0, ni.Duration)
+	assert.EqualValues(t, time.Minute, ni.Duration)
 	assert.False(t, ni.EventIsLive)
 }
 
@@ -1061,7 +1061,7 @@ func TestMergeInfoIsLive(t *testing.T) {
 	}
 	ci := dto.CalCmsEntry{
 		StartTime: time.Date(2024, 11, 11, 1, 2, 3, 0, time.Local),
-		Live:      1,
+		Live:      true,
 	}
 	ni, ct := mergeInfo(oi, ci)
 	assert.EqualValues(t, 1, ct.TotalCount)
@@ -1076,7 +1076,7 @@ func TestMergeLiveWasReset(t *testing.T) {
 	}
 	ci := dto.CalCmsEntry{
 		StartTime: time.Date(2024, 11, 11, 1, 2, 3, 0, time.Local),
-		Live:      0,
+		Live:      false,
 	}
 	ni, ct := mergeInfo(oi, ci)
 	assert.EqualValues(t, 1, ct.TotalCount)

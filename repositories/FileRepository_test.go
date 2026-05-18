@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
@@ -24,6 +25,10 @@ const (
 
 func setupTest() {
 	repo = NewFileRepository(&cfg)
+}
+
+func todayFolderDate() time.Time {
+	return domain.MustParseFolderDate(strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1))
 }
 
 func TestNewFileRepositoryCreatesEmptyList(t *testing.T) {
@@ -67,25 +72,25 @@ func TestGetByPathCorrectPathReturnsElement(t *testing.T) {
 	setupTest()
 	fi := domain.FileInfo{
 		Path:     "A",
-		Duration: 1.0,
+		Duration: time.Second,
 	}
 	err := repo.Store(fi)
 	res := repo.GetByPath("A")
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 	assert.EqualValues(t, "A", res.Path)
-	assert.EqualValues(t, 1.0, res.Duration)
+	assert.EqualValues(t, time.Second, res.Duration)
 }
 
 func TestGetAllReturnsAllElements(t *testing.T) {
 	setupTest()
 	fi1 := domain.FileInfo{
 		Path:     "A",
-		Duration: 2.0,
+		Duration: 2 * time.Second,
 	}
 	fi2 := domain.FileInfo{
 		Path:     "B",
-		Duration: 2.0,
+		Duration: 2 * time.Second,
 	}
 	repo.Store(fi1)
 	repo.Store(fi2)
@@ -96,8 +101,8 @@ func TestGetAllReturnsAllElements(t *testing.T) {
 	assert.NotNil(t, size)
 	assert.EqualValues(t, 2, size)
 	assert.EqualValues(t, 2, len(*res))
-	assert.EqualValues(t, 2.0, el1.Duration)
-	assert.EqualValues(t, 2.0, el2.Duration)
+	assert.EqualValues(t, 2*time.Second, el1.Duration)
+	assert.EqualValues(t, 2*time.Second, el2.Duration)
 }
 
 func TestDeleteNonExistingElementReturnsError(t *testing.T) {
@@ -111,7 +116,7 @@ func TestDeleteExistingElementDeletesElement(t *testing.T) {
 	setupTest()
 	fi := domain.FileInfo{
 		Path:     "A",
-		Duration: 1.0,
+		Duration: time.Second,
 	}
 	repo.Store(fi)
 	sizeBefore := repo.Size()
@@ -133,7 +138,7 @@ func TestGetForHourNoMatchReturnsNil(t *testing.T) {
 	fi := domain.FileInfo{
 		Path:       "A",
 		StartTime:  helper.TimeFromHourAndMinute(12, 0),
-		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
+		FolderDate: todayFolderDate(),
 	}
 	repo.Store(fi)
 	res := repo.GetByHour("13", false)
@@ -145,7 +150,7 @@ func TestGetForHourOneMatchReturnsElement(t *testing.T) {
 	fi := domain.FileInfo{
 		Path:       "A",
 		StartTime:  helper.TimeFromHourAndMinute(12, 0),
-		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
+		FolderDate: todayFolderDate(),
 	}
 	repo.Store(fi)
 	res := repo.GetByHour("12", false)
@@ -161,17 +166,17 @@ func TestGetForHourTwoMatchesReturnsElements(t *testing.T) {
 	fi1 := domain.FileInfo{
 		Path:       "A",
 		StartTime:  helper.TimeFromHourAndMinute(11, 0),
-		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
+		FolderDate: todayFolderDate(),
 	}
 	fi2 := domain.FileInfo{
 		Path:       "B",
 		StartTime:  helper.TimeFromHourAndMinute(12, 0),
-		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
+		FolderDate: todayFolderDate(),
 	}
 	fi3 := domain.FileInfo{
 		Path:       "C",
 		StartTime:  helper.TimeFromHourAndMinute(12, 30),
-		FolderDate: strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
+		FolderDate: todayFolderDate(),
 	}
 	repo.Store(fi1)
 	repo.Store(fi2)
@@ -186,13 +191,13 @@ func TestGetForHourOnlyLiveReturnsNil(t *testing.T) {
 	fi1 := domain.FileInfo{
 		Path:        "A",
 		StartTime:   helper.TimeFromHourAndMinute(12, 0),
-		FolderDate:  strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
+		FolderDate:  todayFolderDate(),
 		EventIsLive: true,
 	}
 	fi2 := domain.FileInfo{
 		Path:        "B",
 		StartTime:   helper.TimeFromHourAndMinute(12, 0),
-		FolderDate:  strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
+		FolderDate:  todayFolderDate(),
 		EventIsLive: true,
 	}
 	repo.Store(fi1)
@@ -206,13 +211,13 @@ func TestGetForHourLiveCheck(t *testing.T) {
 	fi1 := domain.FileInfo{
 		Path:        "A",
 		StartTime:   helper.TimeFromHourAndMinute(12, 0),
-		FolderDate:  strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
+		FolderDate:  todayFolderDate(),
 		EventIsLive: false,
 	}
 	fi2 := domain.FileInfo{
 		Path:        "B",
 		StartTime:   helper.TimeFromHourAndMinute(12, 0),
-		FolderDate:  strings.Replace(helper.GetTodayFolder(false, ""), "/", "-", -1),
+		FolderDate:  todayFolderDate(),
 		EventIsLive: true,
 	}
 	repo.Store(fi1)
@@ -343,7 +348,7 @@ func TestAudioSizeReturnsNumberOfAudioFiles(t *testing.T) {
 	fi1 := domain.FileInfo{
 		Path:      "A",
 		StartTime: helper.TimeFromHourAndMinute(11, 0),
-		FileType:  "Audio",
+		FileType:  domain.FileTypeAudio,
 	}
 	repo.Store(fi1)
 	s2 := repo.AudioSize()
@@ -357,7 +362,7 @@ func TestStreamSizeReturnsNumberOfStreamFiles(t *testing.T) {
 	fi1 := domain.FileInfo{
 		Path:      "A",
 		StartTime: helper.TimeFromHourAndMinute(11, 0),
-		FileType:  "Stream",
+		FileType:  domain.FileTypeStream,
 	}
 	repo.Store(fi1)
 	s2 := repo.StreamSize()
@@ -433,7 +438,7 @@ func TestGetByEventIdTwoEventIdsReturnsTwo(t *testing.T) {
 
 func TestGetByDateEmptyReturnsNil(t *testing.T) {
 	setupTest()
-	res := repo.GetByDate("")
+	res := repo.GetByDate(time.Time{})
 	assert.Nil(t, res)
 }
 
@@ -441,10 +446,10 @@ func TestGetByDateNoMatchReturnsNil(t *testing.T) {
 	setupTest()
 	fi1 := domain.FileInfo{
 		Path:       "A",
-		FolderDate: folderDateDash,
+		FolderDate: domain.MustParseFolderDate(folderDateDash),
 	}
 	repo.Store(fi1)
-	res := repo.GetByDate("2024-09-18")
+	res := repo.GetByDate(domain.MustParseFolderDate("2024-09-18"))
 	assert.Nil(t, res)
 }
 
@@ -452,10 +457,10 @@ func TestGetByDateOneMatchReturnsMatch(t *testing.T) {
 	setupTest()
 	fi1 := domain.FileInfo{
 		Path:       "A",
-		FolderDate: folderDateDash,
+		FolderDate: domain.MustParseFolderDate(folderDateDash),
 	}
 	repo.Store(fi1)
-	res := repo.GetByDate(folderDateDash)
+	res := repo.GetByDate(domain.MustParseFolderDate(folderDateDash))
 	assert.NotNil(t, res)
 	assert.EqualValues(t, "A", (*res)[0].Path)
 }
@@ -464,15 +469,15 @@ func TestGetByDateTwoMatchesReturnsMatches(t *testing.T) {
 	setupTest()
 	fi1 := domain.FileInfo{
 		Path:       "A",
-		FolderDate: folderDateDash,
+		FolderDate: domain.MustParseFolderDate(folderDateDash),
 	}
 	fi2 := domain.FileInfo{
 		Path:       "B",
-		FolderDate: folderDateDash,
+		FolderDate: domain.MustParseFolderDate(folderDateDash),
 	}
 	repo.Store(fi1)
 	repo.Store(fi2)
-	res := repo.GetByDate(folderDateDash)
+	res := repo.GetByDate(domain.MustParseFolderDate(folderDateDash))
 	assert.NotNil(t, res)
 	assert.EqualValues(t, 2, len(*res))
 }

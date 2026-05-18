@@ -23,6 +23,8 @@ const (
 	sampleFolder    = "../samples/"
 )
 
+var parsedFolderDate = domain.MustParseFolderDate(folderDate)
+
 func setupTestCrawl() func() {
 	config.InitConfig(config.EnvFile, &cfgCrawl)
 	crawlRepo = repositories.NewFileRepository(&cfgCrawl)
@@ -68,7 +70,7 @@ func TestExtractFileInfoFileCalCmsReturnsData(t *testing.T) {
 	defer teardown()
 	fi1 := domain.FileInfo{
 		Path:       "Z:\\sendungen\\2024\\09\\22\\21-00\\test.mp3",
-		FolderDate: folderDate,
+		FolderDate: parsedFolderDate,
 	}
 	crawlRepo.Store(fi1)
 	n, e := crawlSvc.extractFileInfo()
@@ -85,7 +87,7 @@ func TestExtractFileInfoFileNamingConventionReturnsData(t *testing.T) {
 	defer teardown()
 	fi1 := domain.FileInfo{
 		Path:       "Z:\\sendungen\\2024\\09\\22\\2000-2100_sendung-xyz.mp3",
-		FolderDate: folderDate,
+		FolderDate: parsedFolderDate,
 	}
 	crawlRepo.Store(fi1)
 	n, e := crawlSvc.extractFileInfo()
@@ -103,7 +105,7 @@ func TestExtractFileInfoAnyFileReturnsData(t *testing.T) {
 	defer teardown()
 	fi1 := domain.FileInfo{
 		Path:       "Z:\\sendungen\\2024\\09\\22\\2100_sendung-xyz.mp3",
-		FolderDate: folderDate,
+		FolderDate: parsedFolderDate,
 	}
 	crawlRepo.Store(fi1)
 	n, e := crawlSvc.extractFileInfo()
@@ -120,7 +122,7 @@ func TestExtractFileInfoRealFileReturnsData(t *testing.T) {
 	cfgCrawl.Crawl.FfprobePath = "../prog/ffprobe.exe"
 	fi1 := domain.FileInfo{
 		Path:       audioSampleFile,
-		FolderDate: folderDate,
+		FolderDate: parsedFolderDate,
 	}
 	crawlRepo.Store(fi1)
 	n, e := crawlSvc.extractFileInfo()
@@ -131,7 +133,7 @@ func TestExtractFileInfoRealFileReturnsData(t *testing.T) {
 	assert.EqualValues(t, 0, n.StreamCount)
 	assert.EqualValues(t, false, fires.FromCalCMS)
 	assert.EqualValues(t, "file HHMM-HHMM", fires.RuleMatched)
-	assert.EqualValues(t, 5.0, fires.Duration)
+	assert.EqualValues(t, 5*time.Second, fires.Duration.Round(time.Second))
 	assert.EqualValues(t, 34, fires.BitRate)
 	assert.EqualValues(t, "MP2/3 (MPEG audio layer 2/3)", fires.FormatName)
 }
@@ -143,7 +145,7 @@ func TestExtractFileInfoStreamReturnsData(t *testing.T) {
 	file := "./temp.stream"
 	fi1 := domain.FileInfo{
 		Path:       file,
-		FolderDate: folderDate,
+		FolderDate: parsedFolderDate,
 	}
 	crawlRepo.Store(fi1)
 	crawlSvc.Cfg.Crawl.StreamMap["test"] = 222
@@ -154,35 +156,34 @@ func TestExtractFileInfoStreamReturnsData(t *testing.T) {
 	assert.EqualValues(t, 1, n.TotalCount)
 	assert.EqualValues(t, 0, n.AudioCount)
 	assert.EqualValues(t, 1, n.StreamCount)
-	assert.EqualValues(t, "Stream", fires.FileType)
+	assert.EqualValues(t, domain.FileTypeStream, fires.FileType)
 	assert.EqualValues(t, "test", fires.StreamName)
 	assert.EqualValues(t, 222, fires.StreamId)
 	os.Remove(file)
 }
 
 func TestConvertTimeWrongStartTimeReturnsError(t *testing.T) {
-	ti, e := convertTime("A", "B", "C")
+	ti, e := convertTime("A", "B", parsedFolderDate)
 	assert.EqualValues(t, time.Time{}, ti)
 	assert.NotNil(t, e)
 	assert.EqualValues(t, "strconv.Atoi: parsing \"A\": invalid syntax", e.Error())
 }
 
 func TestConvertTimeWrongEndTimeReturnsError(t *testing.T) {
-	ti, e := convertTime("11", "B", "C")
+	ti, e := convertTime("11", "B", parsedFolderDate)
 	assert.EqualValues(t, time.Time{}, ti)
 	assert.NotNil(t, e)
 	assert.EqualValues(t, "strconv.Atoi: parsing \"B\": invalid syntax", e.Error())
 }
 
 func TestConvertTimeWrongDateReturnsError(t *testing.T) {
-	ti, e := convertTime("11", "12", "C")
-	assert.EqualValues(t, time.Time{}, ti)
-	assert.NotNil(t, e)
-	assert.EqualValues(t, "parsing time \"C\" as \"2006-01-02\": cannot parse \"C\" as \"2006\"", e.Error())
+	ti, e := convertTime("11", "12", time.Time{})
+	assert.EqualValues(t, time.Date(1, time.January, 1, 11, 12, 0, 0, time.Local), ti)
+	assert.Nil(t, e)
 }
 
 func TestConvertTimeCorrectValuesReturnsTime(t *testing.T) {
-	ti, e := convertTime("11", "12", "2024-09-21")
+	ti, e := convertTime("11", "12", domain.MustParseFolderDate("2024-09-21"))
 	assert.Nil(t, e)
 	assert.EqualValues(t, time.Date(2024, time.September, 21, 11, 12, 0, 0, time.Local), ti)
 }
@@ -205,7 +206,7 @@ func TestParseTechMdCorrectDataReturnsTechMD(t *testing.T) {
 	tm, e := parseTechMd(data)
 	assert.Nil(t, e)
 	assert.NotNil(t, tm)
-	assert.EqualValues(t, 5.034, tm.DurationSec)
+	assert.EqualValues(t, 5034*time.Millisecond, tm.Duration.Round(time.Millisecond))
 	assert.EqualValues(t, 34, tm.BitRate)
 	assert.EqualValues(t, "MP2/3 (MPEG audio layer 2/3)", tm.FormatName)
 }
@@ -221,7 +222,7 @@ func TestAnalyzeTechMdSampleFileReturnsTechMd(t *testing.T) {
 	d, e := analyzeTechMd(audioSampleFile, 5, "../prog/ffprobe.exe")
 	assert.Nil(t, e)
 	assert.NotNil(t, d)
-	assert.EqualValues(t, 5.0, d.DurationSec)
+	assert.EqualValues(t, 5*time.Second, d.Duration.Round(time.Second))
 }
 
 func TestCrawlFolderNoFilesReturnsZero(t *testing.T) {
@@ -315,12 +316,12 @@ func TestAnalyzeStreamDataMixedCaseMapKeyReturnsNameAndId(t *testing.T) {
 func TestFolderDateFromPathCorrectPathReturnsFolderDate(t *testing.T) {
 	folderDate, err := folderDateFromPath("Z:\\sendungen\\2024\\09\\22\\21-00\\test.mp3", "Z:\\sendungen")
 	assert.Nil(t, err)
-	assert.EqualValues(t, "2024-09-22", folderDate)
+	assert.EqualValues(t, domain.MustParseFolderDate("2024-09-22"), folderDate)
 }
 
 func TestFolderDateFromPathShortPathReturnsError(t *testing.T) {
 	folderDate, err := folderDateFromPath("Z:\\sendungen\\2024\\test.mp3", "Z:\\sendungen")
-	assert.EqualValues(t, "", folderDate)
+	assert.EqualValues(t, time.Time{}, folderDate)
 	assert.NotNil(t, err)
 }
 
@@ -336,7 +337,7 @@ func TestCheckForOrphanFilesOneOrphanFileReturnsOne(t *testing.T) {
 	defer teardown()
 	fi1 := domain.FileInfo{
 		Path:       "../file.txt",
-		FolderDate: "2024-09-22",
+		FolderDate: domain.MustParseFolderDate("2024-09-22"),
 	}
 	crawlRepo.Store(fi1)
 	s1 := crawlRepo.Size()

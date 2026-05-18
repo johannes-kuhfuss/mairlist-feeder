@@ -152,7 +152,7 @@ func TestCheckTimeNoEndTime(t *testing.T) {
 	}
 	for length, data := range timesToCheck {
 		fi := domain.FileInfo{
-			Duration: length,
+			Duration: time.Duration(length * float64(time.Second)),
 		}
 		ok, _, detail := checkTime(fi, 1.0, 1.0)
 		detailData := strings.Split(detail, ",")
@@ -163,7 +163,7 @@ func TestCheckTimeNoEndTime(t *testing.T) {
 
 func TestCheckTimeWithEndTime(t *testing.T) {
 	fi := domain.FileInfo{
-		Duration:  3600,
+		Duration:  time.Hour,
 		StartTime: helper.TimeFromHourAndMinute(14, 0),
 		EndTime:   helper.TimeFromHourAndMinute(15, 0),
 	}
@@ -277,7 +277,7 @@ func TestCheckTimeAndLenghthOneFile(t *testing.T) {
 	tearDown := setupTestEx()
 	defer tearDown()
 	fi := domain.FileInfo{
-		Duration:  3600,
+		Duration:  time.Hour,
 		StartTime: helper.TimeFromHourAndMinute(14, 0),
 		EndTime:   helper.TimeFromHourAndMinute(15, 0),
 	}
@@ -293,7 +293,7 @@ func TestCheckTimeAndLenghthOneFileSame(t *testing.T) {
 	defer tearDown()
 	fi := domain.FileInfo{
 		Path:      "A",
-		Duration:  3600,
+		Duration:  time.Hour,
 		StartTime: helper.TimeFromHourAndMinute(14, 0),
 		EndTime:   helper.TimeFromHourAndMinute(15, 0),
 	}
@@ -312,14 +312,14 @@ func TestCheckTimeAndLenghthOneFileNewer(t *testing.T) {
 	defer tearDown()
 	fi1 := domain.FileInfo{
 		Path:      "A",
-		Duration:  3600,
+		Duration:  time.Hour,
 		StartTime: helper.TimeFromHourAndMinute(14, 0),
 		EndTime:   helper.TimeFromHourAndMinute(15, 0),
 		ModTime:   time.Now(),
 	}
 	fi2 := domain.FileInfo{
 		Path:      "A2",
-		Duration:  3600,
+		Duration:  time.Hour,
 		StartTime: helper.TimeFromHourAndMinute(14, 0),
 		EndTime:   helper.TimeFromHourAndMinute(15, 0),
 		ModTime:   time.Now().AddDate(0, 0, -1),
@@ -348,10 +348,10 @@ func TestExportToPlayoutOneFilesExport(t *testing.T) {
 	defer tearDown()
 	fi := domain.FileInfo{
 		Path:       "A",
-		Duration:   3600,
+		Duration:   time.Hour,
 		StartTime:  helper.TimeFromHourAndMinute(13, 0),
 		EndTime:    helper.TimeFromHourAndMinute(14, 0),
-		SlotLength: 60.0,
+		SlotLength: time.Hour,
 	}
 	exportService.exportFiles.Files["13:00"] = fi
 	file, err := exportService.ExportToPlayout("13")
@@ -377,9 +377,9 @@ func TestWritePlaylistFailureKeepsQueuedEntries(t *testing.T) {
 	defer tearDown()
 	exportService.exportFiles.Files["13:00"] = domain.FileInfo{
 		Path:       "A",
-		Duration:   3600,
+		Duration:   time.Hour,
 		StartTime:  helper.TimeFromHourAndMinute(13, 0),
-		SlotLength: 60.0,
+		SlotLength: time.Hour,
 	}
 	file := filepath.Join(t.TempDir(), "missing", "playlist.tpi")
 
@@ -395,9 +395,9 @@ func TestWritePlaylistTruncatesExistingFile(t *testing.T) {
 	defer tearDown()
 	exportService.exportFiles.Files["13:00"] = domain.FileInfo{
 		Path:       "A",
-		Duration:   3600,
+		Duration:   time.Hour,
 		StartTime:  helper.TimeFromHourAndMinute(13, 0),
-		SlotLength: 60.0,
+		SlotLength: time.Hour,
 	}
 	file := filepath.Join(t.TempDir(), "playlist.tpi")
 	os.WriteFile(file, []byte("stale data that must be removed"), 0644)
@@ -417,15 +417,15 @@ func TestWritePlaylistWritesEntriesInTimeOrder(t *testing.T) {
 	defer tearDown()
 	exportService.exportFiles.Files["14:00"] = domain.FileInfo{
 		Path:       "B",
-		Duration:   3600,
+		Duration:   time.Hour,
 		StartTime:  helper.TimeFromHourAndMinute(14, 0),
-		SlotLength: 60.0,
+		SlotLength: time.Hour,
 	}
 	exportService.exportFiles.Files["13:00"] = domain.FileInfo{
 		Path:       "A",
-		Duration:   3600,
+		Duration:   time.Hour,
 		StartTime:  helper.TimeFromHourAndMinute(13, 0),
-		SlotLength: 60.0,
+		SlotLength: time.Hour,
 	}
 	file := filepath.Join(t.TempDir(), "playlist.tpi")
 

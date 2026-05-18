@@ -283,7 +283,7 @@ func TestActionExecCleanReturnsOk(t *testing.T) {
 	router.POST(actionUrl, uh.ExecAction)
 	repo.Store(domain.FileInfo{
 		Path:       "old-file",
-		FolderDate: time.Now().AddDate(0, 0, -1).Format("2006-01-02"),
+		FolderDate: domain.NormalizeDate(time.Now().AddDate(0, 0, -1)),
 	})
 	form := url.Values{}
 	form.Add("action", "clean")

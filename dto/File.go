@@ -62,10 +62,10 @@ func GetFiles(repo *repositories.DefaultFileRepository, CmsUrl string) (fileDta 
 			dta := FileResp{
 				Path:           file.Path,
 				ModTime:        file.ModTime.Format("2006-01-02 15:04:05"),
-				Duration:       strconv.FormatFloat(math.Round(file.Duration/60), 'f', 1, 64),
+				Duration:       strconv.FormatFloat(math.Round(file.Duration.Minutes()), 'f', 1, 64),
 				InfoExtracted:  strconv.FormatBool(file.InfoExtracted),
 				ScanTime:       file.ScanTime.Format("2006-01-02 15:04:05"),
-				FolderDate:     file.FolderDate,
+				FolderDate:     domain.FormatFolderDate(file.FolderDate),
 				RuleMatched:    file.RuleMatched,
 				EventId:        strconv.Itoa(file.EventId),
 				EventIdLink:    buildEventIdLink(CmsUrl, file.EventId),
@@ -111,9 +111,9 @@ func buildCalCmsInfo(file domain.FileInfo) (info string) {
 // buildTechMd formats information from ffprobe for display
 func buildTechMd(file domain.FileInfo) (info string) {
 	switch file.FileType {
-	case "Audio":
+	case domain.FileTypeAudio:
 		info = fmt.Sprintf("%v @ %vkbps", file.FormatName, file.BitRate)
-	case "Stream":
+	case domain.FileTypeStream:
 		if file.StreamId != 0 {
 			info = fmt.Sprintf("Stream %v with Id %v", file.StreamName, file.StreamId)
 		} else {

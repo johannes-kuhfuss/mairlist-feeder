@@ -10,5 +10,5 @@ type CalCmsEntry struct {
 	EndTime   time.Time
 	Duration  time.Duration
 	EventId   int
-	Live      int
+	Live      bool
 }
