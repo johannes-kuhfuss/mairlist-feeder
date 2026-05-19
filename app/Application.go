@@ -78,7 +78,9 @@ func (a *Application) Start() {
 	if a.cfg.Export.QueryMairListStatus {
 		go a.exportService.QueryStatus(a.appCtx)
 	}
-	a.crawlService.Crawl()
+	if err := a.crawlService.Crawl(); err != nil {
+		logger.Error("Error running initial crawl", err)
+	}
 	if _, err := a.calCmsService.RefreshTodayEvents(); err != nil {
 		logger.Error("Error refreshing today's events", err)
 	}
@@ -192,12 +194,24 @@ func (a *Application) scheduleBgJobs() {
 	crawlCycle := "@every " + strconv.Itoa(a.cfg.Crawl.CrawlCycleMin) + "m"
 	a.cfg.RunTime.BgJobs = cron.New()
 	// Crawl every x minutes
-	crawlId, crawlErr := a.cfg.RunTime.BgJobs.AddFunc(crawlCycle, a.crawlService.Crawl)
+	crawlId, crawlErr := a.cfg.RunTime.BgJobs.AddFunc(crawlCycle, func() {
+		if err := a.crawlService.Crawl(); err != nil {
+			logger.Error("Error running scheduled crawl", err)
+		}
+	})
 	// Clean 00:30 local time
-	cleanId, cleanErr := a.cfg.RunTime.BgJobs.AddFunc("30 0 * * *", a.cleanService.Clean)
+	cleanId, cleanErr := a.cfg.RunTime.BgJobs.AddFunc("30 0 * * *", func() {
+		if err := a.cleanService.Clean(); err != nil {
+			logger.Error("Error running scheduled clean", err)
+		}
+	})
 	// Export every hour, x minutes to the hour
 	exportStr := fmt.Sprintf("%02d * * * *", a.cfg.Export.ExportMinute)
-	exportId, exportErr := a.cfg.RunTime.BgJobs.AddFunc(exportStr, a.exportService.Export)
+	exportId, exportErr := a.cfg.RunTime.BgJobs.AddFunc(exportStr, func() {
+		if err := a.exportService.Export(); err != nil {
+			logger.Error("Error running scheduled export", err)
+		}
+	})
 	a.cfg.RunTime.BgJobs.Start()
 	if crawlErr != nil {
 		logger.Errorf("Error when scheduling job %v for crawling. %v", crawlId, crawlErr)

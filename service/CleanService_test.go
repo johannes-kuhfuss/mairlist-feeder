@@ -4,9 +4,11 @@ import (
 	"testing"
 	"time"
 
+	metrics "github.com/johannes-kuhfuss/mairlist-feeder/Metrics"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,11 +19,14 @@ var (
 )
 
 func setupTestClean() func() {
+	registry := prometheus.NewRegistry()
 	config.InitConfig(config.EnvFile, &cfgClean)
+	metrics.InitMetrics(&cfgClean, registry)
 	cleanRepo = repositories.NewFileRepository(&cfgClean)
 	cleanSvc = NewCleanService(&cfgClean, &cleanRepo)
 	return func() {
 		cleanRepo.DeleteAllData()
+		metrics.UnregisterMetrics(&cfgClean, registry)
 	}
 }
 

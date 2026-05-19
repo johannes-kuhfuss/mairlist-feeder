@@ -170,15 +170,27 @@ func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 	}
 	switch action {
 	case "crawl":
-		uh.CrawlSvc.Crawl()
+		if err := uh.CrawlSvc.Crawl(); err != nil {
+			logger.Error("Error executing crawl action", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
 		uh.resetCrawl()
 		c.JSON(http.StatusOK, actionResponse{Status: "ok", Action: action, Message: "Crawl completed."})
 	case "export":
 		if hour == "" {
-			uh.ExportSvc.ExportAllHours()
+			if err := uh.ExportSvc.ExportAllHours(); err != nil {
+				logger.Error("Error executing export action", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+				return
+			}
 			c.JSON(http.StatusOK, actionResponse{Status: "ok", Action: action, Message: "Export completed for all hours."})
 		} else {
-			uh.ExportSvc.ExportForHour(hour)
+			if err := uh.ExportSvc.ExportForHour(hour); err != nil {
+				logger.Error("Error executing export action", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+				return
+			}
 			c.JSON(http.StatusOK, actionResponse{Status: "ok", Action: action, Message: "Export completed for hour " + hour + "."})
 		}
 	case "exporttodisk":
@@ -189,7 +201,11 @@ func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 		}
 		c.JSON(http.StatusOK, actionResponse{Status: "ok", Action: action, Message: "File list saved to disk."})
 	case "clean":
-		uh.CleanSvc.Clean()
+		if err := uh.CleanSvc.Clean(); err != nil {
+			logger.Error("Error executing clean action", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
 		c.JSON(http.StatusOK, actionResponse{Status: "ok", Action: action, Message: "Clean-up completed."})
 	}
 }
@@ -222,7 +238,11 @@ func validateHour(hour string) api_error.ApiErr {
 func (uh *StatsUiHandler) resetCrawl() {
 	uh.Cfg.RunTime.BgJobs.Remove(uh.Cfg.RunTime.CrawlJobId)
 	crawlCycle := "@every " + strconv.Itoa(uh.Cfg.Crawl.CrawlCycleMin) + "m"
-	crawlId, crawlErr := uh.Cfg.RunTime.BgJobs.AddFunc(crawlCycle, uh.CrawlSvc.Crawl)
+	crawlId, crawlErr := uh.Cfg.RunTime.BgJobs.AddFunc(crawlCycle, func() {
+		if err := uh.CrawlSvc.Crawl(); err != nil {
+			logger.Error("Error running scheduled crawl", err)
+		}
+	})
 	if crawlErr != nil {
 		logger.Errorf("Error when scheduling job %v for crawling. %v", crawlId, crawlErr)
 	} else {

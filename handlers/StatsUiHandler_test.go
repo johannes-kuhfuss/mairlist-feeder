@@ -49,7 +49,9 @@ func setupUiTest() func() {
 	exportSvc = service.NewExportService(&cfg, &repo)
 	cleanSvc = service.NewCleanService(&cfg, &repo)
 	cfg.RunTime.BgJobs = cron.New()
-	crawlJobId, _ := cfg.RunTime.BgJobs.AddFunc("@every 10m", crawlSvc.Crawl)
+	crawlJobId, _ := cfg.RunTime.BgJobs.AddFunc("@every 10m", func() {
+		_ = crawlSvc.Crawl()
+	})
 	cfg.RunTime.CrawlJobId = crawlJobId
 	uh = NewStatsUiHandler(&cfg, &repo, &crawlSvc, &exportSvc, &cleanSvc, &calCmsSvc)
 	router = gin.Default()
@@ -329,6 +331,7 @@ func TestActionExecInvalidHourReturnsError(t *testing.T) {
 func TestActionExecCrawlReturnsOk(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
+	cfg.Crawl.RootFolder = t.TempDir()
 	router.POST(actionUrl, uh.ExecAction)
 	form := url.Values{}
 	form.Add("action", "crawl")

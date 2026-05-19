@@ -55,6 +55,22 @@ func TestExportDayEventsNoErrorReturnsFileName(t *testing.T) {
 	os.Remove(fileName)
 }
 
+func TestExportDayEventsNonOkStatusReturnsError(t *testing.T) {
+	setupHelperTest()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+	u, _ := url.Parse(srv.URL)
+	testApp.cfg.RunTime.ListenAddr = u.Hostname() + ":" + u.Port()
+
+	fileName, err := testApp.exportState(eventUrl, "events")
+
+	assert.EqualValues(t, "", fileName)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "500 Internal Server Error")
+}
+
 func TestIsPathWithinRejectsSiblingDirectory(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "export")
 	candidate := root + "2"

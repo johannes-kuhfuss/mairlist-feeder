@@ -3,6 +3,7 @@ package app
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -49,6 +50,9 @@ func (a *Application) exportState(urlPath, filePrefix string) (fileName string, 
 		return "", err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("status export request failed for %s: %s", urlPath, resp.Status)
+	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logger.Error("Error while trying to save day's status", err)

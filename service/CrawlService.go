@@ -30,7 +30,7 @@ import (
 )
 
 type Crawler interface {
-	Crawl()
+	Crawl() error
 }
 
 var (
@@ -58,10 +58,14 @@ func NewCrawlService(cfg *config.AppConfig, repo *repositories.DefaultFileReposi
 }
 
 // Crawl orchestrates the crawling of the folder on disk
-func (s DefaultCrawlService) Crawl() {
+func (s DefaultCrawlService) Crawl() (err error) {
+	defer func() {
+		recordRunResult(s.Cfg, "crawl", err)
+	}()
 	if s.Cfg.Crawl.RootFolder == "" {
+		err = errors.New("no root folder given")
 		logger.Warn("No root folder given. Not running")
-		return
+		return err
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -73,10 +77,11 @@ func (s DefaultCrawlService) Crawl() {
 		s.Cfg.RunTime.CrawlRunning = false
 		s.Cfg.RunTime.Mu.Unlock()
 	}()
-	s.CrawlRun()
+	err = s.CrawlRun()
 	if s.Cfg.CalCms.QueryCalCms && s.CalSvc != nil {
-		s.CalSvc.Query()
+		err = errors.Join(err, s.CalSvc.Query())
 	}
+	return err
 }
 
 // GenHashes creates a hash for the files on disk to allow for easy checking for identical files
@@ -127,13 +132,15 @@ func (s DefaultCrawlService) CrawlRun() error {
 		crawlDur, extractDur, hashDur time.Duration
 		runErr                        error
 	)
-	sinceLastCrawl := time.Since(s.Cfg.RunTime.LastCrawlDate)
-	s.Cfg.Metrics.CrawlIntervals.WithLabelValues("sincelastcrawl").Set(sinceLastCrawl.Seconds())
 	s.Cfg.RunTime.Mu.Lock()
+	sinceLastCrawl := time.Since(s.Cfg.RunTime.LastCrawlDate)
 	s.Cfg.RunTime.CrawlRunNumber++
 	s.Cfg.RunTime.LastCrawlDate = time.Now()
 	crawlRunNumber := s.Cfg.RunTime.CrawlRunNumber
 	s.Cfg.RunTime.Mu.Unlock()
+	if s.Cfg.Metrics.CrawlIntervals != nil {
+		s.Cfg.Metrics.CrawlIntervals.WithLabelValues("sincelastcrawl").Set(sinceLastCrawl.Seconds())
+	}
 
 	logger.Infof("Starting crawl run #%v (Root Folder: %v). Time since last crawl: %v", crawlRunNumber, s.Cfg.Crawl.RootFolder, sinceLastCrawl)
 	start := time.Now().UTC()
@@ -150,7 +157,9 @@ func (s DefaultCrawlService) CrawlRun() error {
 	ts := s.Repo.Size()
 	end := time.Now().UTC()
 	crawlDur = end.Sub(start)
-	s.Cfg.Metrics.FastEventDurations.WithLabelValues("lastcrawl").Observe(crawlDur.Seconds())
+	if s.Cfg.Metrics.FastEventDurations != nil {
+		s.Cfg.Metrics.FastEventDurations.WithLabelValues("lastcrawl").Observe(crawlDur.Seconds())
+	}
 	logger.Infof("Finished crawl run #%v. Removed %v orphaned file(s). Added %v new file(s). %v file(s) in list total. (%v)", crawlRunNumber, filesRemoved, fileCount, ts, crawlDur.String())
 	if s.Repo.NewFiles() {
 		logger.Info("Starting to extract file data...")
@@ -161,7 +170,9 @@ func (s DefaultCrawlService) CrawlRun() error {
 		}
 		end = time.Now().UTC()
 		extractDur = end.Sub(start)
-		s.Cfg.Metrics.FastEventDurations.WithLabelValues("lastextraction").Observe(extractDur.Seconds())
+		if s.Cfg.Metrics.FastEventDurations != nil {
+			s.Cfg.Metrics.FastEventDurations.WithLabelValues("lastextraction").Observe(extractDur.Seconds())
+		}
 		logger.Infof("Extracted file data for %v file(s). %v audio file(s), %v stream file(s) (%v)", fc.TotalCount, fc.AudioCount, fc.StreamCount, extractDur.String())
 		if s.Cfg.Crawl.GenerateHash {
 			logger.Info("Starting to add hashes for new files...")
@@ -172,7 +183,9 @@ func (s DefaultCrawlService) CrawlRun() error {
 			}
 			end = time.Now().UTC()
 			hashDur = end.Sub(start)
-			s.Cfg.Metrics.FastEventDurations.WithLabelValues("lasthash").Observe(hashDur.Seconds())
+			if s.Cfg.Metrics.FastEventDurations != nil {
+				s.Cfg.Metrics.FastEventDurations.WithLabelValues("lasthash").Observe(hashDur.Seconds())
+			}
 			logger.Infof("Added hashes for %v new file(s) (%v)", hc, hashDur.String())
 		}
 	} else {
@@ -180,9 +193,11 @@ func (s DefaultCrawlService) CrawlRun() error {
 	}
 	as := s.Repo.AudioSize()
 	es := s.Repo.StreamSize()
-	s.Cfg.Metrics.FileNumber.WithLabelValues("total").Set(float64(ts))
-	s.Cfg.Metrics.FileNumber.WithLabelValues("audio").Set(float64(as))
-	s.Cfg.Metrics.FileNumber.WithLabelValues("stream").Set(float64(es))
+	if s.Cfg.Metrics.FileNumber != nil {
+		s.Cfg.Metrics.FileNumber.WithLabelValues("total").Set(float64(ts))
+		s.Cfg.Metrics.FileNumber.WithLabelValues("audio").Set(float64(as))
+		s.Cfg.Metrics.FileNumber.WithLabelValues("stream").Set(float64(es))
+	}
 	return runErr
 }
 

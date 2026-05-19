@@ -80,6 +80,7 @@ type AppConfig struct {
 		Connected          *prometheus.GaugeVec
 		EventCounters      *prometheus.GaugeVec
 		CrawlIntervals     *prometheus.GaugeVec
+		RunResults         *prometheus.CounterVec
 		FastEventDurations *prometheus.HistogramVec
 		LongEventDurations *prometheus.HistogramVec
 	}

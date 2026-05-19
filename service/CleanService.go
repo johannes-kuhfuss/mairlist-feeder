@@ -13,7 +13,7 @@ import (
 )
 
 type Cleaner interface {
-	Clean()
+	Clean() error
 }
 
 // The clean service handles the cyclical clean-up of the file list kept in memory
@@ -44,10 +44,14 @@ func isYesterdayOrOlder(folderDate time.Time) (bool, error) {
 }
 
 // Clean orchestrates the clean-up of the file list kept in memory
-func (s DefaultCleanService) Clean() {
+func (s DefaultCleanService) Clean() (err error) {
+	defer func() {
+		recordRunResult(s.Cfg, "clean", err)
+	}()
 	logger.Info("Starting file list clean-up...")
 	start := time.Now().UTC()
-	filesCleaned, err := s.CleanRun()
+	var filesCleaned int
+	filesCleaned, err = s.CleanRun()
 	if err != nil {
 		logger.Error("Error while cleaning repository", err)
 	}
@@ -57,6 +61,7 @@ func (s DefaultCleanService) Clean() {
 	end := time.Now().UTC()
 	dur := end.Sub(start)
 	logger.Infof("File list cleaned-up. Removed %v entries. (%v)", filesCleaned, dur.String())
+	return err
 }
 
 // CleanRun performs the clean-up of expired file list entries

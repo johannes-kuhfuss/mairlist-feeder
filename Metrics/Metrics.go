@@ -40,8 +40,8 @@ func InitMetrics(cfg *config.AppConfig, registry prometheus.Registerer) {
 		Name:      "event_counters",
 		Help:      "How many events have essence associated vs. missing vs. multiple essence",
 	}, []string{
-			"typename",
-		}))
+		"typename",
+	}))
 	cfg.Metrics.CrawlIntervals = registerGaugeVec(registry, prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "coloradio",
 		Subsystem: "mairlistfeeder",
@@ -49,6 +49,15 @@ func InitMetrics(cfg *config.AppConfig, registry prometheus.Registerer) {
 		Help:      "Seconds elapsed between crawl runs",
 	}, []string{
 		"eventname",
+	}))
+	cfg.Metrics.RunResults = registerCounterVec(registry, prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "coloradio",
+		Subsystem: "mairlistfeeder",
+		Name:      "run_results_total",
+		Help:      "Number of completed service runs by service and result",
+	}, []string{
+		"service",
+		"result",
 	}))
 	cfg.Metrics.FastEventDurations = registerHistogramVec(registry, prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
@@ -76,6 +85,7 @@ func UnregisterMetrics(cfg *config.AppConfig, registry prometheus.Registerer) {
 	unregister(registry, cfg.Metrics.Connected)
 	unregister(registry, cfg.Metrics.EventCounters)
 	unregister(registry, cfg.Metrics.CrawlIntervals)
+	unregister(registry, cfg.Metrics.RunResults)
 	unregister(registry, cfg.Metrics.FastEventDurations)
 }
 
@@ -83,6 +93,18 @@ func registerGaugeVec(registry prometheus.Registerer, metric *prometheus.GaugeVe
 	if err := registry.Register(metric); err != nil {
 		if alreadyRegistered, ok := err.(prometheus.AlreadyRegisteredError); ok {
 			if existing, ok := alreadyRegistered.ExistingCollector.(*prometheus.GaugeVec); ok {
+				return existing
+			}
+		}
+		panic(err)
+	}
+	return metric
+}
+
+func registerCounterVec(registry prometheus.Registerer, metric *prometheus.CounterVec) *prometheus.CounterVec {
+	if err := registry.Register(metric); err != nil {
+		if alreadyRegistered, ok := err.(prometheus.AlreadyRegisteredError); ok {
+			if existing, ok := alreadyRegistered.ExistingCollector.(*prometheus.CounterVec); ok {
 				return existing
 			}
 		}
