@@ -79,6 +79,7 @@ type AppConfig struct {
 		MairListPlaying    *prometheus.GaugeVec
 		Connected          *prometheus.GaugeVec
 		EventCounters      *prometheus.GaugeVec
+		CrawlIntervals     *prometheus.GaugeVec
 		FastEventDurations *prometheus.HistogramVec
 		LongEventDurations *prometheus.HistogramVec
 	}

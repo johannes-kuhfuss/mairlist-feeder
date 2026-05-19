@@ -128,7 +128,7 @@ func (s DefaultCrawlService) CrawlRun() error {
 		runErr                        error
 	)
 	sinceLastCrawl := time.Since(s.Cfg.RunTime.LastCrawlDate)
-	s.Cfg.Metrics.LongEventDurations.WithLabelValues("sincelastcrawl").Observe(sinceLastCrawl.Seconds())
+	s.Cfg.Metrics.CrawlIntervals.WithLabelValues("sincelastcrawl").Set(sinceLastCrawl.Seconds())
 	s.Cfg.RunTime.Mu.Lock()
 	s.Cfg.RunTime.CrawlRunNumber++
 	s.Cfg.RunTime.LastCrawlDate = time.Now()
