@@ -55,8 +55,8 @@ type AppConfig struct {
 		ShortDeltaAllowance    float64 `envconfig:"SHORT_DELTA_ALLOWANCE" default:"8.0"`
 		LongDeltaAllowance     float64 `envconfig:"LONG_DELTA_ALLOWANCE" default:"12.0"`
 		MairListUrl            string  `envconfig:"MAIRLIST_URL" default:"http://localhost:9300/"`
-		MairListUser           string  `envconfig:"MAIRLIST_USER" default:"dbtest"`
-		MairListPassword       string  `envconfig:"MAIRLIST_PASS" default:"dbtest"`
+		MairListUser           string  `envconfig:"MAIRLIST_USER"`
+		MairListPassword       string  `envconfig:"MAIRLIST_PASS"`
 		MairListVersion        int     `envconfig:"MAIRLIST_VERSION" default:"6"`
 		AppendPlaylist         bool    `envconfig:"APPEND_PLAYLIST" default:"false"`
 		TerminateAfterDuration bool    `envconfig:"TERM_AFTER_DUR" default:"true"`
@@ -81,6 +81,7 @@ type AppConfig struct {
 		EventCounters      *prometheus.GaugeVec
 		CrawlIntervals     *prometheus.GaugeVec
 		RunResults         *prometheus.CounterVec
+		RunDurations       *prometheus.HistogramVec
 		FastEventDurations *prometheus.HistogramVec
 		LongEventDurations *prometheus.HistogramVec
 	}
@@ -146,6 +147,14 @@ func validateConfig(config *AppConfig) error {
 	}
 	if config.Export.StatusQueryCycleSec <= 0 {
 		return fmt.Errorf("status query cycle must be greater than 0")
+	}
+	if config.Export.AppendPlaylist || config.Export.QueryMairListStatus {
+		if config.Export.MairListUser == "" {
+			return fmt.Errorf("mAirList user must be configured when mAirList integration is enabled")
+		}
+		if config.Export.MairListPassword == "" {
+			return fmt.Errorf("mAirList password must be configured when mAirList integration is enabled")
+		}
 	}
 	if config.Server.UseTls {
 		if _, err := os.Stat(config.Server.CertFile); err != nil {

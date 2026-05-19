@@ -179,7 +179,30 @@ func (a *Application) mapUrls() {
 	a.cfg.RunTime.Router.POST(actionUrl, a.statsUiHandler.ExecAction)
 	a.cfg.RunTime.Router.GET("/logs", a.statsUiHandler.LogsPage)
 	a.cfg.RunTime.Router.GET("/about", a.statsUiHandler.AboutPage)
+	a.cfg.RunTime.Router.GET("/healthz", a.healthz)
 	a.cfg.RunTime.Router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+}
+
+func (a *Application) healthz(c *gin.Context) {
+	if a.cfg.Crawl.RootFolder != "" {
+		if info, err := os.Stat(a.cfg.Crawl.RootFolder); err != nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "error", "message": "root folder is not accessible"})
+			return
+		} else if !info.IsDir() {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "error", "message": "root folder is not a directory"})
+			return
+		}
+	}
+	if a.cfg.Export.ExportFolder != "" {
+		if info, err := os.Stat(a.cfg.Export.ExportFolder); err != nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "error", "message": "export folder is not accessible"})
+			return
+		} else if !info.IsDir() {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"status": "error", "message": "export folder is not a directory"})
+			return
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
 // RegisterForOsSignals listens for OS signals terminating the program and sends an internal signal to start cleanup

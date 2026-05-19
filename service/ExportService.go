@@ -75,8 +75,9 @@ func NewExportService(cfg *config.AppConfig, repo *repositories.DefaultFileRepos
 
 // Export orchestrates the export of data to mAirList
 func (s DefaultExportService) Export() (err error) {
+	start := time.Now()
 	defer func() {
-		recordRunResult(s.Cfg, "export", err)
+		recordRunMetrics(s.Cfg, "export", start, err)
 	}()
 	s.Cfg.RunTime.Mu.Lock()
 	s.Cfg.RunTime.LastExportRunDate = time.Now()
@@ -87,8 +88,9 @@ func (s DefaultExportService) Export() (err error) {
 
 // ExportAllHours exports a playlist for all hours of the day
 func (s DefaultExportService) ExportAllHours() (err error) {
+	start := time.Now()
 	defer func() {
-		recordRunResult(s.Cfg, "export", err)
+		recordRunMetrics(s.Cfg, "export", start, err)
 	}()
 	return s.ExportAllHoursForDate(helper.DateForFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate, 0))
 }
@@ -105,8 +107,9 @@ func (s DefaultExportService) ExportAllHoursForDate(folderDate time.Time) error 
 // ExportForHour exports a playlist for a given hour
 // Loads playlist into mAirList via API, if enabled
 func (s DefaultExportService) ExportForHour(hour string) (err error) {
+	start := time.Now()
 	defer func() {
-		recordRunResult(s.Cfg, "export", err)
+		recordRunMetrics(s.Cfg, "export", start, err)
 	}()
 	return s.ExportForDateAndHour(helper.DateForFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate, 0), hour)
 }

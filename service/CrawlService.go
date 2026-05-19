@@ -59,8 +59,9 @@ func NewCrawlService(cfg *config.AppConfig, repo *repositories.DefaultFileReposi
 
 // Crawl orchestrates the crawling of the folder on disk
 func (s DefaultCrawlService) Crawl() (err error) {
+	start := time.Now()
 	defer func() {
-		recordRunResult(s.Cfg, "crawl", err)
+		recordRunMetrics(s.Cfg, "crawl", start, err)
 	}()
 	if s.Cfg.Crawl.RootFolder == "" {
 		err = errors.New("no root folder given")

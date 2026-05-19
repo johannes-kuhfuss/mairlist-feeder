@@ -71,6 +71,27 @@ func TestExportDayEventsNonOkStatusReturnsError(t *testing.T) {
 	assert.Contains(t, err.Error(), "500 Internal Server Error")
 }
 
+func TestExportDayEventsUsesTimeoutClient(t *testing.T) {
+	setupHelperTest()
+	oldClient := exportStateHTTPClient
+	exportStateHTTPClient = &http.Client{Timeout: time.Nanosecond}
+	defer func() {
+		exportStateHTTPClient = oldClient
+	}()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(50 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+	u, _ := url.Parse(srv.URL)
+	testApp.cfg.RunTime.ListenAddr = u.Hostname() + ":" + u.Port()
+
+	fileName, err := testApp.exportState(eventUrl, "events")
+
+	assert.EqualValues(t, "", fileName)
+	assert.NotNil(t, err)
+}
+
 func TestIsPathWithinRejectsSiblingDirectory(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "export")
 	candidate := root + "2"

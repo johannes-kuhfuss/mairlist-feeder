@@ -1,14 +1,23 @@
 package service
 
-import "github.com/johannes-kuhfuss/mairlist-feeder/config"
+import (
+	"time"
 
-func recordRunResult(cfg *config.AppConfig, serviceName string, err error) {
-	if cfg == nil || cfg.Metrics.RunResults == nil {
+	"github.com/johannes-kuhfuss/mairlist-feeder/config"
+)
+
+func recordRunMetrics(cfg *config.AppConfig, serviceName string, start time.Time, err error) {
+	if cfg == nil {
 		return
 	}
 	result := "success"
 	if err != nil {
 		result = "failure"
 	}
-	cfg.Metrics.RunResults.WithLabelValues(serviceName, result).Inc()
+	if cfg.Metrics.RunResults != nil {
+		cfg.Metrics.RunResults.WithLabelValues(serviceName, result).Inc()
+	}
+	if cfg.Metrics.RunDurations != nil {
+		cfg.Metrics.RunDurations.WithLabelValues(serviceName, result).Observe(time.Since(start).Seconds())
+	}
 }

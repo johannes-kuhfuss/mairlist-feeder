@@ -132,6 +132,52 @@ func TestValidateConfigInvalidStatusQueryCycleReturnsError(t *testing.T) {
 	assert.EqualValues(t, "status query cycle must be greater than 0", err.Error())
 }
 
+func TestValidateConfigAppendPlaylistMissingPasswordReturnsError(t *testing.T) {
+	var cfg AppConfig
+	cfg.Server.GracefulShutdownTime = 10
+	cfg.Crawl.CrawlCycleMin = 10
+	cfg.Export.ExportMinute = 59
+	cfg.Export.StatusQueryCycleSec = 5
+	cfg.Export.AppendPlaylist = true
+	cfg.Export.MairListUser = "dbtest"
+	cfg.Export.MairListPassword = ""
+
+	err := validateConfig(&cfg)
+
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "mAirList password must be configured when mAirList integration is enabled", err.Error())
+}
+
+func TestValidateConfigQueryMairListStatusMissingUserReturnsError(t *testing.T) {
+	var cfg AppConfig
+	cfg.Server.GracefulShutdownTime = 10
+	cfg.Crawl.CrawlCycleMin = 10
+	cfg.Export.ExportMinute = 59
+	cfg.Export.StatusQueryCycleSec = 5
+	cfg.Export.QueryMairListStatus = true
+	cfg.Export.MairListPassword = "secret"
+
+	err := validateConfig(&cfg)
+
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "mAirList user must be configured when mAirList integration is enabled", err.Error())
+}
+
+func TestValidateConfigMairListIntegrationConfiguredReturnsNoError(t *testing.T) {
+	var cfg AppConfig
+	cfg.Server.GracefulShutdownTime = 10
+	cfg.Crawl.CrawlCycleMin = 10
+	cfg.Export.ExportMinute = 59
+	cfg.Export.StatusQueryCycleSec = 5
+	cfg.Export.AppendPlaylist = true
+	cfg.Export.MairListUser = "user"
+	cfg.Export.MairListPassword = "secret"
+
+	err := validateConfig(&cfg)
+
+	assert.Nil(t, err)
+}
+
 func TestValidateConfigInvalidRootFolderReturnsError(t *testing.T) {
 	var cfg AppConfig
 	cfg.Server.GracefulShutdownTime = 10

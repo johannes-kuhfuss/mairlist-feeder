@@ -45,8 +45,9 @@ func isYesterdayOrOlder(folderDate time.Time) (bool, error) {
 
 // Clean orchestrates the clean-up of the file list kept in memory
 func (s DefaultCleanService) Clean() (err error) {
+	runStart := time.Now()
 	defer func() {
-		recordRunResult(s.Cfg, "clean", err)
+		recordRunMetrics(s.Cfg, "clean", runStart, err)
 	}()
 	logger.Info("Starting file list clean-up...")
 	start := time.Now().UTC()

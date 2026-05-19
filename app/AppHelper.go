@@ -16,6 +16,10 @@ import (
 	"github.com/johannes-kuhfuss/services_utils/logger"
 )
 
+var exportStateHTTPClient = &http.Client{
+	Timeout: 5 * time.Second,
+}
+
 // ExportDayDataRun runs the export job
 func (a *Application) ExportDayDataRun() {
 	a.calCmsService.SaveYesterdaysEvents()
@@ -44,7 +48,7 @@ func (a *Application) exportState(urlPath, filePrefix string) (fileName string, 
 	}
 	u.Host = a.cfg.RunTime.ListenAddr
 	u.Path = urlPath
-	resp, err := http.Get(u.String())
+	resp, err := exportStateHTTPClient.Get(u.String())
 	if err != nil {
 		logger.Error("Error while trying to save day's status", err)
 		return "", err

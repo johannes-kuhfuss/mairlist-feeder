@@ -59,6 +59,21 @@ func InitMetrics(cfg *config.AppConfig, registry prometheus.Registerer) {
 		"service",
 		"result",
 	}))
+	cfg.Metrics.RunDurations = registerHistogramVec(registry, prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: "coloradio",
+			Subsystem: "mairlistfeeder",
+			Name:      "run_duration_seconds",
+			Help:      "Duration of completed service runs in seconds",
+			Buckets: []float64{
+				0.1, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300, 600, 900,
+			},
+		},
+		[]string{
+			"service",
+			"result",
+		},
+	))
 	cfg.Metrics.FastEventDurations = registerHistogramVec(registry, prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: "coloradio",
@@ -86,6 +101,7 @@ func UnregisterMetrics(cfg *config.AppConfig, registry prometheus.Registerer) {
 	unregister(registry, cfg.Metrics.EventCounters)
 	unregister(registry, cfg.Metrics.CrawlIntervals)
 	unregister(registry, cfg.Metrics.RunResults)
+	unregister(registry, cfg.Metrics.RunDurations)
 	unregister(registry, cfg.Metrics.FastEventDurations)
 }
 
