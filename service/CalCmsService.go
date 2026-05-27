@@ -619,10 +619,22 @@ func (s DefaultCalCmsService) CountRun() {
 func (s DefaultCalCmsService) SaveYesterdaysEvents() {
 	events, err := s.GetTodayEvents()
 	if err == nil {
+		snapshotDate := domain.FormatFolderDate(helper.DateForFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate, 0))
+		events = filterEventsForDate(events, snapshotDate)
 		s.eventsYesterday.Lock()
 		defer s.eventsYesterday.Unlock()
 		s.eventsYesterday.events = append([]dto.Event(nil), events...)
 	}
+}
+
+func filterEventsForDate(events []dto.Event, date string) []dto.Event {
+	filteredEvents := make([]dto.Event, 0, len(events))
+	for _, event := range events {
+		if event.StartDate == date {
+			filteredEvents = append(filteredEvents, event)
+		}
+	}
+	return filteredEvents
 }
 
 // GetYesterdaysEvents retrieves yesterday's event state from the local variable

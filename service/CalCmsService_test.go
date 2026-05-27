@@ -784,6 +784,31 @@ func TestRefreshTodayEventsFailureKeepsCachedEventsAndSetsError(t *testing.T) {
 	assert.False(t, cfgCal.RunTime.LastCalCmsRefreshDate.IsZero())
 }
 
+func TestSaveYesterdaysEventsStoresOnlyBaseDateEvents(t *testing.T) {
+	teardown := setupTestCal()
+	defer teardown()
+	cfgCal.Misc.TestCrawl = true
+	cfgCal.Misc.TestDate = "2024/09/17"
+	baseDateEvent := dto.Event{
+		EventId:   "1",
+		Title:     "Base Date Event",
+		StartDate: "2024-09-17",
+	}
+	nextDateEvent := dto.Event{
+		EventId:   "2",
+		Title:     "Next Date Event",
+		StartDate: "2024-09-18",
+	}
+	calCmsService.eventsToday.Lock()
+	calCmsService.eventsToday.events = []dto.Event{baseDateEvent, nextDateEvent}
+	calCmsService.eventsToday.Unlock()
+
+	calCmsService.SaveYesterdaysEvents()
+
+	events := calCmsService.GetYesterdaysEvents()
+	assert.EqualValues(t, []dto.Event{baseDateEvent}, events)
+}
+
 func TestCheckHashNoFilesReturnsFalse(t *testing.T) {
 	files := domain.FileList{}
 	i, h := checkHash(&files)
