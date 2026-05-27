@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/johannes-kuhfuss/mairlist-feeder/appstate"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
 	"github.com/johannes-kuhfuss/mairlist-feeder/dto"
@@ -30,8 +31,10 @@ type CalCmsQuerier interface {
 // The calCms service handles all the communication with calCms and the necessary data transformation
 type DefaultCalCmsService struct {
 	Cfg             *config.AppConfig
+	State           *appstate.AppState
 	Repo            *repositories.DefaultFileRepository
 	httpClient      *http.Client
+	Now             func() time.Time
 	calCmsPgm       *safeCalCmsPgm
 	eventsToday     *safeEvents
 	eventsYesterday *safeEvents
@@ -63,10 +66,16 @@ func InitHttpCalClient() *http.Client {
 
 // NewCalCmsService creates a new calCms service and injects its dependencies
 func NewCalCmsService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository) DefaultCalCmsService {
+	return NewCalCmsServiceWithState(cfg, appstate.New(), repo)
+}
+
+func NewCalCmsServiceWithState(cfg *config.AppConfig, state *appstate.AppState, repo *repositories.DefaultFileRepository) DefaultCalCmsService {
 	return DefaultCalCmsService{
 		Cfg:             cfg,
+		State:           state,
 		Repo:            repo,
 		httpClient:      InitHttpCalClient(),
+		Now:             time.Now,
 		calCmsPgm:       &safeCalCmsPgm{},
 		eventsToday:     &safeEvents{},
 		eventsYesterday: &safeEvents{},
@@ -96,14 +105,14 @@ func calcCalCmsEndDateForDays(startDate string, days int) (endDate string, e err
 
 // setCalCmsQueryState sets staus of last calCms interaction with result and time for status overview
 func (s DefaultCalCmsService) setCalCmsQueryState(success bool) {
-	s.Cfg.RunTime.Mu.Lock()
-	defer s.Cfg.RunTime.Mu.Unlock()
+	s.State.Runtime.Mu.Lock()
+	defer s.State.Runtime.Mu.Unlock()
 	if success {
-		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Succeeded (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
-		s.Cfg.Metrics.Connected.WithLabelValues("calCMS").Set(1)
+		s.State.Runtime.LastCalCmsState = fmt.Sprintf("Succeeded (%v)", s.Now().Format("2006-01-02 15:04:05 -0700 MST"))
+		s.State.Metrics.SetConnected("calCMS", 1)
 	} else {
-		s.Cfg.RunTime.LastCalCmsState = fmt.Sprintf("Failed (%v)", time.Now().Format("2006-01-02 15:04:05 -0700 MST"))
-		s.Cfg.Metrics.Connected.WithLabelValues("calCMS").Set(0)
+		s.State.Runtime.LastCalCmsState = fmt.Sprintf("Failed (%v)", s.Now().Format("2006-01-02 15:04:05 -0700 MST"))
+		s.State.Metrics.SetConnected("calCMS", 0)
 	}
 
 }
@@ -170,7 +179,7 @@ func (s DefaultCalCmsService) getCalCmsEventDataForDates(dates []time.Time) (eve
 func (s DefaultCalCmsService) Query() error {
 	if s.Cfg.CalCms.QueryCalCms {
 		logger.Info("Starting to add information from calCMS...")
-		start := time.Now().UTC()
+		start := s.Now().UTC()
 		data, err := s.getCalCmsEventData()
 		if err != nil {
 			logger.Error("error getting data from calCms", err)
@@ -183,9 +192,9 @@ func (s DefaultCalCmsService) Query() error {
 		}
 		s.insertData(calCmsData)
 		fc := s.EnrichFileInformation()
-		end := time.Now().UTC()
+		end := s.Now().UTC()
 		updateDur := end.Sub(start)
-		s.Cfg.Metrics.FastEventDurations.WithLabelValues("lastcalcmsupdate").Observe(updateDur.Seconds())
+		s.State.Metrics.ObserveFastEvent("lastcalcmsupdate", updateDur.Seconds())
 		logger.Infof("Added or updated information from calCMS for %v file(s), audio: %v, stream: %v (%v)", fc.TotalCount, fc.AudioCount, fc.StreamCount, updateDur.String())
 		return nil
 	}
@@ -567,14 +576,14 @@ func (s DefaultCalCmsService) RefreshTodayEvents() ([]dto.Event, error) {
 }
 
 func (s DefaultCalCmsService) setTodayRefreshState(err error) {
-	s.Cfg.RunTime.Mu.Lock()
-	defer s.Cfg.RunTime.Mu.Unlock()
-	s.Cfg.RunTime.LastCalCmsRefreshDate = time.Now()
+	s.State.Runtime.Mu.Lock()
+	defer s.State.Runtime.Mu.Unlock()
+	s.State.Runtime.LastCalCmsRefreshDate = s.Now()
 	if err != nil {
-		s.Cfg.RunTime.LastCalCmsRefreshErr = err.Error()
+		s.State.Runtime.LastCalCmsRefreshErr = err.Error()
 		return
 	}
-	s.Cfg.RunTime.LastCalCmsRefreshErr = ""
+	s.State.Runtime.LastCalCmsRefreshErr = ""
 }
 
 // GetTodayEvents returns the cached event list for display on the web UI.
@@ -602,10 +611,10 @@ func (s DefaultCalCmsService) countEvents(events []dto.Event) {
 			multipleCount++
 		}
 	}
-	s.Cfg.Metrics.EventCounters.WithLabelValues("present").Set(float64(presentCount))
-	s.Cfg.Metrics.EventCounters.WithLabelValues("missing").Set(float64(missingCount))
-	s.Cfg.Metrics.EventCounters.WithLabelValues("multiple").Set(float64(multipleCount))
-	s.Cfg.Metrics.EventCounters.WithLabelValues("total").Set(float64(presentCount + missingCount + multipleCount))
+	s.State.Metrics.SetEventCounter("present", float64(presentCount))
+	s.State.Metrics.SetEventCounter("missing", float64(missingCount))
+	s.State.Metrics.SetEventCounter("multiple", float64(multipleCount))
+	s.State.Metrics.SetEventCounter("total", float64(presentCount+missingCount+multipleCount))
 
 }
 

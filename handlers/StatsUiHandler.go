@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/johannes-kuhfuss/mairlist-feeder/appstate"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
 	"github.com/johannes-kuhfuss/mairlist-feeder/dto"
@@ -21,11 +22,22 @@ import (
 
 type StatsUiHandler struct {
 	Cfg       *config.AppConfig
-	Repo      *repositories.DefaultFileRepository
-	CrawlSvc  *service.DefaultCrawlService
-	ExportSvc *service.DefaultExportService
-	CleanSvc  *service.DefaultCleanService
-	CalCmsSvc *service.DefaultCalCmsService
+	State     *appstate.AppState
+	Repo      repositories.FileRepository
+	CrawlSvc  service.Crawler
+	ExportSvc uiExporter
+	CleanSvc  service.Cleaner
+	CalCmsSvc uiCalCmsService
+}
+
+type uiExporter interface {
+	ExportAllHours() error
+	ExportForHour(string) error
+}
+
+type uiCalCmsService interface {
+	GetTodayEvents() ([]dto.Event, error)
+	GetYesterdaysEvents() []dto.Event
 }
 
 type actionResponse struct {
@@ -36,8 +48,13 @@ type actionResponse struct {
 
 // NewStatsUiHandler creates a new web UI handler and injects its dependencies
 func NewStatsUiHandler(cfg *config.AppConfig, repo *repositories.DefaultFileRepository, crs *service.DefaultCrawlService, exs *service.DefaultExportService, cls *service.DefaultCleanService, csv *service.DefaultCalCmsService) StatsUiHandler {
+	return NewStatsUiHandlerWithState(cfg, appstate.New(), repo, crs, exs, cls, csv)
+}
+
+func NewStatsUiHandlerWithState(cfg *config.AppConfig, state *appstate.AppState, repo repositories.FileRepository, crs service.Crawler, exs uiExporter, cls service.Cleaner, csv uiCalCmsService) StatsUiHandler {
 	return StatsUiHandler{
 		Cfg:       cfg,
+		State:     state,
 		Repo:      repo,
 		CrawlSvc:  crs,
 		ExportSvc: exs,
@@ -48,7 +65,7 @@ func NewStatsUiHandler(cfg *config.AppConfig, repo *repositories.DefaultFileRepo
 
 // StatusPage is the handler for the status page
 func (uh *StatsUiHandler) StatusPage(c *gin.Context) {
-	configData := dto.GetConfig(uh.Cfg)
+	configData := dto.GetConfig(uh.Cfg, uh.State)
 	c.HTML(http.StatusOK, "status.page.tmpl", gin.H{
 		"title":      "Status",
 		"configdata": configData,
@@ -236,9 +253,9 @@ func validateHour(hour string) api_error.ApiErr {
 }
 
 func (uh *StatsUiHandler) resetCrawl() {
-	uh.Cfg.RunTime.BgJobs.Remove(uh.Cfg.RunTime.CrawlJobId)
+	uh.State.Runtime.BgJobs.Remove(uh.State.Runtime.CrawlJobId)
 	crawlCycle := "@every " + strconv.Itoa(uh.Cfg.Crawl.CrawlCycleMin) + "m"
-	crawlId, crawlErr := uh.Cfg.RunTime.BgJobs.AddFunc(crawlCycle, func() {
+	crawlId, crawlErr := uh.State.Runtime.BgJobs.AddFunc(crawlCycle, func() {
 		if err := uh.CrawlSvc.Crawl(); err != nil {
 			logger.Error("Error running scheduled crawl", err)
 		}
@@ -246,6 +263,6 @@ func (uh *StatsUiHandler) resetCrawl() {
 	if crawlErr != nil {
 		logger.Errorf("Error when scheduling job %v for crawling. %v", crawlId, crawlErr)
 	} else {
-		uh.Cfg.RunTime.CrawlJobId = crawlId
+		uh.State.Runtime.CrawlJobId = crawlId
 	}
 }

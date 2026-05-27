@@ -25,8 +25,10 @@ type FileRepository interface {
 	GetByEventId(int) *domain.FileList
 	GetByEventIdAndDate(int, time.Time) *domain.FileList
 	GetAll() *domain.FileList
+	GetByDate(time.Time) *domain.FileList
 	GetByHour(string, bool) *domain.FileList
 	GetByDateAndHour(time.Time, string, bool) *domain.FileList
+	GetByIdAndDateAndHour(int, time.Time, string, bool) *domain.FileList
 	Store(domain.FileInfo) error
 	Delete(string) error
 	SaveToDisk(string) error

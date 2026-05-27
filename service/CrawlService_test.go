@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/johannes-kuhfuss/mairlist-feeder/appstate"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
@@ -13,9 +14,10 @@ import (
 )
 
 var (
-	cfgCrawl  config.AppConfig
-	crawlSvc  DefaultCrawlService
-	crawlRepo repositories.DefaultFileRepository
+	cfgCrawl   config.AppConfig
+	stateCrawl *appstate.AppState
+	crawlSvc   DefaultCrawlService
+	crawlRepo  repositories.DefaultFileRepository
 )
 
 const (
@@ -28,8 +30,9 @@ var parsedFolderDate = domain.MustParseFolderDate(folderDate)
 
 func setupTestCrawl() func() {
 	config.InitConfig(config.EnvFile, &cfgCrawl)
+	stateCrawl = appstate.New()
 	crawlRepo = repositories.NewFileRepository(&cfgCrawl)
-	crawlSvc = NewCrawlService(&cfgCrawl, &crawlRepo, nil)
+	crawlSvc = NewCrawlServiceWithState(&cfgCrawl, stateCrawl, &crawlRepo, nil)
 	return func() {
 		crawlRepo.DeleteAllData()
 	}

@@ -56,7 +56,7 @@ func formatEventLink(id int) bool {
 }
 
 // GetFiles retrives all files maintained in the repository and formats them for display purposes
-func GetFiles(repo *repositories.DefaultFileRepository, CmsUrl string) (fileDta []FileResp) {
+func GetFiles(repo repositories.FileRepository, CmsUrl string) (fileDta []FileResp) {
 	if files := repo.GetAll(); files != nil {
 		fileDta = formatFiles(*files, CmsUrl)
 	}
@@ -65,7 +65,7 @@ func GetFiles(repo *repositories.DefaultFileRepository, CmsUrl string) (fileDta 
 }
 
 // GetFilesForDate retrieves files for a folder date and formats them for display.
-func GetFilesForDate(repo *repositories.DefaultFileRepository, CmsUrl string, folderDate time.Time) (fileDta []FileResp) {
+func GetFilesForDate(repo repositories.FileRepository, CmsUrl string, folderDate time.Time) (fileDta []FileResp) {
 	if files := repo.GetByDate(folderDate); files != nil {
 		fileDta = formatFiles(*files, CmsUrl)
 	}

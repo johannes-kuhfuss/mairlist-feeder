@@ -8,11 +8,12 @@ import (
 	"testing"
 	"time"
 
-	metrics "github.com/johannes-kuhfuss/mairlist-feeder/Metrics"
+	"github.com/johannes-kuhfuss/mairlist-feeder/appstate"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
 	"github.com/johannes-kuhfuss/mairlist-feeder/dto"
 	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
+	metrics "github.com/johannes-kuhfuss/mairlist-feeder/metrics"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
@@ -20,6 +21,7 @@ import (
 
 var (
 	cfgCal        config.AppConfig
+	stateCal      *appstate.AppState
 	fileRepoCal   repositories.DefaultFileRepository
 	calCmsService DefaultCalCmsService
 	fi1           domain.FileInfo = domain.FileInfo{
@@ -51,12 +53,13 @@ const (
 func setupTestCal() func() {
 	registry := prometheus.NewRegistry()
 	config.InitConfig(config.EnvFile, &cfgCal)
+	stateCal = appstate.New()
 	fileRepoCal = repositories.NewFileRepository(&cfgCal)
-	calCmsService = NewCalCmsService(&cfgCal, &fileRepoCal)
-	metrics.InitMetrics(&cfgCal, registry)
+	calCmsService = NewCalCmsServiceWithState(&cfgCal, stateCal, &fileRepoCal)
+	metrics.InitMetrics(stateCal, registry)
 	return func() {
 		fileRepoCal.DeleteAllData()
-		metrics.UnregisterMetrics(&cfgCal, registry)
+		metrics.UnregisterMetrics(stateCal, registry)
 	}
 }
 
@@ -746,8 +749,8 @@ func TestRefreshTodayEventsUpdatesRefreshState(t *testing.T) {
 	_, err := calCmsService.RefreshTodayEvents()
 
 	assert.Nil(t, err)
-	assert.False(t, cfgCal.RunTime.LastCalCmsRefreshDate.IsZero())
-	assert.EqualValues(t, "", cfgCal.RunTime.LastCalCmsRefreshErr)
+	assert.False(t, stateCal.Runtime.LastCalCmsRefreshDate.IsZero())
+	assert.EqualValues(t, "", stateCal.Runtime.LastCalCmsRefreshErr)
 }
 
 func TestRefreshTodayEventsFailureKeepsCachedEventsAndSetsError(t *testing.T) {
@@ -780,8 +783,8 @@ func TestRefreshTodayEventsFailureKeepsCachedEventsAndSetsError(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, cacheErr)
 	assert.EqualValues(t, ev, cachedEvents)
-	assert.EqualValues(t, "500 Internal Server Error", cfgCal.RunTime.LastCalCmsRefreshErr)
-	assert.False(t, cfgCal.RunTime.LastCalCmsRefreshDate.IsZero())
+	assert.EqualValues(t, "500 Internal Server Error", stateCal.Runtime.LastCalCmsRefreshErr)
+	assert.False(t, stateCal.Runtime.LastCalCmsRefreshDate.IsZero())
 }
 
 func TestSaveYesterdaysEventsStoresOnlyBaseDateEvents(t *testing.T) {
@@ -1000,14 +1003,14 @@ func TestSetCalCmsQueryStateSuccess(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	calCmsService.setCalCmsQueryState(true)
-	assert.Contains(t, calCmsService.Cfg.RunTime.LastCalCmsState, "Succeeded")
+	assert.Contains(t, calCmsService.State.Runtime.LastCalCmsState, "Succeeded")
 }
 
 func TestSetCalCmsQueryStateFailure(t *testing.T) {
 	teardown := setupTestCal()
 	defer teardown()
 	calCmsService.setCalCmsQueryState(false)
-	assert.Contains(t, calCmsService.Cfg.RunTime.LastCalCmsState, "Failed")
+	assert.Contains(t, calCmsService.State.Runtime.LastCalCmsState, "Failed")
 }
 
 func TestMergeInfoNotFromCalCms(t *testing.T) {

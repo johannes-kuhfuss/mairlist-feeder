@@ -7,16 +7,16 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	metrics "github.com/johannes-kuhfuss/mairlist-feeder/Metrics"
+	"github.com/johannes-kuhfuss/mairlist-feeder/appstate"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
 	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
+	metrics "github.com/johannes-kuhfuss/mairlist-feeder/metrics"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
@@ -24,6 +24,7 @@ import (
 
 var (
 	cfg           config.AppConfig
+	stateEx       *appstate.AppState
 	fileRepo      repositories.DefaultFileRepository
 	exportService DefaultExportService
 )
@@ -43,12 +44,13 @@ const (
 func setupTestEx() func() {
 	registry := prometheus.NewRegistry()
 	config.InitConfig(config.EnvFile, &cfg)
-	metrics.InitMetrics(&cfg, registry)
+	stateEx = appstate.New()
+	metrics.InitMetrics(stateEx, registry)
 	fileRepo = repositories.NewFileRepository(&cfg)
-	exportService = NewExportService(&cfg, &fileRepo)
+	exportService = NewExportServiceWithState(&cfg, stateEx, &fileRepo)
 	return func() {
 		fileRepo.DeleteAllData()
-		metrics.UnregisterMetrics(&cfg, registry)
+		metrics.UnregisterMetrics(stateEx, registry)
 	}
 }
 
@@ -269,7 +271,7 @@ func TestSetExportPathRegularReturnsPath(t *testing.T) {
 	s, _ := exportService.setExportPath(hour)
 	assert.NotNil(t, s)
 	file := time.Now().Format("2006-01-02") + "-" + hour + ".tpi"
-	tp := path.Join(exportService.Cfg.Export.ExportFolder, file)
+	tp := filepath.Join(exportService.Cfg.Export.ExportFolder, file)
 
 	assert.EqualValues(t, strings.Replace(tp, "/", "\\", -1), s)
 }
@@ -282,7 +284,7 @@ func TestSetExportPathForDateRegularReturnsPathForRequestedDate(t *testing.T) {
 	s, _ := exportService.setExportPathForDate(folderDate, hour)
 	assert.NotNil(t, s)
 	file := "2024-09-18-" + hour + ".tpi"
-	tp := path.Join(exportService.Cfg.Export.ExportFolder, file)
+	tp := filepath.Join(exportService.Cfg.Export.ExportFolder, file)
 
 	assert.EqualValues(t, strings.Replace(tp, "/", "\\", -1), s)
 }
@@ -291,10 +293,10 @@ func TestIsPathWithinRejectsSiblingDirectory(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "export")
 	candidate := root + "2"
 
-	assert.False(t, isPathWithin(candidate, root))
+	assert.False(t, helper.IsPathWithin(candidate, root))
 }
 
-func TestCheckTimeAndLenghthOneFile(t *testing.T) {
+func TestCheckTimeAndLengthOneFile(t *testing.T) {
 	var files domain.FileList
 	tearDown := setupTestEx()
 	defer tearDown()
@@ -304,12 +306,11 @@ func TestCheckTimeAndLenghthOneFile(t *testing.T) {
 		EndTime:   helper.TimeFromHourAndMinute(15, 0),
 	}
 	files = append(files, fi)
-	assert.EqualValues(t, 0, len(exportService.exportFiles.Files))
-	exportService.checkTimeAndLenghth(&files)
-	assert.EqualValues(t, 1, len(exportService.exportFiles.Files))
+	plan := exportService.checkTimeAndLength(&files)
+	assert.EqualValues(t, 1, len(plan))
 }
 
-func TestCheckTimeAndLenghthOneFileSame(t *testing.T) {
+func TestCheckTimeAndLengthOneFileSame(t *testing.T) {
 	var files domain.FileList
 	tearDown := setupTestEx()
 	defer tearDown()
@@ -320,15 +321,14 @@ func TestCheckTimeAndLenghthOneFileSame(t *testing.T) {
 		EndTime:   helper.TimeFromHourAndMinute(15, 0),
 	}
 	files = append(files, fi)
-	assert.EqualValues(t, 0, len(exportService.exportFiles.Files))
-	exportService.checkTimeAndLenghth(&files)
-	assert.EqualValues(t, 1, len(exportService.exportFiles.Files))
-	exportService.checkTimeAndLenghth(&files)
-	assert.EqualValues(t, 1, len(exportService.exportFiles.Files))
-	assert.EqualValues(t, "A", exportService.exportFiles.Files["14:00"].Path)
+	plan := exportService.checkTimeAndLength(&files)
+	assert.EqualValues(t, 1, len(plan))
+	plan = exportService.checkTimeAndLength(&files)
+	assert.EqualValues(t, 1, len(plan))
+	assert.EqualValues(t, "A", plan["14:00"].Path)
 }
 
-func TestCheckTimeAndLenghthOneFileNewer(t *testing.T) {
+func TestCheckTimeAndLengthOneFileNewer(t *testing.T) {
 	var files domain.FileList
 	tearDown := setupTestEx()
 	defer tearDown()
@@ -347,13 +347,10 @@ func TestCheckTimeAndLenghthOneFileNewer(t *testing.T) {
 		ModTime:   time.Now().AddDate(0, 0, -1),
 	}
 	files = append(files, fi1)
-	assert.EqualValues(t, 0, len(exportService.exportFiles.Files))
-	exportService.checkTimeAndLenghth(&files)
-	assert.EqualValues(t, 1, len(exportService.exportFiles.Files))
 	files = append(files, fi2)
-	exportService.checkTimeAndLenghth(&files)
-	assert.EqualValues(t, 1, len(exportService.exportFiles.Files))
-	assert.EqualValues(t, "A", exportService.exportFiles.Files["14:00"].Path)
+	plan := exportService.checkTimeAndLength(&files)
+	assert.EqualValues(t, 1, len(plan))
+	assert.EqualValues(t, "A", plan["14:00"].Path)
 }
 
 func TestExportToPlayoutNoFilesNoExport(t *testing.T) {
@@ -375,8 +372,8 @@ func TestExportToPlayoutOneFilesExport(t *testing.T) {
 		EndTime:    helper.TimeFromHourAndMinute(14, 0),
 		SlotLength: time.Hour,
 	}
-	exportService.exportFiles.Files["13:00"] = fi
-	file, err := exportService.ExportToPlayout("13")
+	plan := exportPlan{"13:00": fi}
+	file, err := exportService.exportToPlayoutForDate(helper.DateForFolder(exportService.Cfg.Misc.TestCrawl, exportService.Cfg.Misc.TestDate, 0), "13", plan)
 	assert.Nil(t, err)
 	readFile, _ := os.Open(file)
 	fileScanner := bufio.NewScanner(readFile)
@@ -390,41 +387,41 @@ func TestExportToPlayoutOneFilesExport(t *testing.T) {
 	assert.EqualValues(t, "\t\tR\tEnd of auto-generated playlist", fileLines[3])
 	time.Sleep(1 * time.Second)
 	os.Remove(file)
-	assert.EqualValues(t, file, exportService.Cfg.RunTime.LastExportFileName)
-	assert.GreaterOrEqual(t, time.Now(), exportService.Cfg.RunTime.LastExportedFileDate)
+	assert.EqualValues(t, file, exportService.State.Runtime.LastExportFileName)
+	assert.GreaterOrEqual(t, time.Now(), exportService.State.Runtime.LastExportedFileDate)
 }
 
 func TestWritePlaylistFailureKeepsQueuedEntries(t *testing.T) {
 	tearDown := setupTestEx()
 	defer tearDown()
-	exportService.exportFiles.Files["13:00"] = domain.FileInfo{
+	plan := exportPlan{"13:00": domain.FileInfo{
 		Path:       "A",
 		Duration:   time.Hour,
 		StartTime:  helper.TimeFromHourAndMinute(13, 0),
 		SlotLength: time.Hour,
-	}
+	}}
 	file := filepath.Join(t.TempDir(), "missing", "playlist.tpi")
 
-	err := exportService.WritePlaylist(file)
+	err := exportService.WritePlaylist(file, plan)
 
 	assert.NotNil(t, err)
-	assert.EqualValues(t, 1, len(exportService.exportFiles.Files))
-	assert.EqualValues(t, "A", exportService.exportFiles.Files["13:00"].Path)
+	assert.EqualValues(t, 1, len(plan))
+	assert.EqualValues(t, "A", plan["13:00"].Path)
 }
 
 func TestWritePlaylistTruncatesExistingFile(t *testing.T) {
 	tearDown := setupTestEx()
 	defer tearDown()
-	exportService.exportFiles.Files["13:00"] = domain.FileInfo{
+	plan := exportPlan{"13:00": domain.FileInfo{
 		Path:       "A",
 		Duration:   time.Hour,
 		StartTime:  helper.TimeFromHourAndMinute(13, 0),
 		SlotLength: time.Hour,
-	}
+	}}
 	file := filepath.Join(t.TempDir(), "playlist.tpi")
 	os.WriteFile(file, []byte("stale data that must be removed"), 0644)
 
-	err := exportService.WritePlaylist(file)
+	err := exportService.WritePlaylist(file, plan)
 	data, readErr := os.ReadFile(file)
 
 	assert.Nil(t, err)
@@ -437,21 +434,23 @@ func TestWritePlaylistWritesEntriesInTimeOrder(t *testing.T) {
 	var fileLines []string
 	tearDown := setupTestEx()
 	defer tearDown()
-	exportService.exportFiles.Files["14:00"] = domain.FileInfo{
-		Path:       "B",
-		Duration:   time.Hour,
-		StartTime:  helper.TimeFromHourAndMinute(14, 0),
-		SlotLength: time.Hour,
-	}
-	exportService.exportFiles.Files["13:00"] = domain.FileInfo{
-		Path:       "A",
-		Duration:   time.Hour,
-		StartTime:  helper.TimeFromHourAndMinute(13, 0),
-		SlotLength: time.Hour,
+	plan := exportPlan{
+		"14:00": domain.FileInfo{
+			Path:       "B",
+			Duration:   time.Hour,
+			StartTime:  helper.TimeFromHourAndMinute(14, 0),
+			SlotLength: time.Hour,
+		},
+		"13:00": domain.FileInfo{
+			Path:       "A",
+			Duration:   time.Hour,
+			StartTime:  helper.TimeFromHourAndMinute(13, 0),
+			SlotLength: time.Hour,
+		},
 	}
 	file := filepath.Join(t.TempDir(), "playlist.tpi")
 
-	err := exportService.WritePlaylist(file)
+	err := exportService.WritePlaylist(file, plan)
 
 	assert.Nil(t, err)
 	readFile, _ := os.Open(file)
@@ -545,7 +544,7 @@ func TestGetPlaylistPlaying(t *testing.T) {
 	exportService.Cfg.Export.MairListVersion = 5
 	err := exportService.GetPlaylist()
 	assert.Nil(t, err)
-	assert.True(t, exportService.Cfg.RunTime.MairListPlaying)
+	assert.True(t, exportService.State.Runtime.MairListPlaying)
 }
 
 func TestParseMairListPlaylistJsonWrongJsonReturnsError(t *testing.T) {

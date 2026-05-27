@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/johannes-kuhfuss/mairlist-feeder/appstate"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
@@ -18,48 +19,60 @@ type Cleaner interface {
 
 // The clean service handles the cyclical clean-up of the file list kept in memory
 type DefaultCleanService struct {
-	Cfg  *config.AppConfig
-	Repo *repositories.DefaultFileRepository
-	mu   *sync.Mutex
+	Cfg   *config.AppConfig
+	State *appstate.AppState
+	Repo  *repositories.DefaultFileRepository
+	Now   func() time.Time
+	mu    *sync.Mutex
 }
 
 // NewCleanService creates a new cleaning service and injects its dependencies
 func NewCleanService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository) DefaultCleanService {
+	return NewCleanServiceWithState(cfg, appstate.New(), repo)
+}
+
+func NewCleanServiceWithState(cfg *config.AppConfig, state *appstate.AppState, repo *repositories.DefaultFileRepository) DefaultCleanService {
 	return DefaultCleanService{
-		Cfg:  cfg,
-		Repo: repo,
-		mu:   &sync.Mutex{},
+		Cfg:   cfg,
+		State: state,
+		Repo:  repo,
+		Now:   time.Now,
+		mu:    &sync.Mutex{},
 	}
 }
 
 // isYesterdayOrOlder is a helper function which checks each entry and determines whether this entry can be purged from the list
 func isYesterdayOrOlder(folderDate time.Time) (bool, error) {
+	return isYesterdayOrOlderAt(folderDate, time.Now())
+}
+
+func isYesterdayOrOlderAt(folderDate time.Time, now time.Time) (bool, error) {
 	if folderDate.IsZero() {
 		return false, errors.New("folder date is empty")
 	}
 	fileDate := time.Date(folderDate.Year(), folderDate.Month(), folderDate.Day(), 0, 0, 0, 0, time.Local)
-	today := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Local)
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
 	diff := today.Sub(fileDate).Hours() / 24
 	return diff >= 1, nil
 }
 
 // Clean orchestrates the clean-up of the file list kept in memory
 func (s DefaultCleanService) Clean() (err error) {
-	runStart := time.Now()
+	runStart := s.Now()
 	defer func() {
-		recordRunMetrics(s.Cfg, "clean", runStart, err)
+		recordRunMetrics(s.State, "clean", runStart, err)
 	}()
 	logger.Info("Starting file list clean-up...")
-	start := time.Now().UTC()
+	start := s.Now().UTC()
 	var filesCleaned int
 	filesCleaned, err = s.CleanRun()
 	if err != nil {
 		logger.Error("Error while cleaning repository", err)
 	}
-	s.Cfg.RunTime.Mu.Lock()
-	s.Cfg.RunTime.FilesCleaned = filesCleaned
-	s.Cfg.RunTime.Mu.Unlock()
-	end := time.Now().UTC()
+	s.State.Runtime.Mu.Lock()
+	s.State.Runtime.FilesCleaned = filesCleaned
+	s.State.Runtime.Mu.Unlock()
+	end := s.Now().UTC()
 	dur := end.Sub(start)
 	logger.Infof("File list cleaned-up. Removed %v entries. (%v)", filesCleaned, dur.String())
 	return err
@@ -72,14 +85,14 @@ func (s DefaultCleanService) CleanRun() (filesCleaned int, e error) {
 	)
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.Cfg.RunTime.Mu.Lock()
-	s.Cfg.RunTime.CleanRunning = true
-	s.Cfg.RunTime.LastCleanDate = time.Now()
-	s.Cfg.RunTime.Mu.Unlock()
+	s.State.Runtime.Mu.Lock()
+	s.State.Runtime.CleanRunning = true
+	s.State.Runtime.LastCleanDate = s.Now()
+	s.State.Runtime.Mu.Unlock()
 	defer func() {
-		s.Cfg.RunTime.Mu.Lock()
-		s.Cfg.RunTime.CleanRunning = false
-		s.Cfg.RunTime.Mu.Unlock()
+		s.State.Runtime.Mu.Lock()
+		s.State.Runtime.CleanRunning = false
+		s.State.Runtime.Mu.Unlock()
 	}()
 	if files := s.Repo.GetAll(); files != nil {
 		filesCleaned, errorCounter = s.checkAndClean(files)
@@ -94,7 +107,7 @@ func (s DefaultCleanService) CleanRun() (filesCleaned int, e error) {
 // checkAndClean checks the folder date of each file and, if older than today, removes the file from the in-memory store
 func (s DefaultCleanService) checkAndClean(files *domain.FileList) (fileCount int, errorCount int) {
 	for _, file := range *files {
-		fromYesterday, err := isYesterdayOrOlder(file.FolderDate)
+		fromYesterday, err := isYesterdayOrOlderAt(file.FolderDate, s.Now())
 		if err != nil {
 			errorCount++
 			logger.Error("Error converting date", err)

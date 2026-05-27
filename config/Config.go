@@ -6,14 +6,9 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"sync"
-	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/robfig/cron/v3"
 )
 
 // Configuration with subsections
@@ -73,44 +68,6 @@ type AppConfig struct {
 		ExportDayEvents    bool     `envconfig:"EXPORT_DAY_EVENTS" default:"false"`
 		ShowNonCalCmsFiles bool     `envconfig:"SHOW_NON_CALCMS_FILES" default:"true"`
 		FutureEventsDays   int      `envconfig:"FUTURE_EVENTS_DAYS" default:"5"`
-	}
-	Metrics struct {
-		FileNumber         *prometheus.GaugeVec
-		MairListPlaying    *prometheus.GaugeVec
-		Connected          *prometheus.GaugeVec
-		EventCounters      *prometheus.GaugeVec
-		CrawlIntervals     *prometheus.GaugeVec
-		RunResults         *prometheus.CounterVec
-		RunDurations       *prometheus.HistogramVec
-		FastEventDurations *prometheus.HistogramVec
-		LongEventDurations *prometheus.HistogramVec
-	}
-	RunTime struct {
-		Mu                    sync.Mutex
-		Router                *gin.Engine
-		BgJobs                *cron.Cron
-		ListenAddr            string
-		StartDate             time.Time
-		CrawlRunNumber        int
-		LastCrawlDate         time.Time
-		LastExportRunDate     time.Time
-		LastExportedFileDate  time.Time
-		LastExportFileName    string
-		CrawlRunning          bool
-		ExportRunning         bool
-		CleanRunning          bool
-		LastCleanDate         time.Time
-		FilesCleaned          int
-		CrawlJobId            cron.EntryID
-		ExportJobId           cron.EntryID
-		CleanJobId            cron.EntryID
-		EventJobId            cron.EntryID
-		CalCmsJobId           cron.EntryID
-		LastCalCmsState       string
-		LastCalCmsRefreshDate time.Time
-		LastCalCmsRefreshErr  string
-		LastMairListCommState string
-		MairListPlaying       bool
 	}
 }
 
@@ -192,12 +149,9 @@ func checkFilePath(filePath *string) {
 
 // setDefaults sets defaults for some configurations items
 func setDefaults(config *AppConfig) {
-	config.RunTime.LastCalCmsState = "N/A"
-	config.RunTime.LastMairListCommState = "N/A"
 	if len(config.Crawl.StreamMap) == 0 {
 		config.Crawl.StreamMap = make(map[string]int)
 	}
-	config.RunTime.LastCrawlDate = time.Now()
 	checkFilePath(&config.Server.CertFile)
 	checkFilePath(&config.Server.KeyFile)
 	checkFilePath(&config.Server.LogFile)

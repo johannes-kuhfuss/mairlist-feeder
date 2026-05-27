@@ -2,15 +2,15 @@
 package metrics
 
 import (
-	"github.com/johannes-kuhfuss/mairlist-feeder/config"
+	"github.com/johannes-kuhfuss/mairlist-feeder/appstate"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 // InitMetrics sets up the Prometheus metrics.
-func InitMetrics(cfg *config.AppConfig, registry prometheus.Registerer) {
+func InitMetrics(state *appstate.AppState, registry prometheus.Registerer) {
 	registry = registererOrDefault(registry)
 
-	cfg.Metrics.FileNumber = registerGaugeVec(registry, prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	state.Metrics.FileNumber = registerGaugeVec(registry, prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "coloradio",
 		Subsystem: "mairlistfeeder",
 		Name:      "file_count",
@@ -18,7 +18,7 @@ func InitMetrics(cfg *config.AppConfig, registry prometheus.Registerer) {
 	}, []string{
 		"fileCountType",
 	}))
-	cfg.Metrics.MairListPlaying = registerGaugeVec(registry, prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	state.Metrics.MairListPlaying = registerGaugeVec(registry, prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "coloradio",
 		Subsystem: "mairlistfeeder",
 		Name:      "playstatus",
@@ -26,7 +26,7 @@ func InitMetrics(cfg *config.AppConfig, registry prometheus.Registerer) {
 	}, []string{
 		"mairlistname",
 	}))
-	cfg.Metrics.Connected = registerGaugeVec(registry, prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	state.Metrics.Connected = registerGaugeVec(registry, prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "coloradio",
 		Subsystem: "mairlistfeeder",
 		Name:      "subsystem_connection",
@@ -34,7 +34,7 @@ func InitMetrics(cfg *config.AppConfig, registry prometheus.Registerer) {
 	}, []string{
 		"subsystemname",
 	}))
-	cfg.Metrics.EventCounters = registerGaugeVec(registry, prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	state.Metrics.EventCounters = registerGaugeVec(registry, prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "coloradio",
 		Subsystem: "mairlistfeeder",
 		Name:      "event_counters",
@@ -42,7 +42,7 @@ func InitMetrics(cfg *config.AppConfig, registry prometheus.Registerer) {
 	}, []string{
 		"typename",
 	}))
-	cfg.Metrics.CrawlIntervals = registerGaugeVec(registry, prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	state.Metrics.CrawlIntervals = registerGaugeVec(registry, prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "coloradio",
 		Subsystem: "mairlistfeeder",
 		Name:      "crawl_interval_seconds",
@@ -50,7 +50,7 @@ func InitMetrics(cfg *config.AppConfig, registry prometheus.Registerer) {
 	}, []string{
 		"eventname",
 	}))
-	cfg.Metrics.RunResults = registerCounterVec(registry, prometheus.NewCounterVec(prometheus.CounterOpts{
+	state.Metrics.RunResults = registerCounterVec(registry, prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "coloradio",
 		Subsystem: "mairlistfeeder",
 		Name:      "run_results_total",
@@ -59,7 +59,7 @@ func InitMetrics(cfg *config.AppConfig, registry prometheus.Registerer) {
 		"service",
 		"result",
 	}))
-	cfg.Metrics.RunDurations = registerHistogramVec(registry, prometheus.NewHistogramVec(
+	state.Metrics.RunDurations = registerHistogramVec(registry, prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: "coloradio",
 			Subsystem: "mairlistfeeder",
@@ -74,7 +74,7 @@ func InitMetrics(cfg *config.AppConfig, registry prometheus.Registerer) {
 			"result",
 		},
 	))
-	cfg.Metrics.FastEventDurations = registerHistogramVec(registry, prometheus.NewHistogramVec(
+	state.Metrics.FastEventDurations = registerHistogramVec(registry, prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Namespace: "coloradio",
 			Subsystem: "mairlistfeeder",
@@ -92,17 +92,17 @@ func InitMetrics(cfg *config.AppConfig, registry prometheus.Registerer) {
 }
 
 // UnregisterMetrics removes the configured metrics from the given registry.
-func UnregisterMetrics(cfg *config.AppConfig, registry prometheus.Registerer) {
+func UnregisterMetrics(state *appstate.AppState, registry prometheus.Registerer) {
 	registry = registererOrDefault(registry)
 
-	unregister(registry, cfg.Metrics.FileNumber)
-	unregister(registry, cfg.Metrics.MairListPlaying)
-	unregister(registry, cfg.Metrics.Connected)
-	unregister(registry, cfg.Metrics.EventCounters)
-	unregister(registry, cfg.Metrics.CrawlIntervals)
-	unregister(registry, cfg.Metrics.RunResults)
-	unregister(registry, cfg.Metrics.RunDurations)
-	unregister(registry, cfg.Metrics.FastEventDurations)
+	unregister(registry, state.Metrics.FileNumber)
+	unregister(registry, state.Metrics.MairListPlaying)
+	unregister(registry, state.Metrics.Connected)
+	unregister(registry, state.Metrics.EventCounters)
+	unregister(registry, state.Metrics.CrawlIntervals)
+	unregister(registry, state.Metrics.RunResults)
+	unregister(registry, state.Metrics.RunDurations)
+	unregister(registry, state.Metrics.FastEventDurations)
 }
 
 func registerGaugeVec(registry prometheus.Registerer, metric *prometheus.GaugeVec) *prometheus.GaugeVec {

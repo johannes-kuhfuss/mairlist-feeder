@@ -10,14 +10,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/johannes-kuhfuss/mairlist-feeder/appstate"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
+	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/stretchr/testify/assert"
 )
 
 func setupHelperTest() {
 	testApp = Application{}
+	testApp.state = appstate.New()
 	config.InitConfig(config.EnvFile, &testApp.cfg)
-	testApp.cfg.RunTime.ListenAddr = fmt.Sprintf("%s:%s", testApp.cfg.Server.Host, testApp.cfg.Server.Port)
+	testApp.state.Runtime.ListenAddr = fmt.Sprintf("%s:%s", testApp.cfg.Server.Host, testApp.cfg.Server.Port)
 }
 
 var testApp Application
@@ -46,7 +49,7 @@ func TestExportDayEventsNoErrorReturnsFileName(t *testing.T) {
 	}))
 	defer srv.Close()
 	u, _ := url.Parse(srv.URL)
-	testApp.cfg.RunTime.ListenAddr = u.Hostname() + ":" + u.Port()
+	testApp.state.Runtime.ListenAddr = u.Hostname() + ":" + u.Port()
 	fileName, err := testApp.exportState(eventUrl, "events")
 	_, noFile := os.Stat(fileName)
 	assert.Nil(t, err)
@@ -62,7 +65,7 @@ func TestExportDayEventsNonOkStatusReturnsError(t *testing.T) {
 	}))
 	defer srv.Close()
 	u, _ := url.Parse(srv.URL)
-	testApp.cfg.RunTime.ListenAddr = u.Hostname() + ":" + u.Port()
+	testApp.state.Runtime.ListenAddr = u.Hostname() + ":" + u.Port()
 
 	fileName, err := testApp.exportState(eventUrl, "events")
 
@@ -84,7 +87,7 @@ func TestExportDayEventsUsesTimeoutClient(t *testing.T) {
 	}))
 	defer srv.Close()
 	u, _ := url.Parse(srv.URL)
-	testApp.cfg.RunTime.ListenAddr = u.Hostname() + ":" + u.Port()
+	testApp.state.Runtime.ListenAddr = u.Hostname() + ":" + u.Port()
 
 	fileName, err := testApp.exportState(eventUrl, "events")
 
@@ -96,5 +99,5 @@ func TestIsPathWithinRejectsSiblingDirectory(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "export")
 	candidate := root + "2"
 
-	assert.False(t, isPathWithin(candidate, root))
+	assert.False(t, helper.IsPathWithin(candidate, root))
 }

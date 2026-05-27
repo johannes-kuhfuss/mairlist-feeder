@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/johannes-kuhfuss/mairlist-feeder/appstate"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/robfig/cron/v3"
 	"github.com/stretchr/testify/assert"
@@ -12,11 +13,13 @@ import (
 
 var (
 	testConfig config.AppConfig
+	testState  *appstate.AppState
 )
 
 func TestGetConfigReturnsNoError(t *testing.T) {
 	config.InitConfig("", &testConfig)
-	resp := GetConfig(&testConfig)
+	testState = appstate.New()
+	resp := GetConfig(&testConfig, testState)
 
 	assert.NotNil(t, resp)
 
@@ -36,8 +39,8 @@ func TestConvertDateDateReturnsString(t *testing.T) {
 }
 
 func TestGetNextJobDateNoJobReturnsNA(t *testing.T) {
-	config.InitConfig("", &testConfig)
-	j := getNextJobDate(&testConfig, 1)
+	testState = appstate.New()
+	j := getNextJobDate(testState, 1)
 	assert.EqualValues(t, "N/A", j)
 }
 
@@ -46,10 +49,10 @@ func NoOp() {
 }
 
 func TestGetNextJobDateJobReturnsDate(t *testing.T) {
-	config.InitConfig("", &testConfig)
-	testConfig.RunTime.BgJobs = cron.New()
-	id, _ := testConfig.RunTime.BgJobs.AddFunc("@every 5m", NoOp)
-	j := getNextJobDate(&testConfig, id)
+	testState = appstate.New()
+	testState.Runtime.BgJobs = cron.New()
+	id, _ := testState.Runtime.BgJobs.AddFunc("@every 5m", NoOp)
+	j := getNextJobDate(testState, id)
 	assert.EqualValues(t, "0001-01-01 00:00:00 +0000 UTC", j)
 }
 

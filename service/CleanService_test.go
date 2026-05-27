@@ -4,29 +4,32 @@ import (
 	"testing"
 	"time"
 
-	metrics "github.com/johannes-kuhfuss/mairlist-feeder/Metrics"
+	"github.com/johannes-kuhfuss/mairlist-feeder/appstate"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
+	metrics "github.com/johannes-kuhfuss/mairlist-feeder/metrics"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	cfgClean  config.AppConfig
-	cleanSvc  DefaultCleanService
-	cleanRepo repositories.DefaultFileRepository
+	cfgClean   config.AppConfig
+	stateClean *appstate.AppState
+	cleanSvc   DefaultCleanService
+	cleanRepo  repositories.DefaultFileRepository
 )
 
 func setupTestClean() func() {
 	registry := prometheus.NewRegistry()
 	config.InitConfig(config.EnvFile, &cfgClean)
-	metrics.InitMetrics(&cfgClean, registry)
+	stateClean = appstate.New()
+	metrics.InitMetrics(stateClean, registry)
 	cleanRepo = repositories.NewFileRepository(&cfgClean)
-	cleanSvc = NewCleanService(&cfgClean, &cleanRepo)
+	cleanSvc = NewCleanServiceWithState(&cfgClean, stateClean, &cleanRepo)
 	return func() {
 		cleanRepo.DeleteAllData()
-		metrics.UnregisterMetrics(&cfgClean, registry)
+		metrics.UnregisterMetrics(stateClean, registry)
 	}
 }
 
@@ -116,7 +119,7 @@ func TestCleanNoFilesReturnsZero(t *testing.T) {
 	teardown := setupTestClean()
 	defer teardown()
 	cleanSvc.Clean()
-	assert.EqualValues(t, 0, cleanSvc.Cfg.RunTime.FilesCleaned)
+	assert.EqualValues(t, 0, cleanSvc.State.Runtime.FilesCleaned)
 }
 
 func TestCleanOneFileReturnsOne(t *testing.T) {
@@ -128,5 +131,5 @@ func TestCleanOneFileReturnsOne(t *testing.T) {
 	}
 	cleanRepo.Store(fi1)
 	cleanSvc.Clean()
-	assert.EqualValues(t, 1, cleanSvc.Cfg.RunTime.FilesCleaned)
+	assert.EqualValues(t, 1, cleanSvc.State.Runtime.FilesCleaned)
 }

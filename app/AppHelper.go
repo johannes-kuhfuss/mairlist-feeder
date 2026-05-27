@@ -8,11 +8,10 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
-	"strings"
 	"time"
 
+	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
 	"github.com/johannes-kuhfuss/services_utils/logger"
 )
 
@@ -46,7 +45,7 @@ func (a *Application) exportState(urlPath, filePrefix string) (fileName string, 
 	} else {
 		u.Scheme = "http"
 	}
-	u.Host = a.cfg.RunTime.ListenAddr
+	u.Host = a.listenAddr()
 	u.Path = urlPath
 	resp, err := exportStateHTTPClient.Get(u.String())
 	if err != nil {
@@ -63,13 +62,13 @@ func (a *Application) exportState(urlPath, filePrefix string) (fileName string, 
 		return "", err
 	}
 	exportFileName := filePrefix + "_" + time.Now().Format("2006-01-02") + ".html"
-	writePath := path.Join(a.cfg.Export.ExportFolder, exportFileName)
+	writePath := filepath.Join(a.cfg.Export.ExportFolder, exportFileName)
 	absWritePath, err := filepath.Abs(writePath)
 	if err != nil {
 		logger.Error("error creating export file path", err)
 		return "", err
 	}
-	if !isPathWithin(absWritePath, a.cfg.Export.ExportFolder) {
+	if !helper.IsPathWithin(absWritePath, a.cfg.Export.ExportFolder) {
 		return "", errors.New("invalid export path")
 	}
 	file, err := os.Create(absWritePath)
@@ -85,14 +84,9 @@ func (a *Application) exportState(urlPath, filePrefix string) (fileName string, 
 	return absWritePath, nil
 }
 
-func isPathWithin(candidate, root string) bool {
-	absRoot, err := filepath.Abs(root)
-	if err != nil {
-		return false
+func (a *Application) listenAddr() string {
+	if a.state == nil {
+		return ""
 	}
-	rel, err := filepath.Rel(absRoot, candidate)
-	if err != nil {
-		return false
-	}
-	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel))
+	return a.state.Runtime.ListenAddr
 }

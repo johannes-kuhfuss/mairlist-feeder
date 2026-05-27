@@ -13,9 +13,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	metrics "github.com/johannes-kuhfuss/mairlist-feeder/Metrics"
+	"github.com/johannes-kuhfuss/mairlist-feeder/appstate"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
+	metrics "github.com/johannes-kuhfuss/mairlist-feeder/metrics"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/johannes-kuhfuss/mairlist-feeder/service"
 	"github.com/prometheus/client_golang/prometheus"
@@ -27,6 +28,7 @@ var (
 	repo      repositories.DefaultFileRepository
 	uh        StatsUiHandler
 	cfg       config.AppConfig
+	state     *appstate.AppState
 	router    *gin.Engine
 	recorder  *httptest.ResponseRecorder
 	calCmsSvc service.DefaultCalCmsService
@@ -42,25 +44,26 @@ const (
 func setupUiTest() func() {
 	registry := prometheus.NewRegistry()
 	config.InitConfig("", &cfg)
-	metrics.InitMetrics(&cfg, registry)
+	state = appstate.New()
+	metrics.InitMetrics(state, registry)
 	repo = repositories.NewFileRepository(&cfg)
-	calCmsSvc = service.NewCalCmsService(&cfg, &repo)
-	crawlSvc = service.NewCrawlService(&cfg, &repo, &calCmsSvc)
-	exportSvc = service.NewExportService(&cfg, &repo)
-	cleanSvc = service.NewCleanService(&cfg, &repo)
-	cfg.RunTime.BgJobs = cron.New()
-	crawlJobId, _ := cfg.RunTime.BgJobs.AddFunc("@every 10m", func() {
+	calCmsSvc = service.NewCalCmsServiceWithState(&cfg, state, &repo)
+	crawlSvc = service.NewCrawlServiceWithState(&cfg, state, &repo, &calCmsSvc)
+	exportSvc = service.NewExportServiceWithState(&cfg, state, &repo)
+	cleanSvc = service.NewCleanServiceWithState(&cfg, state, &repo)
+	state.Runtime.BgJobs = cron.New()
+	crawlJobId, _ := state.Runtime.BgJobs.AddFunc("@every 10m", func() {
 		_ = crawlSvc.Crawl()
 	})
-	cfg.RunTime.CrawlJobId = crawlJobId
-	uh = NewStatsUiHandler(&cfg, &repo, &crawlSvc, &exportSvc, &cleanSvc, &calCmsSvc)
+	state.Runtime.CrawlJobId = crawlJobId
+	uh = NewStatsUiHandlerWithState(&cfg, state, &repo, &crawlSvc, &exportSvc, &cleanSvc, &calCmsSvc)
 	router = gin.Default()
 	router.LoadHTMLGlob("../templates/*.tmpl")
 	recorder = httptest.NewRecorder()
 	return func() {
-		cfg.RunTime.BgJobs.Stop()
+		state.Runtime.BgJobs.Stop()
 		router = nil
-		metrics.UnregisterMetrics(&cfg, registry)
+		metrics.UnregisterMetrics(state, registry)
 	}
 }
 
@@ -340,7 +343,7 @@ func TestActionExecCrawlReturnsOk(t *testing.T) {
 
 	assert.EqualValues(t, http.StatusOK, statusCode)
 	assert.EqualValues(t, "{\"status\":\"ok\",\"action\":\"crawl\",\"message\":\"Crawl completed.\"}", string(data))
-	assert.True(t, cfg.RunTime.BgJobs.Entry(cfg.RunTime.CrawlJobId).Valid())
+	assert.True(t, state.Runtime.BgJobs.Entry(state.Runtime.CrawlJobId).Valid())
 }
 
 func TestActionExecCleanReturnsOk(t *testing.T) {
@@ -358,7 +361,7 @@ func TestActionExecCleanReturnsOk(t *testing.T) {
 
 	assert.EqualValues(t, http.StatusOK, statusCode)
 	assert.EqualValues(t, "{\"status\":\"ok\",\"action\":\"clean\",\"message\":\"Clean-up completed.\"}", string(data))
-	assert.EqualValues(t, 1, cfg.RunTime.FilesCleaned)
+	assert.EqualValues(t, 1, state.Runtime.FilesCleaned)
 	assert.EqualValues(t, 0, repo.Size())
 }
 

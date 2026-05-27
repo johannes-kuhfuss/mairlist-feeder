@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/johannes-kuhfuss/mairlist-feeder/appstate"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
 	"github.com/johannes-kuhfuss/mairlist-feeder/dto"
@@ -42,26 +43,36 @@ var (
 // The crawl service handles the cyclical scanning of the supervised folder and the extraction and enrichment of data for all files
 type DefaultCrawlService struct {
 	Cfg    *config.AppConfig
+	State  *appstate.AppState
 	Repo   *repositories.DefaultFileRepository
 	CalSvc CalCmsQuerier
+	Now    func() time.Time
+	RunCmd func(context.Context, string, ...string) ([]byte, error)
 	mu     *sync.Mutex
 }
 
 // NewCrawlService creates a new crawling service and injects its dependencies
 func NewCrawlService(cfg *config.AppConfig, repo *repositories.DefaultFileRepository, calSvc CalCmsQuerier) DefaultCrawlService {
+	return NewCrawlServiceWithState(cfg, appstate.New(), repo, calSvc)
+}
+
+func NewCrawlServiceWithState(cfg *config.AppConfig, state *appstate.AppState, repo *repositories.DefaultFileRepository, calSvc CalCmsQuerier) DefaultCrawlService {
 	return DefaultCrawlService{
 		Cfg:    cfg,
+		State:  state,
 		Repo:   repo,
 		CalSvc: calSvc,
+		Now:    time.Now,
+		RunCmd: runCommand,
 		mu:     &sync.Mutex{},
 	}
 }
 
 // Crawl orchestrates the crawling of the folder on disk
 func (s DefaultCrawlService) Crawl() (err error) {
-	start := time.Now()
+	start := s.Now()
 	defer func() {
-		recordRunMetrics(s.Cfg, "crawl", start, err)
+		recordRunMetrics(s.State, "crawl", start, err)
 	}()
 	if s.Cfg.Crawl.RootFolder == "" {
 		err = errors.New("no root folder given")
@@ -70,13 +81,13 @@ func (s DefaultCrawlService) Crawl() (err error) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.Cfg.RunTime.Mu.Lock()
-	s.Cfg.RunTime.CrawlRunning = true
-	s.Cfg.RunTime.Mu.Unlock()
+	s.State.Runtime.Mu.Lock()
+	s.State.Runtime.CrawlRunning = true
+	s.State.Runtime.Mu.Unlock()
 	defer func() {
-		s.Cfg.RunTime.Mu.Lock()
-		s.Cfg.RunTime.CrawlRunning = false
-		s.Cfg.RunTime.Mu.Unlock()
+		s.State.Runtime.Mu.Lock()
+		s.State.Runtime.CrawlRunning = false
+		s.State.Runtime.Mu.Unlock()
 	}()
 	err = s.CrawlRun()
 	if s.Cfg.CalCms.QueryCalCms && s.CalSvc != nil {
@@ -133,15 +144,13 @@ func (s DefaultCrawlService) CrawlRun() error {
 		crawlDur, extractDur, hashDur time.Duration
 		runErr                        error
 	)
-	s.Cfg.RunTime.Mu.Lock()
-	sinceLastCrawl := time.Since(s.Cfg.RunTime.LastCrawlDate)
-	s.Cfg.RunTime.CrawlRunNumber++
-	s.Cfg.RunTime.LastCrawlDate = time.Now()
-	crawlRunNumber := s.Cfg.RunTime.CrawlRunNumber
-	s.Cfg.RunTime.Mu.Unlock()
-	if s.Cfg.Metrics.CrawlIntervals != nil {
-		s.Cfg.Metrics.CrawlIntervals.WithLabelValues("sincelastcrawl").Set(sinceLastCrawl.Seconds())
-	}
+	s.State.Runtime.Mu.Lock()
+	sinceLastCrawl := time.Since(s.State.Runtime.LastCrawlDate)
+	s.State.Runtime.CrawlRunNumber++
+	s.State.Runtime.LastCrawlDate = s.Now()
+	crawlRunNumber := s.State.Runtime.CrawlRunNumber
+	s.State.Runtime.Mu.Unlock()
+	s.State.Metrics.SetCrawlInterval("sincelastcrawl", sinceLastCrawl.Seconds())
 
 	logger.Infof("Starting crawl run #%v (Root Folder: %v). Time since last crawl: %v", crawlRunNumber, s.Cfg.Crawl.RootFolder, sinceLastCrawl)
 	start := time.Now().UTC()
@@ -158,9 +167,7 @@ func (s DefaultCrawlService) CrawlRun() error {
 	ts := s.Repo.Size()
 	end := time.Now().UTC()
 	crawlDur = end.Sub(start)
-	if s.Cfg.Metrics.FastEventDurations != nil {
-		s.Cfg.Metrics.FastEventDurations.WithLabelValues("lastcrawl").Observe(crawlDur.Seconds())
-	}
+	s.State.Metrics.ObserveFastEvent("lastcrawl", crawlDur.Seconds())
 	logger.Infof("Finished crawl run #%v. Removed %v orphaned file(s). Added %v new file(s). %v file(s) in list total. (%v)", crawlRunNumber, filesRemoved, fileCount, ts, crawlDur.String())
 	if s.Repo.NewFiles() {
 		logger.Info("Starting to extract file data...")
@@ -171,9 +178,7 @@ func (s DefaultCrawlService) CrawlRun() error {
 		}
 		end = time.Now().UTC()
 		extractDur = end.Sub(start)
-		if s.Cfg.Metrics.FastEventDurations != nil {
-			s.Cfg.Metrics.FastEventDurations.WithLabelValues("lastextraction").Observe(extractDur.Seconds())
-		}
+		s.State.Metrics.ObserveFastEvent("lastextraction", extractDur.Seconds())
 		logger.Infof("Extracted file data for %v file(s). %v audio file(s), %v stream file(s) (%v)", fc.TotalCount, fc.AudioCount, fc.StreamCount, extractDur.String())
 		if s.Cfg.Crawl.GenerateHash {
 			logger.Info("Starting to add hashes for new files...")
@@ -184,9 +189,7 @@ func (s DefaultCrawlService) CrawlRun() error {
 			}
 			end = time.Now().UTC()
 			hashDur = end.Sub(start)
-			if s.Cfg.Metrics.FastEventDurations != nil {
-				s.Cfg.Metrics.FastEventDurations.WithLabelValues("lasthash").Observe(hashDur.Seconds())
-			}
+			s.State.Metrics.ObserveFastEvent("lasthash", hashDur.Seconds())
 			logger.Infof("Added hashes for %v new file(s) (%v)", hc, hashDur.String())
 		}
 	} else {
@@ -194,11 +197,9 @@ func (s DefaultCrawlService) CrawlRun() error {
 	}
 	as := s.Repo.AudioSize()
 	es := s.Repo.StreamSize()
-	if s.Cfg.Metrics.FileNumber != nil {
-		s.Cfg.Metrics.FileNumber.WithLabelValues("total").Set(float64(ts))
-		s.Cfg.Metrics.FileNumber.WithLabelValues("audio").Set(float64(as))
-		s.Cfg.Metrics.FileNumber.WithLabelValues("stream").Set(float64(es))
-	}
+	s.State.Metrics.SetFileNumber("total", float64(ts))
+	s.State.Metrics.SetFileNumber("audio", float64(as))
+	s.State.Metrics.SetFileNumber("stream", float64(es))
 	return runErr
 }
 
@@ -257,7 +258,7 @@ func (s DefaultCrawlService) setNewFileData(newFile fs.FileInfo, srcPath string,
 	fileInfo.ModTime = newFile.ModTime()
 	fileInfo.Path = srcPath
 	fileInfo.FromCalCMS = false
-	fileInfo.ScanTime = time.Now()
+	fileInfo.ScanTime = s.Now()
 	folderDate, err := folderDateFromPath(srcPath, rootFolder)
 	if err != nil {
 		return domain.FileInfo{}, err
@@ -356,7 +357,7 @@ func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
 func (s DefaultCrawlService) extractAudioInfo(oldInfo domain.FileInfo) (newInfo domain.FileInfo, e error) {
 	newInfo = oldInfo
 	newInfo.FileType = domain.FileTypeAudio
-	techMd, err := analyzeTechMd(oldInfo.Path, s.Cfg.Crawl.FfProbeTimeOut, s.Cfg.Crawl.FfprobePath)
+	techMd, err := analyzeTechMdWithRunner(oldInfo.Path, s.Cfg.Crawl.FfProbeTimeOut, s.Cfg.Crawl.FfprobePath, s.RunCmd)
 	if err != nil {
 		logger.Error("Could not analyze file length", err)
 		return newInfo, err
@@ -454,13 +455,16 @@ func convertTime(t1str, t2str string, folderDate time.Time) (t time.Time, e erro
 
 // analyzeTechMd runs ffprobe to extract technical metadata from audio files
 func analyzeTechMd(essencePath string, timeout int, ffprobePath string) (techMetadata *dto.TechnicalMetadata, err error) {
+	return analyzeTechMdWithRunner(essencePath, timeout, ffprobePath, runCommand)
+}
+
+func analyzeTechMdWithRunner(essencePath string, timeout int, ffprobePath string, runner func(context.Context, string, ...string) ([]byte, error)) (techMetadata *dto.TechnicalMetadata, err error) {
 	ctx := context.Background()
 	timeoutDuration := time.Duration(timeout) * time.Second
 	ctx, cancel := context.WithTimeout(ctx, timeoutDuration)
 	defer cancel()
 	// Syntax: ffprobe -show_format -print_format json -loglevel quiet <input_file>
-	cmd := exec.CommandContext(ctx, ffprobePath, "-show_format", "-print_format", "json", "-loglevel", "quiet", essencePath)
-	outJson, err := cmd.CombinedOutput()
+	outJson, err := runner(ctx, ffprobePath, "-show_format", "-print_format", "json", "-loglevel", "quiet", essencePath)
 	if err != nil {
 		logger.Error("Could not execute ffprobe", err)
 		return nil, err
@@ -471,6 +475,11 @@ func analyzeTechMd(essencePath string, timeout int, ffprobePath string) (techMet
 		return nil, err
 	}
 	return techMd, nil
+}
+
+func runCommand(ctx context.Context, name string, args ...string) ([]byte, error) {
+	cmd := exec.CommandContext(ctx, name, args...)
+	return cmd.CombinedOutput()
 }
 
 // analyzeStreamData reads the file's contents to extract information about which stream is referred to
