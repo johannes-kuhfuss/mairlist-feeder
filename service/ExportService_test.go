@@ -512,6 +512,19 @@ func TestGetPlaylistExecRequestFails(t *testing.T) {
 	assert.EqualValues(t, "url not found", err.Error())
 }
 
+func TestGetPlaylistNonOkStatusReturnsError(t *testing.T) {
+	tearDown := setupTestEx()
+	defer tearDown()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+	exportService.Cfg.Export.MairListUrl = srv.URL
+	err := exportService.GetPlaylist()
+	assert.NotNil(t, err)
+	assert.EqualValues(t, "mAirList playlist request failed: HTTP 500", err.Error())
+}
+
 func TestGetPlaylistParseFails(t *testing.T) {
 	tearDown := setupTestEx()
 	defer tearDown()

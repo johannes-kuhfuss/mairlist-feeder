@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -39,26 +40,8 @@ func (a *Application) ExportDayDataRun() {
 // exportState exports an HTML file containing the event view or the file view of the day
 // This represents the status for the day, so you can retroactively check for which event files were present
 func (a *Application) exportState(urlPath, filePrefix string) (fileName string, e error) {
-	u := url.URL{}
-	if a.cfg.Server.UseTls {
-		u.Scheme = "https"
-	} else {
-		u.Scheme = "http"
-	}
-	u.Host = a.listenAddr()
-	u.Path = urlPath
-	resp, err := exportStateHTTPClient.Get(u.String())
+	body, err := a.exportStateBody(urlPath)
 	if err != nil {
-		logger.Error("Error while trying to save day's status", err)
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("status export request failed for %s: %s", urlPath, resp.Status)
-	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		logger.Error("Error while trying to save day's status", err)
 		return "", err
 	}
 	exportFileName := filePrefix + "_" + time.Now().Format("2006-01-02") + ".html"
@@ -82,6 +65,41 @@ func (a *Application) exportState(urlPath, filePrefix string) (fileName string, 
 		return "", err
 	}
 	return absWritePath, nil
+}
+
+func (a *Application) exportStateBody(urlPath string) ([]byte, error) {
+	if a.state != nil && a.state.Runtime.Router != nil {
+		req := httptest.NewRequest(http.MethodGet, urlPath, nil)
+		resp := httptest.NewRecorder()
+		a.state.Runtime.Router.ServeHTTP(resp, req)
+		if resp.Code != http.StatusOK {
+			return nil, fmt.Errorf("status export request failed for %s: %s", urlPath, http.StatusText(resp.Code))
+		}
+		return resp.Body.Bytes(), nil
+	}
+	u := url.URL{}
+	if a.cfg.Server.UseTls {
+		u.Scheme = "https"
+	} else {
+		u.Scheme = "http"
+	}
+	u.Host = a.listenAddr()
+	u.Path = urlPath
+	resp, err := exportStateHTTPClient.Get(u.String())
+	if err != nil {
+		logger.Error("Error while trying to save day's status", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("status export request failed for %s: %s", urlPath, resp.Status)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error("Error while trying to save day's status", err)
+		return nil, err
+	}
+	return body, nil
 }
 
 func (a *Application) listenAddr() string {

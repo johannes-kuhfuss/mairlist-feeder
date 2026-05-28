@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/johannes-kuhfuss/mairlist-feeder/appstate"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
 	"github.com/johannes-kuhfuss/mairlist-feeder/helper"
@@ -93,6 +94,25 @@ func TestExportDayEventsUsesTimeoutClient(t *testing.T) {
 
 	assert.EqualValues(t, "", fileName)
 	assert.NotNil(t, err)
+}
+
+func TestExportDayEventsUsesRouterWhenAvailableWithTlsEnabled(t *testing.T) {
+	setupHelperTest()
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	router.GET(eventUrl, func(c *gin.Context) {
+		c.String(http.StatusOK, "<!DOCTYPE html><html><body>ok</body></html>")
+	})
+	testApp.state.Runtime.Router = router
+	testApp.cfg.Server.UseTls = true
+
+	fileName, err := testApp.exportState(eventUrl, "events")
+	data, readErr := os.ReadFile(fileName)
+
+	assert.Nil(t, err)
+	assert.Nil(t, readErr)
+	assert.Contains(t, string(data), "ok")
+	os.Remove(fileName)
 }
 
 func TestIsPathWithinRejectsSiblingDirectory(t *testing.T) {

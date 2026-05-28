@@ -446,7 +446,7 @@ func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dt
 	for _, event := range calCmsData.Events {
 		if !slices.Contains(s.Cfg.CalCms.EventExclusion, event.Skey) {
 			var ev dto.Event
-			ev.CurrentEvent = isCurrent(event.StartTime, event.EndTime)
+			ev.CurrentEvent = isCurrent(event.StartDate, event.StartTime, event.EndTime)
 			ev.EventId = strconv.Itoa(event.EventID)
 			ev.StartDate = event.StartDate
 			ev.StartTime = event.StartTime
@@ -494,8 +494,16 @@ func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dt
 	return el
 }
 
-func isCurrent(startTime, endTime string) string {
-	now := time.Now()
+func isCurrent(eventDate, startTime, endTime string) string {
+	return isCurrentAt(eventDate, startTime, endTime, time.Now())
+}
+
+func isCurrentAt(eventDate, startTime, endTime string, now time.Time) string {
+	date, err := domain.ParseFolderDate(eventDate)
+	if err != nil {
+		logger.Errorf("Could not parse event date %q. %v", eventDate, err)
+		return ""
+	}
 	sth, stm, err := parseCompactHourMinute(startTime)
 	if err != nil {
 		logger.Errorf("Could not parse event start time %q. %v", startTime, err)
@@ -506,8 +514,8 @@ func isCurrent(startTime, endTime string) string {
 		logger.Errorf("Could not parse event end time %q. %v", endTime, err)
 		return ""
 	}
-	st := time.Date(now.Year(), now.Month(), now.Day(), sth, stm, 0, 0, time.Local)
-	et := time.Date(now.Year(), now.Month(), now.Day(), eth, etm, 0, 0, time.Local)
+	st := time.Date(date.Year(), date.Month(), date.Day(), sth, stm, 0, 0, time.Local)
+	et := time.Date(date.Year(), date.Month(), date.Day(), eth, etm, 0, 0, time.Local)
 	if !et.After(st) {
 		et = et.AddDate(0, 0, 1)
 	}

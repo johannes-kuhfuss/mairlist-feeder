@@ -995,8 +995,21 @@ func TestExtractFileInfoTwoIdenticalFilesWithHashReturnsSame(t *testing.T) {
 }
 
 func TestIsCurrentInvalidTimeReturnsEmpty(t *testing.T) {
-	assert.EqualValues(t, "", isCurrent("1", "1200"))
-	assert.EqualValues(t, "", isCurrent("1100", "99:00"))
+	assert.EqualValues(t, "", isCurrent(folderDateDash, "1", "1200"))
+	assert.EqualValues(t, "", isCurrent(folderDateDash, "1100", "99:00"))
+}
+
+func TestIsCurrentUsesEventDate(t *testing.T) {
+	now := time.Date(2024, 9, 17, 11, 30, 0, 0, time.Local)
+
+	assert.EqualValues(t, "***", isCurrentAt("2024-09-17", "1100", "1200", now))
+	assert.EqualValues(t, "", isCurrentAt("2024-09-18", "1100", "1200", now))
+}
+
+func TestIsCurrentHandlesOvernightEvent(t *testing.T) {
+	now := time.Date(2024, 9, 18, 0, 30, 0, 0, time.Local)
+
+	assert.EqualValues(t, "***", isCurrentAt("2024-09-17", "2300", "0100", now))
 }
 
 func TestSetCalCmsQueryStateSuccess(t *testing.T) {

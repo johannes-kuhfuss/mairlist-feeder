@@ -585,6 +585,7 @@ func (s DefaultExportService) GetPlaylist() error {
 		s.State.Runtime.MairListPlaying = playing
 		return nil
 	}
+	err = fmt.Errorf("mAirList playlist request failed: HTTP %d", statusCode)
 	logger.Error("could not get mAirList playlist", err)
 	return err
 }
