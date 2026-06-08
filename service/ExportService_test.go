@@ -381,6 +381,7 @@ func TestExportToPlayoutOneFilesExport(t *testing.T) {
 	for fileScanner.Scan() {
 		fileLines = append(fileLines, fileScanner.Text())
 	}
+	assert.NoError(t, fileScanner.Err())
 	readFile.Close()
 	assert.EqualValues(t, "13:00:00\tH\tF\tA", fileLines[1])
 	assert.EqualValues(t, "14:00:00\tH\tD\tEnd of block", fileLines[2])
@@ -459,6 +460,7 @@ func TestWritePlaylistWritesEntriesInTimeOrder(t *testing.T) {
 	for fileScanner.Scan() {
 		fileLines = append(fileLines, fileScanner.Text())
 	}
+	assert.NoError(t, fileScanner.Err())
 	readFile.Close()
 	assert.EqualValues(t, "13:00:00\tH\tF\tA", fileLines[1])
 	assert.EqualValues(t, "14:00:00\tH\tF\tB", fileLines[2])
