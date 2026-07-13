@@ -17,10 +17,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func setupHelperTest() {
+func setupHelperTest(t *testing.T) {
+	t.Helper()
 	testApp = Application{}
 	testApp.state = appstate.New()
 	config.InitConfig(config.EnvFile, &testApp.cfg)
+	testApp.cfg.Export.ExportFolder = t.TempDir()
 	testApp.state.Runtime.ListenAddr = fmt.Sprintf("%s:%s", testApp.cfg.Server.Host, testApp.cfg.Server.Port)
 }
 
@@ -35,14 +37,14 @@ func TestExportDayEventsNoConfigReturnsError(t *testing.T) {
 }
 
 func TestExportDayEventsGetErrorReturnsError(t *testing.T) {
-	setupHelperTest()
+	setupHelperTest(t)
 	file, err := testApp.exportState(eventUrl, "events")
 	assert.NotNil(t, err)
 	assert.EqualValues(t, "", file)
 }
 
 func TestExportDayEventsNoErrorReturnsFileName(t *testing.T) {
-	setupHelperTest()
+	setupHelperTest(t)
 	htmlResp := "<!DOCTYPE html><html><body></body></html>"
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -55,12 +57,10 @@ func TestExportDayEventsNoErrorReturnsFileName(t *testing.T) {
 	_, noFile := os.Stat(fileName)
 	assert.Nil(t, err)
 	assert.Nil(t, noFile)
-	time.Sleep(1 * time.Second)
-	os.Remove(fileName)
 }
 
 func TestExportDayEventsNonOkStatusReturnsError(t *testing.T) {
-	setupHelperTest()
+	setupHelperTest(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
@@ -76,7 +76,7 @@ func TestExportDayEventsNonOkStatusReturnsError(t *testing.T) {
 }
 
 func TestExportDayEventsUsesTimeoutClient(t *testing.T) {
-	setupHelperTest()
+	setupHelperTest(t)
 	oldClient := exportStateHTTPClient
 	exportStateHTTPClient = &http.Client{Timeout: time.Nanosecond}
 	defer func() {
@@ -97,7 +97,7 @@ func TestExportDayEventsUsesTimeoutClient(t *testing.T) {
 }
 
 func TestExportDayEventsUsesRouterWhenAvailableWithTlsEnabled(t *testing.T) {
-	setupHelperTest()
+	setupHelperTest(t)
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	router.GET(eventUrl, func(c *gin.Context) {
@@ -112,7 +112,6 @@ func TestExportDayEventsUsesRouterWhenAvailableWithTlsEnabled(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Nil(t, readErr)
 	assert.Contains(t, string(data), "ok")
-	os.Remove(fileName)
 }
 
 func TestIsPathWithinRejectsSiblingDirectory(t *testing.T) {
