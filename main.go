@@ -1,7 +1,13 @@
 package main
 
-import "github.com/johannes-kuhfuss/mairlist-feeder/app"
+import (
+	"log"
+
+	"github.com/johannes-kuhfuss/mairlist-feeder/app"
+)
 
 func main() {
-	app.StartApp()
+	if err := app.StartApp(); err != nil {
+		log.Fatal(err)
+	}
 }

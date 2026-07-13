@@ -2,6 +2,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"time"
@@ -15,6 +16,7 @@ import (
 
 type Cleaner interface {
 	Clean() error
+	CleanContext(context.Context) error
 }
 
 // The clean service handles the cyclical clean-up of the file list kept in memory
@@ -50,14 +52,18 @@ func isYesterdayOrOlderAt(folderDate time.Time, now time.Time) (bool, error) {
 	if folderDate.IsZero() {
 		return false, errors.New("folder date is empty")
 	}
-	fileDate := time.Date(folderDate.Year(), folderDate.Month(), folderDate.Day(), 0, 0, 0, 0, time.Local)
-	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
-	diff := today.Sub(fileDate).Hours() / 24
-	return diff >= 1, nil
+	location := now.Location()
+	fileDate := time.Date(folderDate.Year(), folderDate.Month(), folderDate.Day(), 0, 0, 0, 0, location)
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, location)
+	return fileDate.Before(today), nil
 }
 
 // Clean orchestrates the clean-up of the file list kept in memory
 func (s DefaultCleanService) Clean() (err error) {
+	return s.CleanContext(context.Background())
+}
+
+func (s DefaultCleanService) CleanContext(ctx context.Context) (err error) {
 	runStart := s.Now()
 	defer func() {
 		recordRunMetrics(s.State, "clean", runStart, err)
@@ -65,13 +71,11 @@ func (s DefaultCleanService) Clean() (err error) {
 	logger.Info("Starting file list clean-up...")
 	start := s.Now().UTC()
 	var filesCleaned int
-	filesCleaned, err = s.CleanRun()
+	filesCleaned, err = s.CleanRunContext(ctx)
 	if err != nil {
 		logger.Error("Error while cleaning repository", err)
 	}
-	s.State.Runtime.Mu.Lock()
-	s.State.Runtime.FilesCleaned = filesCleaned
-	s.State.Runtime.Mu.Unlock()
+	s.State.Runtime.Update(func(runtime *appstate.RuntimeState) { runtime.FilesCleaned = filesCleaned })
 	end := s.Now().UTC()
 	dur := end.Sub(start)
 	logger.Infof("File list cleaned-up. Removed %v entries. (%v)", filesCleaned, dur.String())
@@ -80,22 +84,24 @@ func (s DefaultCleanService) Clean() (err error) {
 
 // CleanRun performs the clean-up of expired file list entries
 func (s DefaultCleanService) CleanRun() (filesCleaned int, e error) {
+	return s.CleanRunContext(context.Background())
+}
+
+func (s DefaultCleanService) CleanRunContext(ctx context.Context) (filesCleaned int, e error) {
 	var (
 		errorCounter int
 	)
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.State.Runtime.Mu.Lock()
-	s.State.Runtime.CleanRunning = true
-	s.State.Runtime.LastCleanDate = s.Now()
-	s.State.Runtime.Mu.Unlock()
+	s.State.Runtime.Update(func(runtime *appstate.RuntimeState) {
+		runtime.CleanRunning = true
+		runtime.LastCleanDate = s.Now()
+	})
 	defer func() {
-		s.State.Runtime.Mu.Lock()
-		s.State.Runtime.CleanRunning = false
-		s.State.Runtime.Mu.Unlock()
+		s.State.Runtime.Update(func(runtime *appstate.RuntimeState) { runtime.CleanRunning = false })
 	}()
 	if files := s.Repo.GetAll(); files != nil {
-		filesCleaned, errorCounter = s.checkAndClean(files)
+		filesCleaned, errorCounter = s.checkAndClean(ctx, files)
 	}
 	if errorCounter == 0 {
 		return filesCleaned, nil
@@ -105,8 +111,11 @@ func (s DefaultCleanService) CleanRun() (filesCleaned int, e error) {
 }
 
 // checkAndClean checks the folder date of each file and, if older than today, removes the file from the in-memory store
-func (s DefaultCleanService) checkAndClean(files *domain.FileList) (fileCount int, errorCount int) {
-	for _, file := range *files {
+func (s DefaultCleanService) checkAndClean(ctx context.Context, files domain.FileList) (fileCount int, errorCount int) {
+	for _, file := range files {
+		if err := ctx.Err(); err != nil {
+			return fileCount, errorCount + 1
+		}
 		fromYesterday, err := isYesterdayOrOlderAt(file.FolderDate, s.Now())
 		if err != nil {
 			errorCount++

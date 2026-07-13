@@ -814,7 +814,7 @@ func TestSaveYesterdaysEventsStoresOnlyBaseDateEvents(t *testing.T) {
 
 func TestCheckHashNoFilesReturnsFalse(t *testing.T) {
 	files := domain.FileList{}
-	i, h := checkHash(&files)
+	i, h := checkHash(files)
 	assert.EqualValues(t, false, i)
 	assert.EqualValues(t, false, h)
 }
@@ -823,7 +823,7 @@ func TestCheckHashOneFileReturnsFalse(t *testing.T) {
 	files := domain.FileList{}
 	fi1 := domain.FileInfo{}
 	files = append(files, fi1)
-	i, h := checkHash(&files)
+	i, h := checkHash(files)
 	assert.EqualValues(t, false, i)
 	assert.EqualValues(t, false, h)
 }
@@ -834,7 +834,7 @@ func TestCheckHashTwoFilesNoChecksumReturnsFalse(t *testing.T) {
 	fi2 := domain.FileInfo{}
 	files = append(files, fi1)
 	files = append(files, fi2)
-	i, h := checkHash(&files)
+	i, h := checkHash(files)
 	assert.EqualValues(t, false, i)
 	assert.EqualValues(t, false, h)
 }
@@ -849,7 +849,7 @@ func TestCheckHashTwoFilesDifferentChecksumReturnsFalse(t *testing.T) {
 	}
 	files = append(files, fi1)
 	files = append(files, fi2)
-	i, h := checkHash(&files)
+	i, h := checkHash(files)
 	assert.EqualValues(t, false, i)
 	assert.EqualValues(t, true, h)
 }
@@ -868,7 +868,7 @@ func TestCheckHashThreeFilesWithMiddleMismatchReturnsFalse(t *testing.T) {
 	files = append(files, fi1)
 	files = append(files, fi2)
 	files = append(files, fi3)
-	i, h := checkHash(&files)
+	i, h := checkHash(files)
 	assert.EqualValues(t, false, i)
 	assert.EqualValues(t, true, h)
 }
@@ -883,14 +883,14 @@ func TestCheckHashTwoFilesSameChecksumReturnsTrue(t *testing.T) {
 	}
 	files = append(files, fi1)
 	files = append(files, fi2)
-	i, h := checkHash(&files)
+	i, h := checkHash(files)
 	assert.EqualValues(t, true, i)
 	assert.EqualValues(t, true, h)
 }
 
 func TestExtractFileInfoNoFilesReturnsNA(t *testing.T) {
 	files := domain.FileList{}
-	s, d, f := extractFileInfo(&files, false)
+	s, d, f := extractFileInfo(files, false)
 	assert.EqualValues(t, "N/A", s)
 	assert.EqualValues(t, "N/A", d)
 	assert.EqualValues(t, "N/A", f)
@@ -903,7 +903,7 @@ func TestExtractFileInfoOneFilesNoHashReturnsDuration(t *testing.T) {
 		Duration: time.Minute,
 	}
 	files = append(files, fi1)
-	s, d, f := extractFileInfo(&files, false)
+	s, d, f := extractFileInfo(files, false)
 	assert.EqualValues(t, "Present", s)
 	assert.EqualValues(t, "1.0", d)
 	assert.EqualValues(t, "Manual", f)
@@ -918,7 +918,7 @@ func TestExtractFileInfoOnecalCmsFilesNoHashReturnsDuration(t *testing.T) {
 		EventId:    5,
 	}
 	files = append(files, fi1)
-	s, d, f := extractFileInfo(&files, false)
+	s, d, f := extractFileInfo(files, false)
 	assert.EqualValues(t, "Present", s)
 	assert.EqualValues(t, "1.0", d)
 	assert.EqualValues(t, "calCMS", f)
@@ -936,7 +936,7 @@ func TestExtractFileInfoTwoFilesNoHashReturnsNoDuration(t *testing.T) {
 	}
 	files = append(files, fi1)
 	files = append(files, fi2)
-	s, d, f := extractFileInfo(&files, false)
+	s, d, f := extractFileInfo(files, false)
 	assert.EqualValues(t, "Multiple", s)
 	assert.EqualValues(t, "N/A", d)
 	assert.EqualValues(t, "N/A", f)
@@ -952,7 +952,7 @@ func TestExtractFileInfoTwoFilesHashMissingReturnsNoDuration(t *testing.T) {
 	}
 	files = append(files, fi1)
 	files = append(files, fi2)
-	s, d, f := extractFileInfo(&files, true)
+	s, d, f := extractFileInfo(files, true)
 	assert.EqualValues(t, "Multiple", s)
 	assert.EqualValues(t, "N/A", d)
 	assert.EqualValues(t, "N/A", f)
@@ -970,7 +970,7 @@ func TestExtractFileInfoTwoDifferentFilesWithHashReturnsDifferent(t *testing.T) 
 	}
 	files = append(files, fi1)
 	files = append(files, fi2)
-	s, d, f := extractFileInfo(&files, true)
+	s, d, f := extractFileInfo(files, true)
 	assert.EqualValues(t, "Multiple (different)", s)
 	assert.EqualValues(t, "N/A", d)
 	assert.EqualValues(t, "N/A", f)
@@ -988,7 +988,7 @@ func TestExtractFileInfoTwoIdenticalFilesWithHashReturnsSame(t *testing.T) {
 	}
 	files = append(files, fi1)
 	files = append(files, fi2)
-	s, d, f := extractFileInfo(&files, true)
+	s, d, f := extractFileInfo(files, true)
 	assert.EqualValues(t, "Multiple (identical)", s)
 	assert.EqualValues(t, "1.0", d)
 	assert.EqualValues(t, "N/A", f)

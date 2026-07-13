@@ -2,6 +2,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,6 +27,7 @@ import (
 
 type CalCmsQuerier interface {
 	Query() error
+	QueryContext(context.Context) error
 }
 
 // The calCms service handles all the communication with calCms and the necessary data transformation
@@ -105,13 +107,16 @@ func calcCalCmsEndDateForDays(startDate string, days int) (endDate string, e err
 
 // setCalCmsQueryState sets staus of last calCms interaction with result and time for status overview
 func (s DefaultCalCmsService) setCalCmsQueryState(success bool) {
-	s.State.Runtime.Mu.Lock()
-	defer s.State.Runtime.Mu.Unlock()
+	s.State.Runtime.Update(func(runtime *appstate.RuntimeState) {
+		if success {
+			runtime.LastCalCmsState = fmt.Sprintf("Succeeded (%v)", s.Now().Format("2006-01-02 15:04:05 -0700 MST"))
+		} else {
+			runtime.LastCalCmsState = fmt.Sprintf("Failed (%v)", s.Now().Format("2006-01-02 15:04:05 -0700 MST"))
+		}
+	})
 	if success {
-		s.State.Runtime.LastCalCmsState = fmt.Sprintf("Succeeded (%v)", s.Now().Format("2006-01-02 15:04:05 -0700 MST"))
 		s.State.Metrics.SetConnected("calCMS", 1)
 	} else {
-		s.State.Runtime.LastCalCmsState = fmt.Sprintf("Failed (%v)", s.Now().Format("2006-01-02 15:04:05 -0700 MST"))
 		s.State.Metrics.SetConnected("calCMS", 0)
 	}
 
@@ -119,10 +124,18 @@ func (s DefaultCalCmsService) setCalCmsQueryState(success bool) {
 
 // getCalCmsEventData retrieves the event information for the crawled date range from calCms.
 func (s DefaultCalCmsService) getCalCmsEventData() (eventData []byte, e error) {
-	return s.getCalCmsEventDataForDates(helper.GetCrawlDates(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate))
+	return s.getCalCmsEventDataContext(context.Background())
+}
+
+func (s DefaultCalCmsService) getCalCmsEventDataContext(ctx context.Context) (eventData []byte, e error) {
+	return s.getCalCmsEventDataForDatesContext(ctx, helper.GetCrawlDates(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate))
 }
 
 func (s DefaultCalCmsService) getCalCmsEventDataForDates(dates []time.Time) (eventData []byte, e error) {
+	return s.getCalCmsEventDataForDatesContext(context.Background(), dates)
+}
+
+func (s DefaultCalCmsService) getCalCmsEventDataForDatesContext(ctx context.Context, dates []time.Time) (eventData []byte, e error) {
 	//API doc: https://github.com/rapilodev/racalmas/blob/master/docs/event-api.md
 	//URL old: https://programm.coloradio.org/agenda/events.cgi?date=2024-04-09&template=event.json-p
 	//URL new: https://programm.coloradio.org/agenda/events.cgi?from_date=2024-10-04&from_time=00:00&till_date=2024-10-05&till_time=00:00&template=event.json-p
@@ -146,7 +159,7 @@ func (s DefaultCalCmsService) getCalCmsEventDataForDates(dates []time.Time) (eve
 	query.Add("till_time", "00:00")
 	query.Add("template", s.Cfg.CalCms.Template)
 	calUrl.RawQuery = query.Encode()
-	req, err := http.NewRequest("GET", calUrl.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, calUrl.String(), nil)
 	if err != nil {
 		s.setCalCmsQueryState(false)
 		logger.Error("Cannot build calCMS http request", err)
@@ -177,10 +190,14 @@ func (s DefaultCalCmsService) getCalCmsEventDataForDates(dates []time.Time) (eve
 
 // Query orchestrates the process of querying calCms and adding the retrieved information to the file representations in memory
 func (s DefaultCalCmsService) Query() error {
+	return s.QueryContext(context.Background())
+}
+
+func (s DefaultCalCmsService) QueryContext(ctx context.Context) error {
 	if s.Cfg.CalCms.QueryCalCms {
 		logger.Info("Starting to add information from calCMS...")
 		start := s.Now().UTC()
-		data, err := s.getCalCmsEventData()
+		data, err := s.getCalCmsEventDataContext(ctx)
 		if err != nil {
 			logger.Error("error getting data from calCms", err)
 			return err
@@ -207,7 +224,7 @@ func (s DefaultCalCmsService) Query() error {
 func (s DefaultCalCmsService) EnrichFileInformation() (fc dto.FileCounts) {
 	for _, folderDate := range helper.GetCrawlDates(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate) {
 		if files := s.Repo.GetByDate(folderDate); files != nil {
-			for _, file := range *files {
+			for _, file := range files {
 				if file.EventId != 0 {
 					calCmsInfo, err := s.checkCalCmsEventData(file)
 					if err != nil {
@@ -385,24 +402,24 @@ func parseDuration(dur string) string {
 }
 
 // extractFileInfo is a helper function that returns file status and file duration as strings
-func extractFileInfo(files *domain.FileList, hashEnabled bool) (fileStatus string, duration string, fileSource string) {
+func extractFileInfo(files domain.FileList, hashEnabled bool) (fileStatus string, duration string, fileSource string) {
 	var fs string
-	if len(*files) == 0 {
+	if len(files) == 0 {
 		return "N/A", "N/A", "N/A"
 	}
-	if len(*files) == 1 {
-		if (*files)[0].FromCalCMS && (*files)[0].EventId != 0 {
+	if len(files) == 1 {
+		if files[0].FromCalCMS && files[0].EventId != 0 {
 			fs = "calCMS"
 		} else {
 			fs = "Manual"
 		}
-		return "Present", strconv.FormatFloat(math.Round((*files)[0].Duration.Minutes()), 'f', 1, 64), fs
+		return "Present", strconv.FormatFloat(math.Round(files[0].Duration.Minutes()), 'f', 1, 64), fs
 	}
 	if hashEnabled {
 		filesIdentical, checksumAvail := checkHash(files)
 		switch {
 		case checksumAvail && filesIdentical:
-			return "Multiple (identical)", strconv.FormatFloat(math.Round((*files)[0].Duration.Minutes()), 'f', 1, 64), "N/A"
+			return "Multiple (identical)", strconv.FormatFloat(math.Round(files[0].Duration.Minutes()), 'f', 1, 64), "N/A"
 		case checksumAvail && !filesIdentical:
 			return "Multiple (different)", "N/A", "N/A"
 		default:
@@ -413,15 +430,15 @@ func extractFileInfo(files *domain.FileList, hashEnabled bool) (fileStatus strin
 }
 
 // checkHash compares the has of all files and returns true, if the hash values of all files are identical
-func checkHash(files *domain.FileList) (filesIdentical bool, checksumAvail bool) {
+func checkHash(files domain.FileList) (filesIdentical bool, checksumAvail bool) {
 	var (
 		hash string
 	)
-	if len(*files) < 2 {
+	if len(files) < 2 {
 		return false, false
 	}
 	filesIdentical = true
-	for _, file := range *files {
+	for _, file := range files {
 		if file.Checksum == "" {
 			return false, false
 		} else {
@@ -441,7 +458,7 @@ func checkHash(files *domain.FileList) (filesIdentical bool, checksumAvail bool)
 func (s DefaultCalCmsService) convertEvent(calCmsData domain.CalCmsPgmData) []dto.Event {
 	var (
 		el    []dto.Event
-		files *domain.FileList
+		files domain.FileList
 	)
 	for _, event := range calCmsData.Events {
 		if !slices.Contains(s.Cfg.CalCms.EventExclusion, event.Skey) {
@@ -554,11 +571,15 @@ func hourFromTimeString(timeValue string) (string, error) {
 
 // RefreshTodayEvents updates the cached event list for display on the web UI.
 func (s DefaultCalCmsService) RefreshTodayEvents() ([]dto.Event, error) {
+	return s.RefreshTodayEventsContext(context.Background())
+}
+
+func (s DefaultCalCmsService) RefreshTodayEventsContext(ctx context.Context) ([]dto.Event, error) {
 	var (
 		calCmsData domain.CalCmsPgmData
 	)
 	if s.Cfg.CalCms.QueryCalCms {
-		data, err := s.getCalCmsEventData()
+		data, err := s.getCalCmsEventDataContext(ctx)
 		if err != nil {
 			logger.Error("error getting data from calCms", err)
 			s.setTodayRefreshState(err)
@@ -584,14 +605,14 @@ func (s DefaultCalCmsService) RefreshTodayEvents() ([]dto.Event, error) {
 }
 
 func (s DefaultCalCmsService) setTodayRefreshState(err error) {
-	s.State.Runtime.Mu.Lock()
-	defer s.State.Runtime.Mu.Unlock()
-	s.State.Runtime.LastCalCmsRefreshDate = s.Now()
-	if err != nil {
-		s.State.Runtime.LastCalCmsRefreshErr = err.Error()
-		return
-	}
-	s.State.Runtime.LastCalCmsRefreshErr = ""
+	s.State.Runtime.Update(func(runtime *appstate.RuntimeState) {
+		runtime.LastCalCmsRefreshDate = s.Now()
+		if err != nil {
+			runtime.LastCalCmsRefreshErr = err.Error()
+			return
+		}
+		runtime.LastCalCmsRefreshErr = ""
+	})
 }
 
 // GetTodayEvents returns the cached event list for display on the web UI.
@@ -627,7 +648,11 @@ func (s DefaultCalCmsService) countEvents(events []dto.Event) {
 }
 
 func (s DefaultCalCmsService) CountRun() {
-	if _, err := s.RefreshTodayEvents(); err != nil {
+	s.CountRunContext(context.Background())
+}
+
+func (s DefaultCalCmsService) CountRunContext(ctx context.Context) {
+	if _, err := s.RefreshTodayEventsContext(ctx); err != nil {
 		logger.Error("error refreshing today's events", err)
 	}
 }

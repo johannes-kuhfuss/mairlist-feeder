@@ -33,6 +33,7 @@ The web UI exposes:
 - `/filelist`: known files
 - `/events`: cached calCMS event/file status
 - `/actions`: manual crawl, export, clean, and save actions
+- `/actions/:id`: status of a queued manual action
 - `/logs`: in-memory logs
 - `/metrics`: Prometheus metrics
 
@@ -43,3 +44,9 @@ Run the test suite with:
 ```sh
 go test ./...
 ```
+
+Manual actions are queued and executed serially. `POST /actions` returns `202 Accepted`
+with a `status_url`; the web UI polls that URL until the action succeeds or fails.
+
+Startup validates the configured crawl root, `ffprobe` executable, export directory,
+and TLS files before accepting traffic.

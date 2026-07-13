@@ -104,7 +104,7 @@ func TestExportDayEventsUsesRouterWhenAvailableWithTlsEnabled(t *testing.T) {
 		c.String(http.StatusOK, "<!DOCTYPE html><html><body>ok</body></html>")
 	})
 	testApp.state.Runtime.Router = router
-	testApp.cfg.Server.UseTls = true
+	testApp.cfg.Server.UseTLS = true
 
 	fileName, err := testApp.exportState(eventUrl, "events")
 	data, readErr := os.ReadFile(fileName)

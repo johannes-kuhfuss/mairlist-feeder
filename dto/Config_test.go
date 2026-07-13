@@ -40,7 +40,7 @@ func TestConvertDateDateReturnsString(t *testing.T) {
 
 func TestGetNextJobDateNoJobReturnsNA(t *testing.T) {
 	testState = appstate.New()
-	j := getNextJobDate(testState, 1)
+	j := getNextJobDate(testState.Runtime.BgJobs, 1)
 	assert.EqualValues(t, "N/A", j)
 }
 
@@ -52,7 +52,7 @@ func TestGetNextJobDateJobReturnsDate(t *testing.T) {
 	testState = appstate.New()
 	testState.Runtime.BgJobs = cron.New()
 	id, _ := testState.Runtime.BgJobs.AddFunc("@every 5m", NoOp)
-	j := getNextJobDate(testState, id)
+	j := getNextJobDate(testState.Runtime.BgJobs, id)
 	assert.EqualValues(t, "0001-01-01 00:00:00 +0000 UTC", j)
 }
 

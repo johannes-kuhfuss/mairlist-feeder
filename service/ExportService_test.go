@@ -20,6 +20,7 @@ import (
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -43,7 +44,13 @@ const (
 
 func setupTestEx() func() {
 	registry := prometheus.NewRegistry()
+	cfg = config.AppConfig{}
 	config.InitConfig(config.EnvFile, &cfg)
+	exportFolder, err := os.MkdirTemp("", "mairlist-feeder-export-test-")
+	if err != nil {
+		panic(err)
+	}
+	cfg.Export.ExportFolder = exportFolder
 	stateEx = appstate.New()
 	metrics.InitMetrics(stateEx, registry)
 	fileRepo = repositories.NewFileRepository(&cfg)
@@ -51,6 +58,7 @@ func setupTestEx() func() {
 	return func() {
 		fileRepo.DeleteAllData()
 		metrics.UnregisterMetrics(stateEx, registry)
+		os.RemoveAll(exportFolder)
 	}
 }
 
@@ -261,7 +269,7 @@ func TestSetExportPathTestReturnsTest(t *testing.T) {
 	exportService.Cfg.Misc.TestCrawl = true
 	s, _ := exportService.setExportPath("13")
 	assert.NotNil(t, s)
-	assert.EqualValues(t, strings.ToLower("C:\\temp\\Test_13.tpi"), strings.ToLower(s))
+	assert.EqualValues(t, strings.ToLower(filepath.Join(exportService.Cfg.Export.ExportFolder, "Test_13.tpi")), strings.ToLower(s))
 }
 
 func TestSetExportPathRegularReturnsPath(t *testing.T) {
@@ -306,7 +314,7 @@ func TestCheckTimeAndLengthOneFile(t *testing.T) {
 		EndTime:   helper.TimeFromHourAndMinute(15, 0),
 	}
 	files = append(files, fi)
-	plan := exportService.checkTimeAndLength(&files)
+	plan := exportService.checkTimeAndLength(files)
 	assert.EqualValues(t, 1, len(plan))
 }
 
@@ -321,9 +329,9 @@ func TestCheckTimeAndLengthOneFileSame(t *testing.T) {
 		EndTime:   helper.TimeFromHourAndMinute(15, 0),
 	}
 	files = append(files, fi)
-	plan := exportService.checkTimeAndLength(&files)
+	plan := exportService.checkTimeAndLength(files)
 	assert.EqualValues(t, 1, len(plan))
-	plan = exportService.checkTimeAndLength(&files)
+	plan = exportService.checkTimeAndLength(files)
 	assert.EqualValues(t, 1, len(plan))
 	assert.EqualValues(t, "A", plan["14:00"].Path)
 }
@@ -348,7 +356,7 @@ func TestCheckTimeAndLengthOneFileNewer(t *testing.T) {
 	}
 	files = append(files, fi1)
 	files = append(files, fi2)
-	plan := exportService.checkTimeAndLength(&files)
+	plan := exportService.checkTimeAndLength(files)
 	assert.EqualValues(t, 1, len(plan))
 	assert.EqualValues(t, "A", plan["14:00"].Path)
 }
@@ -410,6 +418,30 @@ func TestWritePlaylistFailureKeepsQueuedEntries(t *testing.T) {
 	assert.EqualValues(t, "A", plan["13:00"].Path)
 }
 
+func TestExportToPlayoutReturnsPlaylistWriteFailure(t *testing.T) {
+	tearDown := setupTestEx()
+	defer tearDown()
+	invalidExportFolder := filepath.Join(t.TempDir(), "not-a-directory")
+	require.NoError(t, os.WriteFile(invalidExportFolder, []byte("file"), 0644))
+	exportService.Cfg.Export.ExportFolder = invalidExportFolder
+	plan := exportPlan{"13:00": domain.FileInfo{
+		Path:       "A",
+		Duration:   time.Hour,
+		StartTime:  helper.TimeFromHourAndMinute(13, 0),
+		SlotLength: time.Hour,
+	}}
+
+	file, err := exportService.exportToPlayoutForDate(
+		helper.DateForFolder(exportService.Cfg.Misc.TestCrawl, exportService.Cfg.Misc.TestDate, 0),
+		"13",
+		plan,
+	)
+
+	require.Error(t, err)
+	assert.Empty(t, file)
+	assert.Empty(t, exportService.State.Runtime.LastExportFileName)
+}
+
 func TestWritePlaylistTruncatesExistingFile(t *testing.T) {
 	tearDown := setupTestEx()
 	defer tearDown()
@@ -429,6 +461,22 @@ func TestWritePlaylistTruncatesExistingFile(t *testing.T) {
 	assert.Nil(t, readErr)
 	assert.Contains(t, string(data), "13:00:00\tH\tF\tA")
 	assert.NotContains(t, string(data), "stale data")
+}
+
+func TestReplaceFileRestoresDestinationWhenInstallFails(t *testing.T) {
+	dir := t.TempDir()
+	destination := filepath.Join(dir, "playlist.tpi")
+	require.NoError(t, os.WriteFile(destination, []byte("existing playlist"), 0644))
+
+	err := replaceFile(filepath.Join(dir, "missing.tmp"), destination)
+
+	require.Error(t, err)
+	data, readErr := os.ReadFile(destination)
+	require.NoError(t, readErr)
+	assert.Equal(t, "existing playlist", string(data))
+	backups, globErr := filepath.Glob(filepath.Join(dir, "*.bak"))
+	require.NoError(t, globErr)
+	assert.Empty(t, backups)
 }
 
 func TestWritePlaylistWritesEntriesInTimeOrder(t *testing.T) {

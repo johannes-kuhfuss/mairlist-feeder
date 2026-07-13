@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -123,7 +124,7 @@ func TestExtractFileInfoAnyFileReturnsData(t *testing.T) {
 func TestExtractFileInfoRealFileReturnsData(t *testing.T) {
 	teardown := setupTestCrawl()
 	defer teardown()
-	cfgCrawl.Crawl.FfprobePath = "../prog/ffprobe.exe"
+	cfgCrawl.Crawl.FFprobePath = "../prog/ffprobe.exe"
 	fi1 := domain.FileInfo{
 		Path:       audioSampleFile,
 		FolderDate: parsedFolderDate,
@@ -222,6 +223,20 @@ func TestAnalyzeTechMdWrongFfprobePathReturnsError(t *testing.T) {
 	assert.Contains(t, e.Error(), "executable file not found")
 }
 
+func TestAnalyzeTechMdStopsWhenContextIsCanceled(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	runner := func(ctx context.Context, _ string, _ ...string) ([]byte, error) {
+		<-ctx.Done()
+		return nil, ctx.Err()
+	}
+
+	metadata, err := analyzeTechMdWithRunnerContext(ctx, "audio.mp3", 60, "ffprobe", runner)
+
+	assert.Nil(t, metadata)
+	assert.ErrorIs(t, err, context.Canceled)
+}
+
 func TestAnalyzeTechMdSampleFileReturnsTechMd(t *testing.T) {
 	d, e := analyzeTechMd(audioSampleFile, 5, "../prog/ffprobe.exe")
 	assert.Nil(t, e)
@@ -296,8 +311,8 @@ func TestCrawlFolderForDateUsesRequestedDate(t *testing.T) {
 	assert.EqualValues(t, 1, crawlRepo.Size())
 	files := crawlRepo.GetByDate(tomorrow)
 	assert.NotNil(t, files)
-	assert.EqualValues(t, 1, len(*files))
-	assert.Contains(t, (*files)[0].Path, "tomorrow.mp3")
+	assert.EqualValues(t, 1, len(files))
+	assert.Contains(t, files[0].Path, "tomorrow.mp3")
 	assert.Nil(t, crawlRepo.GetByDate(today))
 }
 

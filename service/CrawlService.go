@@ -32,6 +32,7 @@ import (
 
 type Crawler interface {
 	Crawl() error
+	CrawlContext(context.Context) error
 }
 
 var (
@@ -70,6 +71,10 @@ func NewCrawlServiceWithState(cfg *config.AppConfig, state *appstate.AppState, r
 
 // Crawl orchestrates the crawling of the folder on disk
 func (s DefaultCrawlService) Crawl() (err error) {
+	return s.CrawlContext(context.Background())
+}
+
+func (s DefaultCrawlService) CrawlContext(ctx context.Context) (err error) {
 	start := s.Now()
 	defer func() {
 		recordRunMetrics(s.State, "crawl", start, err)
@@ -81,26 +86,29 @@ func (s DefaultCrawlService) Crawl() (err error) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.State.Runtime.Mu.Lock()
-	s.State.Runtime.CrawlRunning = true
-	s.State.Runtime.Mu.Unlock()
+	s.State.Runtime.Update(func(runtime *appstate.RuntimeState) { runtime.CrawlRunning = true })
 	defer func() {
-		s.State.Runtime.Mu.Lock()
-		s.State.Runtime.CrawlRunning = false
-		s.State.Runtime.Mu.Unlock()
+		s.State.Runtime.Update(func(runtime *appstate.RuntimeState) { runtime.CrawlRunning = false })
 	}()
-	err = s.CrawlRun()
+	err = s.CrawlRunContext(ctx)
 	if s.Cfg.CalCms.QueryCalCms && s.CalSvc != nil {
-		err = errors.Join(err, s.CalSvc.Query())
+		err = errors.Join(err, s.CalSvc.QueryContext(ctx))
 	}
 	return err
 }
 
 // GenHashes creates a hash for the files on disk to allow for easy checking for identical files
 func (s DefaultCrawlService) GenHashes() (hashCount int, e error) {
+	return s.GenHashesContext(context.Background())
+}
+
+func (s DefaultCrawlService) GenHashesContext(ctx context.Context) (hashCount int, e error) {
 	if s.Repo.Size() > 0 {
 		files := s.Repo.GetAll()
-		for _, file := range *files {
+		for _, file := range files {
+			if err := ctx.Err(); err != nil {
+				return hashCount, err
+			}
 			if file.Checksum == "" {
 				hash, err := generateHash(file.Path)
 				if err != nil {
@@ -124,7 +132,7 @@ func (s DefaultCrawlService) GenHashes() (hashCount int, e error) {
 func (s DefaultCrawlService) checkForOrphanFiles() (filesRemoved int) {
 	if s.Repo.Size() > 0 {
 		files := s.Repo.GetAll()
-		for _, file := range *files {
+		for _, file := range files {
 			if _, err := os.Stat(file.Path); errors.Is(err, os.ErrNotExist) {
 				if err := s.Repo.Delete(file.Path); err == nil {
 					logger.Warnf("File %v not found on disk. Removing from list.", file.Path)
@@ -140,16 +148,23 @@ func (s DefaultCrawlService) checkForOrphanFiles() (filesRemoved int) {
 
 // CrawlRun performs the crawling of the folder, the data enrichment and the hash creation
 func (s DefaultCrawlService) CrawlRun() error {
+	return s.CrawlRunContext(context.Background())
+}
+
+func (s DefaultCrawlService) CrawlRunContext(ctx context.Context) error {
 	var (
 		crawlDur, extractDur, hashDur time.Duration
 		runErr                        error
 	)
-	s.State.Runtime.Mu.Lock()
-	sinceLastCrawl := time.Since(s.State.Runtime.LastCrawlDate)
-	s.State.Runtime.CrawlRunNumber++
-	s.State.Runtime.LastCrawlDate = s.Now()
-	crawlRunNumber := s.State.Runtime.CrawlRunNumber
-	s.State.Runtime.Mu.Unlock()
+	var sinceLastCrawl time.Duration
+	var crawlRunNumber int
+	now := s.Now()
+	s.State.Runtime.Update(func(runtime *appstate.RuntimeState) {
+		sinceLastCrawl = now.Sub(runtime.LastCrawlDate)
+		runtime.CrawlRunNumber++
+		runtime.LastCrawlDate = now
+		crawlRunNumber = runtime.CrawlRunNumber
+	})
 	s.State.Metrics.SetCrawlInterval("sincelastcrawl", sinceLastCrawl.Seconds())
 
 	logger.Infof("Starting crawl run #%v (Root Folder: %v). Time since last crawl: %v", crawlRunNumber, s.Cfg.Crawl.RootFolder, sinceLastCrawl)
@@ -157,7 +172,7 @@ func (s DefaultCrawlService) CrawlRun() error {
 	filesRemoved := s.checkForOrphanFiles()
 	fileCount := 0
 	for _, crawlDate := range helper.GetCrawlDates(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate) {
-		fc, err := s.crawlFolderForDate(s.Cfg.Crawl.RootFolder, s.Cfg.Crawl.CrawlExtensions, crawlDate)
+		fc, err := s.crawlFolderForDateContext(ctx, s.Cfg.Crawl.RootFolder, s.Cfg.Crawl.CrawlExtensions, crawlDate)
 		fileCount += fc
 		if err != nil {
 			logger.Errorf("Error crawling folder %v for date %v: %v", s.Cfg.Crawl.RootFolder, domain.FormatFolderDate(crawlDate), err)
@@ -172,7 +187,7 @@ func (s DefaultCrawlService) CrawlRun() error {
 	if s.Repo.NewFiles() {
 		logger.Info("Starting to extract file data...")
 		start = time.Now().UTC()
-		fc, err := s.extractFileInfo()
+		fc, err := s.extractFileInfoContext(ctx)
 		if err != nil {
 			runErr = errors.Join(runErr, err)
 		}
@@ -183,7 +198,7 @@ func (s DefaultCrawlService) CrawlRun() error {
 		if s.Cfg.Crawl.GenerateHash {
 			logger.Info("Starting to add hashes for new files...")
 			start = time.Now().UTC()
-			hc, err := s.GenHashes()
+			hc, err := s.GenHashesContext(ctx)
 			if err != nil {
 				runErr = errors.Join(runErr, err)
 			}
@@ -210,6 +225,10 @@ func (s DefaultCrawlService) crawlFolder(rootFolder string, crawlExtensions []st
 
 // crawlFolderForDate examines one dated folder on disk and adds entries to the in-memory representation.
 func (s DefaultCrawlService) crawlFolderForDate(rootFolder string, crawlExtensions []string, folderDate time.Time) (fileCount int, e error) {
+	return s.crawlFolderForDateContext(context.Background(), rootFolder, crawlExtensions, folderDate)
+}
+
+func (s DefaultCrawlService) crawlFolderForDateContext(ctx context.Context, rootFolder string, crawlExtensions []string, folderDate time.Time) (fileCount int, e error) {
 	folder := helper.FolderForDate(folderDate)
 	folderPath := filepath.Join(rootFolder, folder)
 	if _, err := os.Stat(folderPath); errors.Is(err, os.ErrNotExist) {
@@ -220,6 +239,9 @@ func (s DefaultCrawlService) crawlFolderForDate(rootFolder string, crawlExtensio
 	}
 	err := filepath.WalkDir(folderPath,
 		func(srcPath string, info fs.DirEntry, err error) error {
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				return ctxErr
+			}
 			if err != nil {
 				return err
 			}
@@ -319,14 +341,21 @@ func generateHash(path string) (hash string, e error) {
 // It also initiates the data extraction for technical metadata and streaming information
 // The extracted information is stored in the file list in-memory
 func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
+	return s.extractFileInfoContext(context.Background())
+}
+
+func (s DefaultCrawlService) extractFileInfoContext(ctx context.Context) (fc dto.FileCounts, e error) {
 	if files := s.Repo.GetAll(); files != nil {
-		for _, file := range *files {
+		for _, file := range files {
+			if err := ctx.Err(); err != nil {
+				return fc, errors.Join(e, err)
+			}
 			if !file.InfoExtracted {
 				var exErr error
 				newInfo := file
 
 				if helper.IsAudioFile(s.Cfg, file.Path) {
-					newInfo, exErr = s.extractAudioInfo(file)
+					newInfo, exErr = s.extractAudioInfoContext(ctx, file)
 					fc.AudioCount++
 				}
 				if helper.IsStreamingFile(s.Cfg, file.Path) {
@@ -355,9 +384,13 @@ func (s DefaultCrawlService) extractFileInfo() (fc dto.FileCounts, e error) {
 
 // extractAudioInfo enriches the file information with audio file specific metadata
 func (s DefaultCrawlService) extractAudioInfo(oldInfo domain.FileInfo) (newInfo domain.FileInfo, e error) {
+	return s.extractAudioInfoContext(context.Background(), oldInfo)
+}
+
+func (s DefaultCrawlService) extractAudioInfoContext(ctx context.Context, oldInfo domain.FileInfo) (newInfo domain.FileInfo, e error) {
 	newInfo = oldInfo
 	newInfo.FileType = domain.FileTypeAudio
-	techMd, err := analyzeTechMdWithRunner(oldInfo.Path, s.Cfg.Crawl.FfProbeTimeOut, s.Cfg.Crawl.FfprobePath, s.RunCmd)
+	techMd, err := analyzeTechMdWithRunnerContext(ctx, oldInfo.Path, s.Cfg.Crawl.FFprobeTimeout, s.Cfg.Crawl.FFprobePath, s.RunCmd)
 	if err != nil {
 		logger.Error("Could not analyze file length", err)
 		return newInfo, err
@@ -459,9 +492,12 @@ func analyzeTechMd(essencePath string, timeout int, ffprobePath string) (techMet
 }
 
 func analyzeTechMdWithRunner(essencePath string, timeout int, ffprobePath string, runner func(context.Context, string, ...string) ([]byte, error)) (techMetadata *dto.TechnicalMetadata, err error) {
-	ctx := context.Background()
+	return analyzeTechMdWithRunnerContext(context.Background(), essencePath, timeout, ffprobePath, runner)
+}
+
+func analyzeTechMdWithRunnerContext(parent context.Context, essencePath string, timeout int, ffprobePath string, runner func(context.Context, string, ...string) ([]byte, error)) (techMetadata *dto.TechnicalMetadata, err error) {
 	timeoutDuration := time.Duration(timeout) * time.Second
-	ctx, cancel := context.WithTimeout(ctx, timeoutDuration)
+	ctx, cancel := context.WithTimeout(parent, timeoutDuration)
 	defer cancel()
 	// Syntax: ffprobe -show_format -print_format json -loglevel quiet <input_file>
 	outJson, err := runner(ctx, ffprobePath, "-show_format", "-print_format", "json", "-loglevel", "quiet", essencePath)

@@ -32,6 +32,7 @@ import (
 
 type Exporter interface {
 	Export() error
+	ExportContext(context.Context) error
 }
 
 const (
@@ -82,31 +83,44 @@ func NewExportServiceWithState(cfg *config.AppConfig, state *appstate.AppState, 
 
 // Export orchestrates the export of data to mAirList
 func (s DefaultExportService) Export() (err error) {
+	return s.ExportContext(context.Background())
+}
+
+func (s DefaultExportService) ExportContext(ctx context.Context) (err error) {
 	start := s.Now()
 	defer func() {
 		recordRunMetrics(s.State, "export", start, err)
 	}()
-	s.State.Runtime.Mu.Lock()
-	s.State.Runtime.LastExportRunDate = s.Now()
-	s.State.Runtime.Mu.Unlock()
+	s.State.Runtime.Update(func(runtime *appstate.RuntimeState) { runtime.LastExportRunDate = s.Now() })
 	exportDate, nextHour := getNextExportSlot(s.Now())
-	return s.ExportForDateAndHour(exportDate, nextHour)
+	return s.ExportForDateAndHourContext(ctx, exportDate, nextHour)
 }
 
 // ExportAllHours exports a playlist for all hours of the day
 func (s DefaultExportService) ExportAllHours() (err error) {
+	return s.ExportAllHoursContext(context.Background())
+}
+
+func (s DefaultExportService) ExportAllHoursContext(ctx context.Context) (err error) {
 	start := s.Now()
 	defer func() {
 		recordRunMetrics(s.State, "export", start, err)
 	}()
-	return s.ExportAllHoursForDate(helper.DateForFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate, 0))
+	return s.ExportAllHoursForDateContext(ctx, helper.DateForFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate, 0))
 }
 
 // ExportAllHoursForDate exports a playlist for all hours of a specific day.
 func (s DefaultExportService) ExportAllHoursForDate(folderDate time.Time) error {
+	return s.ExportAllHoursForDateContext(context.Background(), folderDate)
+}
+
+func (s DefaultExportService) ExportAllHoursForDateContext(ctx context.Context, folderDate time.Time) error {
 	var runErr error
 	for hour := range 24 {
-		runErr = errors.Join(runErr, s.ExportForDateAndHour(folderDate, fmt.Sprintf("%02d", hour)))
+		if err := ctx.Err(); err != nil {
+			return errors.Join(runErr, err)
+		}
+		runErr = errors.Join(runErr, s.ExportForDateAndHourContext(ctx, folderDate, fmt.Sprintf("%02d", hour)))
 	}
 	return runErr
 }
@@ -114,25 +128,32 @@ func (s DefaultExportService) ExportAllHoursForDate(folderDate time.Time) error 
 // ExportForHour exports a playlist for a given hour
 // Loads playlist into mAirList via API, if enabled
 func (s DefaultExportService) ExportForHour(hour string) (err error) {
+	return s.ExportForHourContext(context.Background(), hour)
+}
+
+func (s DefaultExportService) ExportForHourContext(ctx context.Context, hour string) (err error) {
 	start := s.Now()
 	defer func() {
 		recordRunMetrics(s.State, "export", start, err)
 	}()
-	return s.ExportForDateAndHour(helper.DateForFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate, 0), hour)
+	return s.ExportForDateAndHourContext(ctx, helper.DateForFolder(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate, 0), hour)
 }
 
 // ExportForDateAndHour exports a playlist for a given folder date and hour.
 // Loads playlist into mAirList via API, if enabled.
 func (s DefaultExportService) ExportForDateAndHour(folderDate time.Time, hour string) error {
+	return s.ExportForDateAndHourContext(context.Background(), folderDate, hour)
+}
+
+func (s DefaultExportService) ExportForDateAndHourContext(ctx context.Context, folderDate time.Time, hour string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.State.Runtime.Mu.Lock()
-	s.State.Runtime.ExportRunning = true
-	s.State.Runtime.Mu.Unlock()
+	s.State.Runtime.Update(func(runtime *appstate.RuntimeState) { runtime.ExportRunning = true })
 	defer func() {
-		s.State.Runtime.Mu.Lock()
-		s.State.Runtime.ExportRunning = false
-		s.State.Runtime.Mu.Unlock()
+		s.State.Runtime.Update(func(runtime *appstate.RuntimeState) { runtime.ExportRunning = false })
 	}()
 	if files := s.Repo.GetByDateAndHour(folderDate, hour, s.Cfg.Export.ExportLiveItems); files != nil {
 		logger.Infof("Starting export for %v %v:00 ...", domain.FormatFolderDate(folderDate), hour)
@@ -145,7 +166,7 @@ func (s DefaultExportService) ExportForDateAndHour(folderDate time.Time, hour st
 				ReqType:  dto.MairListRequestAppendPlaylist,
 				FileName: exportPath,
 			}
-			err := s.ExecuteMairListRequest(req)
+			err := s.ExecuteMairListRequestContext(ctx, req)
 			if err != nil {
 				logger.Error("Error appending playlist", err)
 				return err
@@ -165,9 +186,9 @@ func (s DefaultExportService) ExportForDateAndHour(folderDate time.Time, hour st
 
 // checkTimeAndLength determines suitability of files for playout, based on their length
 // Also resolves conflicts if there are multiple matching files for the same time
-func (s DefaultExportService) checkTimeAndLength(files *domain.FileList) exportPlan {
+func (s DefaultExportService) checkTimeAndLength(files domain.FileList) exportPlan {
 	plan := make(exportPlan)
-	for _, file := range *files {
+	for _, file := range files {
 		lengthOk, slotLen, info := checkTime(file, s.Cfg.Export.ShortDeltaAllowance, s.Cfg.Export.LongDeltaAllowance)
 		logger.Infof("File: %v, ModDate: %v, IsOK: %v, Info: %v", file.Path, file.ModTime, lengthOk, info)
 		if lengthOk {
@@ -304,14 +325,14 @@ func (s DefaultExportService) exportToPlayoutForDate(folderDate time.Time, hour 
 			logger.Error("Error when setting export path", err)
 			return "", err
 		}
-		if err := s.WritePlaylist(exportPath, plan); err == nil {
-			s.State.Runtime.Mu.Lock()
-			s.State.Runtime.LastExportFileName = exportPath
-			s.State.Runtime.LastExportedFileDate = s.Now()
-			s.State.Runtime.Mu.Unlock()
-			return exportPath, nil
+		if err := s.WritePlaylist(exportPath, plan); err != nil {
+			return "", err
 		}
-		return "", err
+		s.State.Runtime.Update(func(runtime *appstate.RuntimeState) {
+			runtime.LastExportFileName = exportPath
+			runtime.LastExportedFileDate = s.Now()
+		})
+		return exportPath, nil
 	}
 	logger.Infof("No elements to export for slot %v %v:00.", domain.FormatFolderDate(folderDate), hour)
 	return "", nil
@@ -323,14 +344,24 @@ func (s DefaultExportService) WritePlaylist(exportPath string, plan exportPlan) 
 		startTime   time.Time
 		line        string
 	)
-	exportFile, err := os.OpenFile(exportPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	exportDir := filepath.Dir(exportPath)
+	exportFile, err := os.CreateTemp(exportDir, filepath.Base(exportPath)+".*.tmp")
 	if err != nil {
 		logger.Error("Error when creating playlist file for mAirlist", err)
 		return err
 	}
-	defer exportFile.Close()
+	tmpPath := exportFile.Name()
+	defer os.Remove(tmpPath)
+	closeWithError := func(currentErr error) error {
+		if closeErr := exportFile.Close(); currentErr == nil {
+			return closeErr
+		}
+		return currentErr
+	}
 	dataWriter := bufio.NewWriter(exportFile)
-	s.writeStartComment(dataWriter)
+	if err := s.writeStartComment(dataWriter); err != nil {
+		return closeWithError(err)
+	}
 	keys := make([]string, 0, len(plan))
 	for timeKey := range plan {
 		keys = append(keys, timeKey)
@@ -353,16 +384,69 @@ func (s DefaultExportService) WritePlaylist(exportPath string, plan exportPlan) 
 			line = fmt.Sprintf("%v\tH\tF\t%v\n", listTime, file.Path)
 		}
 		if err := s.writeLine(dataWriter, line); err != nil {
-			return err
+			return closeWithError(err)
 		}
 	}
 	if s.Cfg.Export.TerminateAfterDuration {
-		s.WriteStopper(dataWriter, startTime, totalLength)
+		if err := s.WriteStopper(dataWriter, startTime, totalLength); err != nil {
+			return closeWithError(err)
+		}
 	}
-	s.writeEndComment(dataWriter)
+	if err := s.writeEndComment(dataWriter); err != nil {
+		return closeWithError(err)
+	}
 	if err := dataWriter.Flush(); err != nil {
 		logger.Error("Error flushing playlist file for mAirlist", err)
+		return closeWithError(err)
+	}
+	if err := exportFile.Sync(); err != nil {
+		return closeWithError(err)
+	}
+	if err := exportFile.Chmod(0644); err != nil {
+		return closeWithError(err)
+	}
+	if err := exportFile.Close(); err != nil {
 		return err
+	}
+	if err := replaceFile(tmpPath, exportPath); err != nil {
+		return err
+	}
+	return nil
+}
+
+// replaceFile installs a fully-written temporary file. On platforms where rename
+// cannot replace an existing file, the old file is restored if installation fails.
+func replaceFile(tmpPath, destination string) error {
+	if err := os.Rename(tmpPath, destination); err == nil {
+		return nil
+	}
+	backupFile, err := os.CreateTemp(filepath.Dir(destination), filepath.Base(destination)+".*.bak")
+	if err != nil {
+		return err
+	}
+	backupPath := backupFile.Name()
+	if err := backupFile.Close(); err != nil {
+		return err
+	}
+	if err := os.Remove(backupPath); err != nil {
+		return err
+	}
+	destinationMoved := false
+	if err := os.Rename(destination, backupPath); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+	} else {
+		destinationMoved = true
+	}
+	if err := os.Rename(tmpPath, destination); err != nil {
+		if destinationMoved {
+			_ = os.Rename(backupPath, destination)
+		}
+		return err
+	}
+	if destinationMoved {
+		_ = os.Remove(backupPath)
 	}
 	return nil
 }
@@ -405,22 +489,22 @@ func (s DefaultExportService) setExportPathForDate(folderDate time.Time, hour st
 }
 
 // writeStartComment is a helper function creating the ".tpi" file's start comment
-func (s DefaultExportService) writeStartComment(w *bufio.Writer) {
+func (s DefaultExportService) writeStartComment(w *bufio.Writer) error {
 	line := fmt.Sprintf("\t\tR\tPlaylist auto-generated by mAirList Feeder at %v\n", s.Now().Format("2006-01-02 15:04:05"))
-	s.writeLine(w, line)
+	return s.writeLine(w, line)
 }
 
 // WriteStopper is a helper function adding an end element to the ".tpi" file
-func (s DefaultExportService) WriteStopper(w *bufio.Writer, startTime time.Time, tlen time.Duration) {
+func (s DefaultExportService) WriteStopper(w *bufio.Writer, startTime time.Time, tlen time.Duration) error {
 	eh := startTime.Add(tlen)
 	line := fmt.Sprintf("%v\tH\tD\tEnd of block\n", eh.Format("15:04:05"))
-	s.writeLine(w, line)
+	return s.writeLine(w, line)
 }
 
 // writeEndComment is a helper function creating the ".tpi" file's end comment
-func (s DefaultExportService) writeEndComment(w *bufio.Writer) {
+func (s DefaultExportService) writeEndComment(w *bufio.Writer) error {
 	line := "\t\tR\tEnd of auto-generated playlist\n"
-	s.writeLine(w, line)
+	return s.writeLine(w, line)
 }
 
 // writeLine is a helper function that writes agiven line to file
@@ -434,15 +518,19 @@ func (s DefaultExportService) writeLine(w *bufio.Writer, line string) error {
 }
 
 func (s DefaultExportService) ExecuteMairListRequest(req dto.MairListRequest) error {
+	return s.ExecuteMairListRequestContext(context.Background(), req)
+}
+
+func (s DefaultExportService) ExecuteMairListRequestContext(ctx context.Context, req dto.MairListRequest) error {
 	// ReqType = appendpl, getpl
 	switch req.ReqType {
 	case dto.MairListRequestAppendPlaylist:
-		err := s.AppendPlaylist(req.FileName)
+		err := s.AppendPlaylistContext(ctx, req.FileName)
 		if err != nil {
 			return err
 		}
 	case dto.MairListRequestGetPlaylist:
-		err := s.GetPlaylist()
+		err := s.GetPlaylistContext(ctx)
 		if err != nil {
 			return err
 		}
@@ -454,6 +542,10 @@ func (s DefaultExportService) ExecuteMairListRequest(req dto.MairListRequest) er
 
 // AppendPlaylist appends the playlist written to the ".tpi" file to the current playlist in mAirList using the API
 func (s DefaultExportService) AppendPlaylist(fileName string) error {
+	return s.AppendPlaylistContext(context.Background(), fileName)
+}
+
+func (s DefaultExportService) AppendPlaylistContext(ctx context.Context, fileName string) error {
 	// POST to http://<server>:9300/execute
 	// Basic Auth
 	// Body is Form URL encoded
@@ -465,6 +557,7 @@ func (s DefaultExportService) AppendPlaylist(fileName string) error {
 	if err != nil {
 		return err
 	}
+	req = req.WithContext(ctx)
 	data, statusCode, err := s.execRequest(req)
 	if err != nil {
 		return err
@@ -482,13 +575,16 @@ func (s DefaultExportService) AppendPlaylist(fileName string) error {
 }
 
 func (s DefaultExportService) SetMairListCommState(success bool) {
-	s.State.Runtime.Mu.Lock()
-	defer s.State.Runtime.Mu.Unlock()
+	s.State.Runtime.Update(func(runtime *appstate.RuntimeState) {
+		if success {
+			runtime.LastMairListCommState = fmt.Sprintf("Succeeded (%v)", s.Now().Format(dateFormat))
+		} else {
+			runtime.LastMairListCommState = fmt.Sprintf("Failed (%v)", s.Now().Format(dateFormat))
+		}
+	})
 	if success {
-		s.State.Runtime.LastMairListCommState = fmt.Sprintf("Succeeded (%v)", s.Now().Format(dateFormat))
 		s.State.Metrics.SetConnected("mAirList", 1)
 	} else {
-		s.State.Runtime.LastMairListCommState = fmt.Sprintf("Failed (%v)", s.Now().Format(dateFormat))
 		s.State.Metrics.SetConnected("mAirList", 0)
 	}
 }
@@ -527,7 +623,10 @@ func (s DefaultExportService) buildAppendRequest(fileName string) (req *http.Req
 	mairListUrl.Path = path.Join(mairListUrl.Path, "/execute")
 	cmd := url.Values{}
 	cmd.Set("command", fmt.Sprintf("PLAYLIST 1 APPEND %v", fileName))
-	req, _ = http.NewRequest("POST", mairListUrl.String(), strings.NewReader(cmd.Encode()))
+	req, err = http.NewRequest(http.MethodPost, mairListUrl.String(), strings.NewReader(cmd.Encode()))
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.SetBasicAuth(s.Cfg.Export.MairListUser, s.Cfg.Export.MairListPassword)
 	return req, nil
@@ -543,12 +642,19 @@ func (s DefaultExportService) buildGetPlaylistRequest() (req *http.Request, e er
 		return nil, err
 	}
 	mairListUrl.Path = path.Join(mairListUrl.Path, "/playlist/0/content")
-	req, _ = http.NewRequest("GET", mairListUrl.String(), nil)
+	req, err = http.NewRequest(http.MethodGet, mairListUrl.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 	req.SetBasicAuth(s.Cfg.Export.MairListUser, s.Cfg.Export.MairListPassword)
 	return req, nil
 }
 
 func (s DefaultExportService) GetPlaylist() error {
+	return s.GetPlaylistContext(context.Background())
+}
+
+func (s DefaultExportService) GetPlaylistContext(ctx context.Context) error {
 	// GET to http://<server>:9300/playlist/0/content
 	// Basic Auth
 	// Returns the current playlist as XML
@@ -559,6 +665,7 @@ func (s DefaultExportService) GetPlaylist() error {
 	if err != nil {
 		return err
 	}
+	req = req.WithContext(ctx)
 	data, statusCode, err := s.execRequest(req)
 	if err != nil {
 		return err
@@ -580,9 +687,7 @@ func (s DefaultExportService) GetPlaylist() error {
 		} else {
 			s.State.Metrics.SetMairListPlaying(s.Cfg.Export.MairListUrl, 0)
 		}
-		s.State.Runtime.Mu.Lock()
-		defer s.State.Runtime.Mu.Unlock()
-		s.State.Runtime.MairListPlaying = playing
+		s.State.Runtime.Update(func(runtime *appstate.RuntimeState) { runtime.MairListPlaying = playing })
 		return nil
 	}
 	err = fmt.Errorf("mAirList playlist request failed: HTTP %d", statusCode)
@@ -634,7 +739,9 @@ func (s DefaultExportService) QueryStatus(ctx context.Context) {
 			logger.Info("Stopped querying mAirList Playlist Status")
 			return
 		default:
-			s.GetPlaylist()
+			if err := s.GetPlaylistContext(ctx); err != nil && ctx.Err() == nil {
+				logger.Error("could not query mAirList playlist status", err)
+			}
 		}
 		select {
 		case <-ctx.Done():

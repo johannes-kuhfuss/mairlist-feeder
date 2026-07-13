@@ -60,6 +60,20 @@ func TestIsYesterdayOrOlderWrongDateReturnsFalse(t *testing.T) {
 	assert.EqualValues(t, false, b)
 }
 
+func TestIsYesterdayOrOlderAcrossSpringDSTChange(t *testing.T) {
+	location, err := time.LoadLocation("Europe/Berlin")
+	if err != nil {
+		t.Skipf("timezone data unavailable: %v", err)
+	}
+	now := time.Date(2026, time.March, 30, 0, 30, 0, 0, location)
+	yesterday := time.Date(2026, time.March, 29, 0, 0, 0, 0, location)
+
+	older, err := isYesterdayOrOlderAt(yesterday, now)
+
+	assert.NoError(t, err)
+	assert.True(t, older)
+}
+
 func TestRunCleanNoFilesReturnsZero(t *testing.T) {
 	teardown := setupTestClean()
 	defer teardown()

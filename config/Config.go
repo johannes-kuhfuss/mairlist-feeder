@@ -16,9 +16,9 @@ type AppConfig struct {
 	Server struct {
 		Host                 string `envconfig:"SERVER_HOST"`
 		Port                 string `envconfig:"SERVER_PORT" default:"8080"`
-		TlsPort              string `envconfig:"SERVER_TLS_PORT" default:"8443"`
+		TLSPort              string `envconfig:"SERVER_TLS_PORT" default:"8443"`
 		GracefulShutdownTime int    `envconfig:"GRACEFUL_SHUTDOWN_TIME" default:"10"`
-		UseTls               bool   `envconfig:"USE_TLS" default:"false"`
+		UseTLS               bool   `envconfig:"USE_TLS" default:"false"`
 		CertFile             string `envconfig:"CERT_FILE" default:"./cert/cert.pem"`
 		KeyFile              string `envconfig:"KEY_FILE" default:"./cert/cert.key"`
 		LogFile              string `envconfig:"LOG_FILE"` // leave empty to disable logging to file
@@ -38,8 +38,8 @@ type AppConfig struct {
 		CrawlExtensions         []string       `envconfig:"CRAWL_EXTENSIONS" default:".mp3,.m4a,.wav,.stream"`
 		AudioFileExtensions     []string       `envconfig:"AUDIO_FILE_EXTENSIONS" default:".mp3,.m4a,.wav"`
 		StreamingFileExtensions []string       `envconfig:"STREAM_FILE_EXTENSIONS" default:".stream"`
-		FfprobePath             string         `envconfig:"FFPROBE_PATH" default:"/usr/bin/ffprobe"`
-		FfProbeTimeOut          int            `envconfig:"FFPROBE_TIMEOUT" default:"60"`
+		FFprobePath             string         `envconfig:"FFPROBE_PATH" default:"/usr/bin/ffprobe"`
+		FFprobeTimeout          int            `envconfig:"FFPROBE_TIMEOUT" default:"60"`
 		CrawlCycleMin           int            `envconfig:"CRAWL_CYCLE_MIN" default:"10"`
 		StreamMap               map[string]int `envconfig:"STREAM_MAP"`
 		GenerateHash            bool           `envconfig:"GENERATE_HASH" default:"false"`
@@ -113,7 +113,7 @@ func validateConfig(config *AppConfig) error {
 			return fmt.Errorf("mAirList password must be configured when mAirList integration is enabled")
 		}
 	}
-	if config.Server.UseTls {
+	if config.Server.UseTLS {
 		if _, err := os.Stat(config.Server.CertFile); err != nil {
 			return fmt.Errorf("TLS certificate file is not accessible: %w", err)
 		}
@@ -128,6 +128,25 @@ func validateConfig(config *AppConfig) error {
 		}
 		if !info.IsDir() {
 			return fmt.Errorf("root folder must be a directory")
+		}
+		if config.Crawl.FFprobePath == "" {
+			return fmt.Errorf("ffprobe path must be configured when crawling is enabled")
+		}
+		ffprobeInfo, err := os.Stat(config.Crawl.FFprobePath)
+		if err != nil {
+			return fmt.Errorf("ffprobe executable is not accessible: %w", err)
+		}
+		if !ffprobeInfo.Mode().IsRegular() {
+			return fmt.Errorf("ffprobe executable must be a regular file")
+		}
+	}
+	if config.Export.ExportFolder != "" {
+		info, err := os.Stat(config.Export.ExportFolder)
+		if err != nil {
+			return fmt.Errorf("export folder is not accessible: %w", err)
+		}
+		if !info.IsDir() {
+			return fmt.Errorf("export folder must be a directory")
 		}
 	}
 	return nil
@@ -157,7 +176,7 @@ func setDefaults(config *AppConfig) {
 	checkFilePath(&config.Server.LogFile)
 	checkFilePath(&config.Misc.FileSaveFile)
 	checkFilePath(&config.Crawl.RootFolder)
-	checkFilePath(&config.Crawl.FfprobePath)
+	checkFilePath(&config.Crawl.FFprobePath)
 	checkFilePath(&config.Export.ExportFolder)
 }
 

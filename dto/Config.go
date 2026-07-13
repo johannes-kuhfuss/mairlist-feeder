@@ -16,9 +16,9 @@ import (
 type ConfigResp struct {
 	ServerHost                 string
 	ServerPort                 string
-	ServerTlsPort              string
+	ServerTLSPort              string
 	ServerGracefulShutdownTime string
-	ServerUseTls               string
+	ServerUseTLS               string
 	ServerCertFile             string
 	ServerKeyFile              string
 	GinMode                    string
@@ -76,9 +76,9 @@ func convertDate(date time.Time) string {
 }
 
 // getNextJobDate retrieves a job's next execution date and returns it in its display format
-func getNextJobDate(state *appstate.AppState, jobId cron.EntryID) string {
-	if state.Runtime.BgJobs != nil && state.Runtime.BgJobs.Entry(jobId).Valid() {
-		return state.Runtime.BgJobs.Entry(jobId).Next.String()
+func getNextJobDate(bgJobs *cron.Cron, jobID cron.EntryID) string {
+	if bgJobs != nil && bgJobs.Entry(jobID).Valid() {
+		return bgJobs.Entry(jobID).Next.String()
 	} else {
 		return "N/A"
 	}
@@ -106,14 +106,13 @@ func formatLogFile(logFile string) string {
 
 // GetConfig converts the configuration to its display format
 func GetConfig(cfg *config.AppConfig, state *appstate.AppState) (resp ConfigResp) {
-	state.Runtime.Mu.Lock()
-	defer state.Runtime.Mu.Unlock()
+	runtime := state.Runtime.Snapshot()
 	resp = ConfigResp{
 		ServerHost:                 cfg.Server.Host,
 		ServerPort:                 cfg.Server.Port,
-		ServerTlsPort:              cfg.Server.TlsPort,
+		ServerTLSPort:              cfg.Server.TLSPort,
 		ServerGracefulShutdownTime: strconv.Itoa(cfg.Server.GracefulShutdownTime),
-		ServerUseTls:               strconv.FormatBool(cfg.Server.UseTls),
+		ServerUseTLS:               strconv.FormatBool(cfg.Server.UseTLS),
 		ServerCertFile:             cfg.Server.CertFile,
 		ServerKeyFile:              cfg.Server.KeyFile,
 		GinMode:                    cfg.Gin.Mode,
@@ -126,40 +125,40 @@ func GetConfig(cfg *config.AppConfig, state *appstate.AppState) (resp ConfigResp
 		AppendToPlayout:            strconv.FormatBool(cfg.Export.AppendPlaylist),
 		ShortAllowance:             strconv.FormatFloat(cfg.Export.ShortDeltaAllowance, 'f', 1, 64),
 		LongAllowance:              strconv.FormatFloat(cfg.Export.LongDeltaAllowance, 'f', 1, 64),
-		CrawlRunNumber:             strconv.Itoa(state.Runtime.CrawlRunNumber),
-		CrawlRunning:               strconv.FormatBool(state.Runtime.CrawlRunning),
-		ExportRunning:              strconv.FormatBool(state.Runtime.ExportRunning),
-		CleanRunning:               strconv.FormatBool(state.Runtime.CleanRunning),
-		FilesCleaned:               strconv.Itoa(state.Runtime.FilesCleaned),
+		CrawlRunNumber:             strconv.Itoa(runtime.CrawlRunNumber),
+		CrawlRunning:               strconv.FormatBool(runtime.CrawlRunning),
+		ExportRunning:              strconv.FormatBool(runtime.ExportRunning),
+		CleanRunning:               strconv.FormatBool(runtime.CleanRunning),
+		FilesCleaned:               strconv.Itoa(runtime.FilesCleaned),
 		GenHashes:                  strconv.FormatBool(cfg.Crawl.GenerateHash),
-		LastCalCmsState:            state.Runtime.LastCalCmsState,
-		LastCalCmsRefreshDate:      convertDate(state.Runtime.LastCalCmsRefreshDate),
-		LastCalCmsRefreshError:     formatEmpty(state.Runtime.LastCalCmsRefreshErr),
-		LastMairListCommState:      state.Runtime.LastMairListCommState,
+		LastCalCmsState:            runtime.LastCalCmsState,
+		LastCalCmsRefreshDate:      convertDate(runtime.LastCalCmsRefreshDate),
+		LastCalCmsRefreshError:     formatEmpty(runtime.LastCalCmsRefreshErr),
+		LastMairListCommState:      runtime.LastMairListCommState,
 		ExportDayEvents:            strconv.FormatBool(cfg.CalCms.ExportDayEvents),
-		MairListPlayingState:       strconv.FormatBool(state.Runtime.MairListPlaying),
+		MairListPlayingState:       strconv.FormatBool(runtime.MairListPlaying),
 		LogFile:                    formatLogFile(cfg.Server.LogFile),
 		QueryMairListStatus:        strconv.FormatBool(cfg.Export.QueryMairListStatus),
 		ExportLiveItems:            strconv.FormatBool(cfg.Export.ExportLiveItems),
 		AddNonCalCmsFiles:          strconv.FormatBool(cfg.Crawl.AddNonCalCmsFiles),
 		ExportMinute:               strconv.Itoa(cfg.Export.ExportMinute),
 	}
-	resp.LastCrawlDate = convertDate(state.Runtime.LastCrawlDate)
-	resp.LastExportDate = convertDate(state.Runtime.LastExportRunDate)
-	resp.LastCleanDate = convertDate(state.Runtime.LastCleanDate)
-	resp.LastExportedFileDate = convertDate(state.Runtime.LastExportedFileDate)
-	resp.StartDate = setStartDate(state.Runtime.StartDate)
-	if state.Runtime.LastExportFileName == "" {
+	resp.LastCrawlDate = convertDate(runtime.LastCrawlDate)
+	resp.LastExportDate = convertDate(runtime.LastExportRunDate)
+	resp.LastCleanDate = convertDate(runtime.LastCleanDate)
+	resp.LastExportedFileDate = convertDate(runtime.LastExportedFileDate)
+	resp.StartDate = setStartDate(runtime.StartDate)
+	if runtime.LastExportFileName == "" {
 		resp.LastExportFileName = "N/A"
 	} else {
-		resp.LastExportFileName = state.Runtime.LastExportFileName
+		resp.LastExportFileName = runtime.LastExportFileName
 	}
 	if cfg.Server.Host == "" {
 		resp.ServerHost = "localhost"
 	}
-	resp.NextCrawlDate = getNextJobDate(state, state.Runtime.CrawlJobId)
-	resp.NextCleanDate = getNextJobDate(state, state.Runtime.CleanJobId)
-	resp.NextExportDate = getNextJobDate(state, state.Runtime.ExportJobId)
+	resp.NextCrawlDate = getNextJobDate(runtime.BgJobs, runtime.CrawlJobID)
+	resp.NextCleanDate = getNextJobDate(runtime.BgJobs, runtime.CleanJobID)
+	resp.NextExportDate = getNextJobDate(runtime.BgJobs, runtime.ExportJobID)
 	resp.StreamFileMapping = getStreamMappings(cfg.Crawl.StreamMap)
 	return
 }

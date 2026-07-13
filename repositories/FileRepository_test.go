@@ -96,11 +96,11 @@ func TestGetAllReturnsAllElements(t *testing.T) {
 	repo.Store(fi2)
 	size := repo.Size()
 	res := repo.GetAll()
-	el1 := (*res)[0]
-	el2 := (*res)[1]
+	el1 := res[0]
+	el2 := res[1]
 	assert.NotNil(t, size)
 	assert.EqualValues(t, 2, size)
-	assert.EqualValues(t, 2, len(*res))
+	assert.EqualValues(t, 2, len(res))
 	assert.EqualValues(t, 2*time.Second, el1.Duration)
 	assert.EqualValues(t, 2*time.Second, el2.Duration)
 }
@@ -154,9 +154,9 @@ func TestGetForHourOneMatchReturnsElement(t *testing.T) {
 	}
 	repo.Store(fi)
 	res := repo.GetByHour("12", false)
-	el := (*res)[0]
-	assert.NotNil(t, *res)
-	assert.EqualValues(t, 1, len(*res))
+	el := res[0]
+	assert.NotNil(t, res)
+	assert.EqualValues(t, 1, len(res))
 	assert.EqualValues(t, "A", el.Path)
 	assert.EqualValues(t, helper.TimeFromHourAndMinute(12, 0), el.StartTime)
 }
@@ -182,8 +182,8 @@ func TestGetForHourTwoMatchesReturnsElements(t *testing.T) {
 	repo.Store(fi2)
 	repo.Store(fi3)
 	res := repo.GetByHour("12", false)
-	assert.NotNil(t, *res)
-	assert.EqualValues(t, 2, len(*res))
+	assert.NotNil(t, res)
+	assert.EqualValues(t, 2, len(res))
 }
 
 func TestGetForHourOnlyLiveReturnsNil(t *testing.T) {
@@ -223,12 +223,12 @@ func TestGetForHourLiveCheck(t *testing.T) {
 	repo.Store(fi1)
 	repo.Store(fi2)
 	res1 := repo.GetByHour("12", false)
-	assert.NotNil(t, *res1)
-	assert.EqualValues(t, 1, len(*res1))
-	assert.EqualValues(t, "A", (*res1)[0].Path)
+	assert.NotNil(t, res1)
+	assert.EqualValues(t, 1, len(res1))
+	assert.EqualValues(t, "A", res1[0].Path)
 	res2 := repo.GetByHour("12", true)
-	assert.NotNil(t, *res2)
-	assert.EqualValues(t, 2, len(*res2))
+	assert.NotNil(t, res2)
+	assert.EqualValues(t, 2, len(res2))
 }
 
 func TestGetByDateAndHourOnlyReturnsRequestedDate(t *testing.T) {
@@ -251,8 +251,8 @@ func TestGetByDateAndHourOnlyReturnsRequestedDate(t *testing.T) {
 	res := repo.GetByDateAndHour(nextDate, "12", false)
 
 	assert.NotNil(t, res)
-	assert.EqualValues(t, 1, len(*res))
-	assert.EqualValues(t, "B", (*res)[0].Path)
+	assert.EqualValues(t, 1, len(res))
+	assert.EqualValues(t, "B", res[0].Path)
 }
 
 func TestSaveToDiskSavesToDisk(t *testing.T) {
@@ -420,8 +420,8 @@ func TestGetByEventIdOneEventIdReturnsOne(t *testing.T) {
 	repo.Store(fi1)
 	res := repo.GetByEventId(1)
 	assert.NotNil(t, res)
-	assert.EqualValues(t, 1, len(*res))
-	assert.EqualValues(t, "A", (*res)[0].Path)
+	assert.EqualValues(t, 1, len(res))
+	assert.EqualValues(t, "A", res[0].Path)
 }
 
 func TestGetByEventIdTwoEventIdsReturnsOne(t *testing.T) {
@@ -438,8 +438,8 @@ func TestGetByEventIdTwoEventIdsReturnsOne(t *testing.T) {
 	repo.Store(fi2)
 	res := repo.GetByEventId(1)
 	assert.NotNil(t, res)
-	assert.EqualValues(t, 1, len(*res))
-	assert.EqualValues(t, "A", (*res)[0].Path)
+	assert.EqualValues(t, 1, len(res))
+	assert.EqualValues(t, "A", res[0].Path)
 }
 
 func TestGetByEventIdTwoEventIdsReturnsTwo(t *testing.T) {
@@ -456,8 +456,8 @@ func TestGetByEventIdTwoEventIdsReturnsTwo(t *testing.T) {
 	repo.Store(fi2)
 	res := repo.GetByEventId(1)
 	assert.NotNil(t, res)
-	assert.EqualValues(t, 2, len(*res))
-	assert.ElementsMatch(t, []string{"A", "B"}, []string{(*res)[0].Path, (*res)[1].Path})
+	assert.EqualValues(t, 2, len(res))
+	assert.ElementsMatch(t, []string{"A", "B"}, []string{res[0].Path, res[1].Path})
 }
 
 func TestGetByEventIdAndDateOnlyReturnsRequestedDate(t *testing.T) {
@@ -480,8 +480,8 @@ func TestGetByEventIdAndDateOnlyReturnsRequestedDate(t *testing.T) {
 	res := repo.GetByEventIdAndDate(1, nextDate)
 
 	assert.NotNil(t, res)
-	assert.EqualValues(t, 1, len(*res))
-	assert.EqualValues(t, "B", (*res)[0].Path)
+	assert.EqualValues(t, 1, len(res))
+	assert.EqualValues(t, "B", res[0].Path)
 }
 
 func TestGetByDateEmptyReturnsNil(t *testing.T) {
@@ -510,7 +510,7 @@ func TestGetByDateOneMatchReturnsMatch(t *testing.T) {
 	repo.Store(fi1)
 	res := repo.GetByDate(domain.MustParseFolderDate(folderDateDash))
 	assert.NotNil(t, res)
-	assert.EqualValues(t, "A", (*res)[0].Path)
+	assert.EqualValues(t, "A", res[0].Path)
 }
 
 func TestGetByDateTwoMatchesReturnsMatches(t *testing.T) {
@@ -527,7 +527,7 @@ func TestGetByDateTwoMatchesReturnsMatches(t *testing.T) {
 	repo.Store(fi2)
 	res := repo.GetByDate(domain.MustParseFolderDate(folderDateDash))
 	assert.NotNil(t, res)
-	assert.EqualValues(t, 2, len(*res))
+	assert.EqualValues(t, 2, len(res))
 }
 
 func TestMergeFileListNil(t *testing.T) {
@@ -538,7 +538,7 @@ func TestMergeFileListNil(t *testing.T) {
 func TestMergeFileListEmpty(t *testing.T) {
 	fl1 := domain.FileList{}
 	fl2 := domain.FileList{}
-	flm := mergeFileList(&fl1, &fl2)
+	flm := mergeFileList(fl1, fl2)
 	assert.EqualValues(t, 0, len(flm))
 }
 
@@ -547,7 +547,7 @@ func TestMergeFileListTwoDifferentElements(t *testing.T) {
 	fi2 := domain.FileInfo{Path: "B"}
 	fl1 := domain.FileList{fi1}
 	fl2 := domain.FileList{fi2}
-	flm := mergeFileList(&fl1, &fl2)
+	flm := mergeFileList(fl1, fl2)
 	assert.EqualValues(t, 2, len(flm))
 }
 
@@ -557,6 +557,6 @@ func TestMergeFileListTwoEqualElements(t *testing.T) {
 	fi3 := domain.FileInfo{Path: "B"}
 	fl1 := domain.FileList{fi1}
 	fl2 := domain.FileList{fi2, fi3}
-	flm := mergeFileList(&fl1, &fl2)
+	flm := mergeFileList(fl1, fl2)
 	assert.EqualValues(t, 2, len(flm))
 }

@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"slices"
@@ -28,22 +29,17 @@ type StatsUiHandler struct {
 	ExportSvc uiExporter
 	CleanSvc  service.Cleaner
 	CalCmsSvc uiCalCmsService
+	jobs      *actionJobs
 }
 
 type uiExporter interface {
-	ExportAllHours() error
-	ExportForHour(string) error
+	ExportAllHoursContext(context.Context) error
+	ExportForHourContext(context.Context, string) error
 }
 
 type uiCalCmsService interface {
 	GetTodayEvents() ([]dto.Event, error)
 	GetYesterdaysEvents() []dto.Event
-}
-
-type actionResponse struct {
-	Status  string `json:"status"`
-	Action  string `json:"action"`
-	Message string `json:"message"`
 }
 
 // NewStatsUiHandler creates a new web UI handler and injects its dependencies
@@ -52,6 +48,10 @@ func NewStatsUiHandler(cfg *config.AppConfig, repo *repositories.DefaultFileRepo
 }
 
 func NewStatsUiHandlerWithState(cfg *config.AppConfig, state *appstate.AppState, repo repositories.FileRepository, crs service.Crawler, exs uiExporter, cls service.Cleaner, csv uiCalCmsService) StatsUiHandler {
+	return NewStatsUiHandlerWithContext(context.Background(), cfg, state, repo, crs, exs, cls, csv)
+}
+
+func NewStatsUiHandlerWithContext(ctx context.Context, cfg *config.AppConfig, state *appstate.AppState, repo repositories.FileRepository, crs service.Crawler, exs uiExporter, cls service.Cleaner, csv uiCalCmsService) StatsUiHandler {
 	return StatsUiHandler{
 		Cfg:       cfg,
 		State:     state,
@@ -60,7 +60,12 @@ func NewStatsUiHandlerWithState(cfg *config.AppConfig, state *appstate.AppState,
 		ExportSvc: exs,
 		CleanSvc:  cls,
 		CalCmsSvc: csv,
+		jobs:      newActionJobs(ctx),
 	}
+}
+
+func (uh *StatsUiHandler) Close() {
+	uh.jobs.close()
 }
 
 // StatusPage is the handler for the status page
@@ -185,45 +190,48 @@ func (uh *StatsUiHandler) ExecAction(c *gin.Context) {
 		c.JSON(err.StatusCode(), err)
 		return
 	}
+	job, err := uh.jobs.submit(action, func(ctx context.Context) (string, error) {
+		message, err := uh.executeAction(ctx, action, hour)
+		if err != nil {
+			logger.Errorf("Error executing %s action: %v", action, err)
+		}
+		return message, err
+	})
+	if err != nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"message": err.Error()})
+		return
+	}
+	c.JSON(http.StatusAccepted, job)
+}
+
+func (uh *StatsUiHandler) ActionStatus(c *gin.Context) {
+	job, ok := uh.jobs.get(c.Param("id"))
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"message": "action job not found"})
+		return
+	}
+	c.JSON(http.StatusOK, job)
+}
+
+func (uh *StatsUiHandler) executeAction(ctx context.Context, action, hour string) (string, error) {
 	switch action {
 	case "crawl":
-		if err := uh.CrawlSvc.Crawl(); err != nil {
-			logger.Error("Error executing crawl action", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
+		if err := uh.CrawlSvc.CrawlContext(ctx); err != nil {
+			return "", err
 		}
 		uh.resetCrawl()
-		c.JSON(http.StatusOK, actionResponse{Status: "ok", Action: action, Message: "Crawl completed."})
+		return "Crawl completed.", nil
 	case "export":
 		if hour == "" {
-			if err := uh.ExportSvc.ExportAllHours(); err != nil {
-				logger.Error("Error executing export action", err)
-				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-				return
-			}
-			c.JSON(http.StatusOK, actionResponse{Status: "ok", Action: action, Message: "Export completed for all hours."})
-		} else {
-			if err := uh.ExportSvc.ExportForHour(hour); err != nil {
-				logger.Error("Error executing export action", err)
-				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-				return
-			}
-			c.JSON(http.StatusOK, actionResponse{Status: "ok", Action: action, Message: "Export completed for hour " + hour + "."})
+			return "Export completed for all hours.", uh.ExportSvc.ExportAllHoursContext(ctx)
 		}
+		return "Export completed for hour " + hour + ".", uh.ExportSvc.ExportForHourContext(ctx, hour)
 	case "exporttodisk":
-		if err := uh.Repo.SaveToDisk(uh.Cfg.Misc.FileSaveFile); err != nil {
-			logger.Error("Error saving repository to disk", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, actionResponse{Status: "ok", Action: action, Message: "File list saved to disk."})
+		return "File list saved to disk.", uh.Repo.SaveToDisk(uh.Cfg.Misc.FileSaveFile)
 	case "clean":
-		if err := uh.CleanSvc.Clean(); err != nil {
-			logger.Error("Error executing clean action", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-		c.JSON(http.StatusOK, actionResponse{Status: "ok", Action: action, Message: "Clean-up completed."})
+		return "Clean-up completed.", uh.CleanSvc.CleanContext(ctx)
+	default:
+		return "", errors.New("unknown action")
 	}
 }
 
@@ -253,16 +261,20 @@ func validateHour(hour string) api_error.ApiErr {
 }
 
 func (uh *StatsUiHandler) resetCrawl() {
-	uh.State.Runtime.BgJobs.Remove(uh.State.Runtime.CrawlJobId)
+	runtime := uh.State.Runtime.Snapshot()
+	if runtime.BgJobs == nil {
+		return
+	}
+	runtime.BgJobs.Remove(runtime.CrawlJobID)
 	crawlCycle := "@every " + strconv.Itoa(uh.Cfg.Crawl.CrawlCycleMin) + "m"
-	crawlId, crawlErr := uh.State.Runtime.BgJobs.AddFunc(crawlCycle, func() {
+	crawlID, crawlErr := runtime.BgJobs.AddFunc(crawlCycle, func() {
 		if err := uh.CrawlSvc.Crawl(); err != nil {
 			logger.Error("Error running scheduled crawl", err)
 		}
 	})
 	if crawlErr != nil {
-		logger.Errorf("Error when scheduling job %v for crawling. %v", crawlId, crawlErr)
+		logger.Errorf("Error when scheduling job %v for crawling. %v", crawlID, crawlErr)
 	} else {
-		uh.State.Runtime.CrawlJobId = crawlId
+		uh.State.Runtime.Update(func(runtime *appstate.RuntimeState) { runtime.CrawlJobID = crawlID })
 	}
 }

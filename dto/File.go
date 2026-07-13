@@ -58,7 +58,7 @@ func formatEventLink(id int) bool {
 // GetFiles retrives all files maintained in the repository and formats them for display purposes
 func GetFiles(repo repositories.FileRepository, CmsUrl string) (fileDta []FileResp) {
 	if files := repo.GetAll(); files != nil {
-		fileDta = formatFiles(*files, CmsUrl)
+		fileDta = formatFiles(files, CmsUrl)
 	}
 	sortFiles(fileDta)
 	return
@@ -67,7 +67,7 @@ func GetFiles(repo repositories.FileRepository, CmsUrl string) (fileDta []FileRe
 // GetFilesForDate retrieves files for a folder date and formats them for display.
 func GetFilesForDate(repo repositories.FileRepository, CmsUrl string, folderDate time.Time) (fileDta []FileResp) {
 	if files := repo.GetByDate(folderDate); files != nil {
-		fileDta = formatFiles(*files, CmsUrl)
+		fileDta = formatFiles(files, CmsUrl)
 	}
 	sortFiles(fileDta)
 	return

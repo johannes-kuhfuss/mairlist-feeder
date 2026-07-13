@@ -17,7 +17,7 @@
           return;
         }
         statusField.className = "alert alert-info";
-        statusField.textContent = "Running action...";
+        statusField.textContent = "Queueing action...";
         const params = new URLSearchParams();
         params.set("action", button_id);
         params.set("hour", hourField ? hourField.value : "");
@@ -34,11 +34,31 @@
             statusField.textContent = data.message || "Action failed.";
             return;
           }
-          statusField.className = "alert alert-success";
-          statusField.textContent = data.message || "Action completed.";
+          statusField.textContent = data.message || "Action queued.";
+          await pollAction(data.status_url, statusField);
         } catch (err) {
           statusField.className = "alert alert-danger";
           statusField.textContent = "Action failed: " + err;
+        }
+      }
+
+      async function pollAction(statusUrl, statusField) {
+        while (true) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const response = await fetch(statusUrl);
+          const data = await response.json();
+          if (!response.ok || data.status === "failed") {
+            statusField.className = "alert alert-danger";
+            statusField.textContent = data.error || data.message || "Action failed.";
+            return;
+          }
+          if (data.status === "succeeded") {
+            statusField.className = "alert alert-success";
+            statusField.textContent = data.message || "Action completed.";
+            return;
+          }
+          statusField.className = "alert alert-info";
+          statusField.textContent = data.message || "Action running.";
         }
       }
     </script>

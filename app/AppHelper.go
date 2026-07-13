@@ -68,17 +68,18 @@ func (a *Application) exportState(urlPath, filePrefix string) (fileName string, 
 }
 
 func (a *Application) exportStateBody(urlPath string) ([]byte, error) {
-	if a.state != nil && a.state.Runtime.Router != nil {
+	if a.state != nil && a.state.Runtime.Snapshot().Router != nil {
+		router := a.state.Runtime.Snapshot().Router
 		req := httptest.NewRequest(http.MethodGet, urlPath, nil)
 		resp := httptest.NewRecorder()
-		a.state.Runtime.Router.ServeHTTP(resp, req)
+		router.ServeHTTP(resp, req)
 		if resp.Code != http.StatusOK {
 			return nil, fmt.Errorf("status export request failed for %s: %s", urlPath, http.StatusText(resp.Code))
 		}
 		return resp.Body.Bytes(), nil
 	}
 	u := url.URL{}
-	if a.cfg.Server.UseTls {
+	if a.cfg.Server.UseTLS {
 		u.Scheme = "https"
 	} else {
 		u.Scheme = "http"
@@ -106,5 +107,5 @@ func (a *Application) listenAddr() string {
 	if a.state == nil {
 		return ""
 	}
-	return a.state.Runtime.ListenAddr
+	return a.state.Runtime.Snapshot().ListenAddr
 }

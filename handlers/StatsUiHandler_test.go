@@ -52,15 +52,16 @@ func setupUiTest() func() {
 	exportSvc = service.NewExportServiceWithState(&cfg, state, &repo)
 	cleanSvc = service.NewCleanServiceWithState(&cfg, state, &repo)
 	state.Runtime.BgJobs = cron.New()
-	crawlJobId, _ := state.Runtime.BgJobs.AddFunc("@every 10m", func() {
+	crawlJobID, _ := state.Runtime.BgJobs.AddFunc("@every 10m", func() {
 		_ = crawlSvc.Crawl()
 	})
-	state.Runtime.CrawlJobId = crawlJobId
+	state.Runtime.CrawlJobID = crawlJobID
 	uh = NewStatsUiHandlerWithState(&cfg, state, &repo, &crawlSvc, &exportSvc, &cleanSvc, &calCmsSvc)
 	router = gin.Default()
 	router.LoadHTMLGlob("../templates/*.tmpl")
 	recorder = httptest.NewRecorder()
 	return func() {
+		uh.Close()
 		state.Runtime.BgJobs.Stop()
 		router = nil
 		metrics.UnregisterMetrics(state, registry)
@@ -216,7 +217,7 @@ func TestActionPageContainsFeedbackUi(t *testing.T) {
 	assert.Contains(t, body, `await fetch("/actions"`)
 	assert.Contains(t, body, `alert alert-success`)
 	assert.Contains(t, body, `alert alert-danger`)
-	assert.Contains(t, body, `data.message || "Action completed."`)
+	assert.Contains(t, body, `await pollAction(data.status_url, statusField)`)
 }
 
 func TestValidateHourHourEmptyReturnsNoError(t *testing.T) {
@@ -304,6 +305,21 @@ func runRequest(form url.Values) (data []byte, statusCode int) {
 	return data, res.StatusCode
 }
 
+func waitForActionJob(t *testing.T, data []byte) actionJob {
+	t.Helper()
+	var submitted actionJob
+	assert.NoError(t, json.Unmarshal(data, &submitted))
+	var completed actionJob
+	assert.Eventually(t, func() bool {
+		job, ok := uh.jobs.get(submitted.ID)
+		if ok {
+			completed = job
+		}
+		return ok && (job.Status == "succeeded" || job.Status == "failed")
+	}, 3*time.Second, 10*time.Millisecond)
+	return completed
+}
+
 func TestActionExecWrongActionReturnsError(t *testing.T) {
 	teardown := setupUiTest()
 	defer teardown()
@@ -341,9 +357,11 @@ func TestActionExecCrawlReturnsOk(t *testing.T) {
 
 	data, statusCode := runRequest(form)
 
-	assert.EqualValues(t, http.StatusOK, statusCode)
-	assert.EqualValues(t, "{\"status\":\"ok\",\"action\":\"crawl\",\"message\":\"Crawl completed.\"}", string(data))
-	assert.True(t, state.Runtime.BgJobs.Entry(state.Runtime.CrawlJobId).Valid())
+	assert.EqualValues(t, http.StatusAccepted, statusCode)
+	job := waitForActionJob(t, data)
+	assert.Equal(t, "succeeded", job.Status)
+	assert.Equal(t, "Crawl completed.", job.Message)
+	assert.True(t, state.Runtime.BgJobs.Entry(state.Runtime.CrawlJobID).Valid())
 }
 
 func TestActionExecCleanReturnsOk(t *testing.T) {
@@ -359,8 +377,10 @@ func TestActionExecCleanReturnsOk(t *testing.T) {
 
 	data, statusCode := runRequest(form)
 
-	assert.EqualValues(t, http.StatusOK, statusCode)
-	assert.EqualValues(t, "{\"status\":\"ok\",\"action\":\"clean\",\"message\":\"Clean-up completed.\"}", string(data))
+	assert.EqualValues(t, http.StatusAccepted, statusCode)
+	job := waitForActionJob(t, data)
+	assert.Equal(t, "succeeded", job.Status)
+	assert.Equal(t, "Clean-up completed.", job.Message)
 	assert.EqualValues(t, 1, state.Runtime.FilesCleaned)
 	assert.EqualValues(t, 0, repo.Size())
 }
@@ -375,8 +395,42 @@ func TestActionExecExportReturnsOk(t *testing.T) {
 
 	data, statusCode := runRequest(form)
 
-	assert.EqualValues(t, http.StatusOK, statusCode)
-	assert.EqualValues(t, "{\"status\":\"ok\",\"action\":\"export\",\"message\":\"Export completed for hour 13.\"}", string(data))
+	assert.EqualValues(t, http.StatusAccepted, statusCode)
+	job := waitForActionJob(t, data)
+	assert.Equal(t, "succeeded", job.Status)
+	assert.Equal(t, "Export completed for hour 13.", job.Message)
+}
+
+func TestActionStatusReturnsCompletedJob(t *testing.T) {
+	teardown := setupUiTest()
+	defer teardown()
+	router.POST(actionUrl, uh.ExecAction)
+	router.GET(actionUrl+"/:id", uh.ActionStatus)
+	form := url.Values{"action": {"export"}, "hour": {"13"}}
+
+	data, statusCode := runRequest(form)
+	job := waitForActionJob(t, data)
+	statusRecorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, job.StatusURL, nil)
+	router.ServeHTTP(statusRecorder, request)
+
+	assert.Equal(t, http.StatusAccepted, statusCode)
+	assert.Equal(t, http.StatusOK, statusRecorder.Code)
+	var response actionJob
+	assert.NoError(t, json.Unmarshal(statusRecorder.Body.Bytes(), &response))
+	assert.Equal(t, "succeeded", response.Status)
+	assert.Equal(t, "Export completed for hour 13.", response.Message)
+}
+
+func TestActionStatusReturnsNotFound(t *testing.T) {
+	teardown := setupUiTest()
+	defer teardown()
+	router.GET(actionUrl+"/:id", uh.ActionStatus)
+	request := httptest.NewRequest(http.MethodGet, actionUrl+"/missing", nil)
+
+	router.ServeHTTP(recorder, request)
+
+	assert.Equal(t, http.StatusNotFound, recorder.Code)
 }
 
 func TestActionExecExportToDiskReturnsOk(t *testing.T) {
@@ -388,10 +442,12 @@ func TestActionExecExportToDiskReturnsOk(t *testing.T) {
 	form.Add("action", "exporttodisk")
 
 	data, statusCode := runRequest(form)
-	_, statErr := os.Stat(cfg.Misc.FileSaveFile)
 
-	assert.EqualValues(t, http.StatusOK, statusCode)
-	assert.EqualValues(t, "{\"status\":\"ok\",\"action\":\"exporttodisk\",\"message\":\"File list saved to disk.\"}", string(data))
+	assert.EqualValues(t, http.StatusAccepted, statusCode)
+	job := waitForActionJob(t, data)
+	assert.Equal(t, "succeeded", job.Status)
+	assert.Equal(t, "File list saved to disk.", job.Message)
+	_, statErr := os.Stat(cfg.Misc.FileSaveFile)
 	assert.Nil(t, statErr)
 }
 

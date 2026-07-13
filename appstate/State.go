@@ -19,7 +19,6 @@ type Metrics struct {
 	RunResults         *prometheus.CounterVec
 	RunDurations       *prometheus.HistogramVec
 	FastEventDurations *prometheus.HistogramVec
-	LongEventDurations *prometheus.HistogramVec
 }
 
 type RuntimeState struct {
@@ -38,16 +37,81 @@ type RuntimeState struct {
 	CleanRunning          bool
 	LastCleanDate         time.Time
 	FilesCleaned          int
-	CrawlJobId            cron.EntryID
-	ExportJobId           cron.EntryID
-	CleanJobId            cron.EntryID
-	EventJobId            cron.EntryID
-	CalCmsJobId           cron.EntryID
+	CrawlJobID            cron.EntryID
+	ExportJobID           cron.EntryID
+	CleanJobID            cron.EntryID
+	EventJobID            cron.EntryID
+	CalCmsJobID           cron.EntryID
 	LastCalCmsState       string
 	LastCalCmsRefreshDate time.Time
 	LastCalCmsRefreshErr  string
 	LastMairListCommState string
 	MairListPlaying       bool
+}
+
+// RuntimeSnapshot is an immutable copy of runtime values safe for concurrent readers.
+type RuntimeSnapshot struct {
+	Router                *gin.Engine
+	BgJobs                *cron.Cron
+	ListenAddr            string
+	StartDate             time.Time
+	CrawlRunNumber        int
+	LastCrawlDate         time.Time
+	LastExportRunDate     time.Time
+	LastExportedFileDate  time.Time
+	LastExportFileName    string
+	CrawlRunning          bool
+	ExportRunning         bool
+	CleanRunning          bool
+	LastCleanDate         time.Time
+	FilesCleaned          int
+	CrawlJobID            cron.EntryID
+	ExportJobID           cron.EntryID
+	CleanJobID            cron.EntryID
+	EventJobID            cron.EntryID
+	CalCmsJobID           cron.EntryID
+	LastCalCmsState       string
+	LastCalCmsRefreshDate time.Time
+	LastCalCmsRefreshErr  string
+	LastMairListCommState string
+	MairListPlaying       bool
+}
+
+func (r *RuntimeState) Update(update func(*RuntimeState)) {
+	r.Mu.Lock()
+	defer r.Mu.Unlock()
+	update(r)
+}
+
+func (r *RuntimeState) Snapshot() RuntimeSnapshot {
+	r.Mu.Lock()
+	defer r.Mu.Unlock()
+	return RuntimeSnapshot{
+		Router:                r.Router,
+		BgJobs:                r.BgJobs,
+		ListenAddr:            r.ListenAddr,
+		StartDate:             r.StartDate,
+		CrawlRunNumber:        r.CrawlRunNumber,
+		LastCrawlDate:         r.LastCrawlDate,
+		LastExportRunDate:     r.LastExportRunDate,
+		LastExportedFileDate:  r.LastExportedFileDate,
+		LastExportFileName:    r.LastExportFileName,
+		CrawlRunning:          r.CrawlRunning,
+		ExportRunning:         r.ExportRunning,
+		CleanRunning:          r.CleanRunning,
+		LastCleanDate:         r.LastCleanDate,
+		FilesCleaned:          r.FilesCleaned,
+		CrawlJobID:            r.CrawlJobID,
+		ExportJobID:           r.ExportJobID,
+		CleanJobID:            r.CleanJobID,
+		EventJobID:            r.EventJobID,
+		CalCmsJobID:           r.CalCmsJobID,
+		LastCalCmsState:       r.LastCalCmsState,
+		LastCalCmsRefreshDate: r.LastCalCmsRefreshDate,
+		LastCalCmsRefreshErr:  r.LastCalCmsRefreshErr,
+		LastMairListCommState: r.LastMairListCommState,
+		MairListPlaying:       r.MairListPlaying,
+	}
 }
 
 type AppState struct {

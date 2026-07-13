@@ -22,6 +22,7 @@ import (
 
 	"github.com/johannes-kuhfuss/mairlist-feeder/appstate"
 	"github.com/johannes-kuhfuss/mairlist-feeder/config"
+	"github.com/johannes-kuhfuss/mairlist-feeder/dto"
 	"github.com/johannes-kuhfuss/mairlist-feeder/handlers"
 	metrics "github.com/johannes-kuhfuss/mairlist-feeder/metrics"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
@@ -37,11 +38,35 @@ type Application struct {
 	appCtx         context.Context
 	appCancel      context.CancelFunc
 	statsUiHandler handlers.StatsUiHandler
-	fileRepo       repositories.DefaultFileRepository
-	crawlService   service.DefaultCrawlService
-	cleanService   service.DefaultCleanService
-	exportService  service.DefaultExportService
-	calCmsService  service.DefaultCalCmsService
+	fileRepo       repositories.FileRepository
+	crawlService   applicationCrawler
+	cleanService   applicationCleaner
+	exportService  applicationExporter
+	calCmsService  applicationCalCms
+}
+
+type applicationCrawler interface {
+	service.Crawler
+}
+
+type applicationCleaner interface {
+	service.Cleaner
+}
+
+type applicationExporter interface {
+	service.Exporter
+	ExportAllHoursContext(context.Context) error
+	ExportForHourContext(context.Context, string) error
+	QueryStatus(context.Context)
+}
+
+type applicationCalCms interface {
+	service.CalCmsQuerier
+	RefreshTodayEventsContext(context.Context) ([]dto.Event, error)
+	GetTodayEvents() ([]dto.Event, error)
+	GetYesterdaysEvents() []dto.Event
+	SaveYesterdaysEvents()
+	CountRunContext(context.Context)
 }
 
 const (
@@ -51,11 +76,9 @@ const (
 )
 
 // StartApp orchestrates the startup of the application
-func StartApp() {
+func StartApp() error {
 	application := &Application{}
-	if err := application.Start(); err != nil {
-		panic(err)
-	}
+	return application.Start()
 }
 
 func (a *Application) Start() error {
@@ -75,20 +98,20 @@ func (a *Application) Start() error {
 	a.initRouter()
 	a.initServer()
 	metrics.InitMetrics(a.state, prometheus.DefaultRegisterer)
+	a.RegisterForOsSignals()
 	a.wireApp()
 	if err := a.mapUrls(); err != nil {
 		return err
 	}
-	a.RegisterForOsSignals()
 	a.scheduleBgJobs()
 	go a.startServer()
 	if a.cfg.Export.QueryMairListStatus {
 		go a.exportService.QueryStatus(a.appCtx)
 	}
-	if err := a.crawlService.Crawl(); err != nil {
+	if err := a.crawlService.CrawlContext(a.appCtx); err != nil {
 		logger.Error("Error running initial crawl", err)
 	}
-	if _, err := a.calCmsService.RefreshTodayEvents(); err != nil {
+	if _, err := a.calCmsService.RefreshTodayEventsContext(a.appCtx); err != nil {
 		logger.Error("Error refreshing today's events", err)
 	}
 
@@ -129,7 +152,7 @@ func (a *Application) initRouter() {
 func (a *Application) initServer() {
 	var tlsConfig tls.Config
 
-	if a.cfg.Server.UseTls {
+	if a.cfg.Server.UseTLS {
 		tlsConfig = tls.Config{
 			PreferServerCipherSuites: true,
 			MinVersion:               tls.VersionTLS13,
@@ -140,8 +163,8 @@ func (a *Application) initServer() {
 			},
 		}
 	}
-	if a.cfg.Server.UseTls {
-		a.state.Runtime.ListenAddr = fmt.Sprintf("%s:%s", a.cfg.Server.Host, a.cfg.Server.TlsPort)
+	if a.cfg.Server.UseTLS {
+		a.state.Runtime.ListenAddr = fmt.Sprintf("%s:%s", a.cfg.Server.Host, a.cfg.Server.TLSPort)
 	} else {
 		a.state.Runtime.ListenAddr = fmt.Sprintf("%s:%s", a.cfg.Server.Host, a.cfg.Server.Port)
 	}
@@ -155,7 +178,7 @@ func (a *Application) initServer() {
 		IdleTimeout:       120 * time.Second,
 		MaxHeaderBytes:    http.DefaultMaxHeaderBytes,
 	}
-	if a.cfg.Server.UseTls {
+	if a.cfg.Server.UseTLS {
 		a.server.TLSConfig = &tlsConfig
 		a.server.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler))
 	}
@@ -163,12 +186,17 @@ func (a *Application) initServer() {
 
 // wireApp initializes the services in the right order and injects the dependencies
 func (a *Application) wireApp() {
-	a.fileRepo = repositories.NewFileRepository(&a.cfg)
-	a.calCmsService = service.NewCalCmsServiceWithState(&a.cfg, a.state, &a.fileRepo)
-	a.crawlService = service.NewCrawlServiceWithState(&a.cfg, a.state, &a.fileRepo, a.calCmsService)
-	a.cleanService = service.NewCleanServiceWithState(&a.cfg, a.state, &a.fileRepo)
-	a.exportService = service.NewExportServiceWithState(&a.cfg, a.state, &a.fileRepo)
-	a.statsUiHandler = handlers.NewStatsUiHandlerWithState(&a.cfg, a.state, &a.fileRepo, &a.crawlService, &a.exportService, &a.cleanService, &a.calCmsService)
+	fileRepo := repositories.NewFileRepository(&a.cfg)
+	calCmsService := service.NewCalCmsServiceWithState(&a.cfg, a.state, &fileRepo)
+	crawlService := service.NewCrawlServiceWithState(&a.cfg, a.state, &fileRepo, &calCmsService)
+	cleanService := service.NewCleanServiceWithState(&a.cfg, a.state, &fileRepo)
+	exportService := service.NewExportServiceWithState(&a.cfg, a.state, &fileRepo)
+	a.fileRepo = &fileRepo
+	a.calCmsService = &calCmsService
+	a.crawlService = &crawlService
+	a.cleanService = &cleanService
+	a.exportService = &exportService
+	a.statsUiHandler = handlers.NewStatsUiHandlerWithContext(a.appCtx, &a.cfg, a.state, a.fileRepo, a.crawlService, a.exportService, a.cleanService, a.calCmsService)
 }
 
 // mapUrls defines the handlers for the available URLs
@@ -185,6 +213,7 @@ func (a *Application) mapUrls() error {
 	a.state.Runtime.Router.GET("/yesterday", a.statsUiHandler.YesterdaysEvents)
 	a.state.Runtime.Router.GET(actionUrl, a.statsUiHandler.ActionPage)
 	a.state.Runtime.Router.POST(actionUrl, a.statsUiHandler.ExecAction)
+	a.state.Runtime.Router.GET(actionUrl+"/:id", a.statsUiHandler.ActionStatus)
 	a.state.Runtime.Router.GET("/logs", a.statsUiHandler.LogsPage)
 	a.state.Runtime.Router.GET("/about", a.statsUiHandler.AboutPage)
 	a.state.Runtime.Router.GET("/healthz", a.healthz)
@@ -224,72 +253,74 @@ func (a *Application) scheduleBgJobs() {
 	// cron format: Minutes, Hours, day of Month, Month, Day of Week
 	logger.Info("Scheduling jobs...")
 	crawlCycle := "@every " + strconv.Itoa(a.cfg.Crawl.CrawlCycleMin) + "m"
-	a.state.Runtime.BgJobs = cron.New()
+	bgJobs := cron.New()
+	a.state.Runtime.Update(func(runtime *appstate.RuntimeState) { runtime.BgJobs = bgJobs })
 	// Crawl every x minutes
-	crawlId, crawlErr := a.state.Runtime.BgJobs.AddFunc(crawlCycle, func() {
-		if err := a.crawlService.Crawl(); err != nil {
+	crawlID, crawlErr := bgJobs.AddFunc(crawlCycle, func() {
+		if err := a.crawlService.CrawlContext(a.appCtx); err != nil {
 			logger.Error("Error running scheduled crawl", err)
 		}
 	})
 	// Clean 00:30 local time
-	cleanId, cleanErr := a.state.Runtime.BgJobs.AddFunc("30 0 * * *", func() {
-		if err := a.cleanService.Clean(); err != nil {
+	cleanID, cleanErr := bgJobs.AddFunc("30 0 * * *", func() {
+		if err := a.cleanService.CleanContext(a.appCtx); err != nil {
 			logger.Error("Error running scheduled clean", err)
 		}
 	})
 	// Export every hour, x minutes to the hour
 	exportStr := fmt.Sprintf("%02d * * * *", a.cfg.Export.ExportMinute)
-	exportId, exportErr := a.state.Runtime.BgJobs.AddFunc(exportStr, func() {
-		if err := a.exportService.Export(); err != nil {
+	exportID, exportErr := bgJobs.AddFunc(exportStr, func() {
+		if err := a.exportService.ExportContext(a.appCtx); err != nil {
 			logger.Error("Error running scheduled export", err)
 		}
 	})
-	a.state.Runtime.BgJobs.Start()
 	if crawlErr != nil {
-		logger.Errorf("Error when scheduling job %v for crawling. %v", crawlId, crawlErr)
+		logger.Errorf("Error when scheduling job %v for crawling. %v", crawlID, crawlErr)
 	} else {
-		a.state.Runtime.CrawlJobId = crawlId
-		logger.Infof("Crawl Job: %v - Next execution: %v", a.state.Runtime.BgJobs.Entry(crawlId).Job, a.state.Runtime.BgJobs.Entry(crawlId).Next.String())
+		a.state.Runtime.Update(func(runtime *appstate.RuntimeState) { runtime.CrawlJobID = crawlID })
+		logger.Infof("Crawl Job: %v", bgJobs.Entry(crawlID).Job)
 	}
 	if cleanErr != nil {
-		logger.Errorf("Error when scheduling job %v for cleaning. %v", cleanId, cleanErr)
+		logger.Errorf("Error when scheduling job %v for cleaning. %v", cleanID, cleanErr)
 	} else {
-		a.state.Runtime.CleanJobId = cleanId
-		logger.Infof("Clean Job: %v - Next execution: %v", a.state.Runtime.BgJobs.Entry(cleanId).Job, a.state.Runtime.BgJobs.Entry(cleanId).Next.String())
+		a.state.Runtime.Update(func(runtime *appstate.RuntimeState) { runtime.CleanJobID = cleanID })
+		logger.Infof("Clean Job: %v", bgJobs.Entry(cleanID).Job)
 	}
 	if exportErr != nil {
-		logger.Errorf("Error when scheduling job %v for exporting. %v", exportId, exportErr)
+		logger.Errorf("Error when scheduling job %v for exporting. %v", exportID, exportErr)
 	} else {
-		a.state.Runtime.ExportJobId = exportId
-		logger.Infof("Export Job: %v - Next execution: %v", a.state.Runtime.BgJobs.Entry(exportId).Job, a.state.Runtime.BgJobs.Entry(exportId).Next.String())
+		a.state.Runtime.Update(func(runtime *appstate.RuntimeState) { runtime.ExportJobID = exportID })
+		logger.Infof("Export Job: %v", bgJobs.Entry(exportID).Job)
 	}
 	// Export day's events at 23:15 (before we start looking at the next day)
 	if a.cfg.CalCms.ExportDayEvents {
-		eventId, eventErr := a.state.Runtime.BgJobs.AddFunc("15 23 * * *", a.ExportDayDataRun)
+		eventID, eventErr := bgJobs.AddFunc("15 23 * * *", a.ExportDayDataRun)
 		if eventErr != nil {
-			logger.Errorf("Error when scheduling job %v for recording day's events state. %v", eventId, eventErr)
+			logger.Errorf("Error when scheduling job %v for recording day's events state. %v", eventID, eventErr)
 		} else {
-			a.state.Runtime.EventJobId = eventId
-			logger.Infof("Recording Day's Events Job: %v - Next execution: %v", a.state.Runtime.BgJobs.Entry(eventId).Job, a.state.Runtime.BgJobs.Entry(eventId).Next.String())
+			a.state.Runtime.Update(func(runtime *appstate.RuntimeState) { runtime.EventJobID = eventID })
+			logger.Infof("Recording Day's Events Job: %v", bgJobs.Entry(eventID).Job)
 		}
 	}
 	if a.cfg.CalCms.QueryCalCms {
-		calCmsId, calCmsErr := a.state.Runtime.BgJobs.AddFunc("@every 1m", a.calCmsService.CountRun)
+		calCmsID, calCmsErr := bgJobs.AddFunc("@every 1m", func() { a.calCmsService.CountRunContext(a.appCtx) })
 		if calCmsErr != nil {
-			logger.Errorf("Error when scheduling job %v for CalCMS event counting. %v", calCmsId, calCmsErr)
+			logger.Errorf("Error when scheduling job %v for CalCMS event counting. %v", calCmsID, calCmsErr)
 		} else {
-			a.state.Runtime.CalCmsJobId = calCmsId
-			logger.Infof("CalCMS Event Counting Job: %v - Next execution: %v", a.state.Runtime.BgJobs.Entry(calCmsId).Job, a.state.Runtime.BgJobs.Entry(calCmsId).Next.String())
+			a.state.Runtime.Update(func(runtime *appstate.RuntimeState) { runtime.CalCmsJobID = calCmsID })
+			logger.Infof("CalCMS Event Counting Job: %v", bgJobs.Entry(calCmsID).Job)
 		}
 	}
+	bgJobs.Start()
 	logger.Info("Jobs scheduled")
 }
 
 // startServer starts the preconfigured web server
 func (a *Application) startServer() {
-	logger.Infof("Listening on %v", a.state.Runtime.ListenAddr)
-	a.state.Runtime.StartDate = date.GetNowUtc()
-	if a.cfg.Server.UseTls {
+	runtime := a.state.Runtime.Snapshot()
+	logger.Infof("Listening on %v", runtime.ListenAddr)
+	a.state.Runtime.Update(func(runtime *appstate.RuntimeState) { runtime.StartDate = date.GetNowUtc() })
+	if a.cfg.Server.UseTLS {
 		if err := a.server.ListenAndServeTLS(a.cfg.Server.CertFile, a.cfg.Server.KeyFile); err != nil && err != http.ErrServerClosed {
 			logger.Error("Error while starting https server", err)
 			a.appCancel()
@@ -310,8 +341,8 @@ func (a *Application) cleanUp() (context.Context, context.CancelFunc) {
 	}
 	shutdownTime := time.Duration(a.cfg.Server.GracefulShutdownTime) * time.Second
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), shutdownTime)
-	if a.state.Runtime.BgJobs != nil {
-		cronCtx := a.state.Runtime.BgJobs.Stop()
+	if bgJobs := a.state.Runtime.Snapshot().BgJobs; bgJobs != nil {
+		cronCtx := bgJobs.Stop()
 		select {
 		case <-cronCtx.Done():
 			logger.Info("Background jobs stopped")
@@ -319,6 +350,7 @@ func (a *Application) cleanUp() (context.Context, context.CancelFunc) {
 			logger.Warn("Timed out waiting for background jobs to stop")
 		}
 	}
+	a.statsUiHandler.Close()
 	defer func() {
 		logger.Info("Cleaned up")
 	}()

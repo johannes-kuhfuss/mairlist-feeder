@@ -214,7 +214,7 @@ func TestValidateConfigTlsMissingCertReturnsError(t *testing.T) {
 	cfg.Crawl.CrawlCycleMin = 10
 	cfg.Export.ExportMinute = 59
 	cfg.Export.StatusQueryCycleSec = 5
-	cfg.Server.UseTls = true
+	cfg.Server.UseTLS = true
 	cfg.Server.CertFile = filepath.Join(t.TempDir(), "missing-cert.pem")
 	cfg.Server.KeyFile = filepath.Join(t.TempDir(), "missing-key.pem")
 
@@ -233,7 +233,7 @@ func TestValidateConfigTlsMissingKeyReturnsError(t *testing.T) {
 	cfg.Crawl.CrawlCycleMin = 10
 	cfg.Export.ExportMinute = 59
 	cfg.Export.StatusQueryCycleSec = 5
-	cfg.Server.UseTls = true
+	cfg.Server.UseTLS = true
 	cfg.Server.CertFile = certFile
 	cfg.Server.KeyFile = filepath.Join(dir, "missing-key.pem")
 
@@ -250,8 +250,55 @@ func TestValidateConfigValidRootFolderReturnsNoError(t *testing.T) {
 	cfg.Export.ExportMinute = 59
 	cfg.Export.StatusQueryCycleSec = 5
 	cfg.Crawl.RootFolder = t.TempDir()
+	ffprobe := filepath.Join(t.TempDir(), "ffprobe")
+	os.WriteFile(ffprobe, []byte("test"), 0755)
+	cfg.Crawl.FFprobePath = ffprobe
 
 	err := validateConfig(&cfg)
 
 	assert.Nil(t, err)
+}
+
+func TestValidateConfigMissingExportFolderReturnsError(t *testing.T) {
+	var cfg AppConfig
+	cfg.Server.GracefulShutdownTime = 10
+	cfg.Crawl.CrawlCycleMin = 10
+	cfg.Export.ExportMinute = 59
+	cfg.Export.StatusQueryCycleSec = 5
+	cfg.Export.ExportFolder = filepath.Join(t.TempDir(), "missing")
+
+	err := validateConfig(&cfg)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "export folder is not accessible")
+}
+
+func TestValidateConfigExportFolderFileReturnsError(t *testing.T) {
+	var cfg AppConfig
+	cfg.Server.GracefulShutdownTime = 10
+	cfg.Crawl.CrawlCycleMin = 10
+	cfg.Export.ExportMinute = 59
+	cfg.Export.StatusQueryCycleSec = 5
+	exportFile := filepath.Join(t.TempDir(), "export-file")
+	os.WriteFile(exportFile, []byte("test"), 0644)
+	cfg.Export.ExportFolder = exportFile
+
+	err := validateConfig(&cfg)
+
+	assert.EqualError(t, err, "export folder must be a directory")
+}
+
+func TestValidateConfigMissingFfprobeReturnsError(t *testing.T) {
+	var cfg AppConfig
+	cfg.Server.GracefulShutdownTime = 10
+	cfg.Crawl.CrawlCycleMin = 10
+	cfg.Export.ExportMinute = 59
+	cfg.Export.StatusQueryCycleSec = 5
+	cfg.Crawl.RootFolder = t.TempDir()
+	cfg.Crawl.FFprobePath = filepath.Join(t.TempDir(), "missing-ffprobe")
+
+	err := validateConfig(&cfg)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "ffprobe executable is not accessible")
 }

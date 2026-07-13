@@ -22,13 +22,13 @@ type FileRepository interface {
 	AudioSize() int
 	StreamSize() int
 	GetByPath(string) *domain.FileInfo
-	GetByEventId(int) *domain.FileList
-	GetByEventIdAndDate(int, time.Time) *domain.FileList
-	GetAll() *domain.FileList
-	GetByDate(time.Time) *domain.FileList
-	GetByHour(string, bool) *domain.FileList
-	GetByDateAndHour(time.Time, string, bool) *domain.FileList
-	GetByIdAndDateAndHour(int, time.Time, string, bool) *domain.FileList
+	GetByEventId(int) domain.FileList
+	GetByEventIdAndDate(int, time.Time) domain.FileList
+	GetAll() domain.FileList
+	GetByDate(time.Time) domain.FileList
+	GetByHour(string, bool) domain.FileList
+	GetByDateAndHour(time.Time, string, bool) domain.FileList
+	GetByIdAndDateAndHour(int, time.Time, string, bool) domain.FileList
 	Store(domain.FileInfo) error
 	Delete(string) error
 	SaveToDisk(string) error
@@ -102,7 +102,7 @@ func (fr DefaultFileRepository) GetByPath(filePath string) *domain.FileInfo {
 }
 
 // GetByEventId returns a file's information where the file is identified by its event id (from calCMS). If no file matches, the methods returns nil
-func (fr DefaultFileRepository) GetByEventId(eventId int) *domain.FileList {
+func (fr DefaultFileRepository) GetByEventId(eventId int) domain.FileList {
 	var list domain.FileList
 	if fr.Size() == 0 {
 		return nil
@@ -115,13 +115,13 @@ func (fr DefaultFileRepository) GetByEventId(eventId int) *domain.FileList {
 		}
 	}
 	if len(list) > 0 {
-		return &list
+		return list
 	}
 	return nil
 }
 
 // GetByEventIdAndDate returns file data matching a calCMS event id and folder date.
-func (fr DefaultFileRepository) GetByEventIdAndDate(eventId int, folderDate time.Time) *domain.FileList {
+func (fr DefaultFileRepository) GetByEventIdAndDate(eventId int, folderDate time.Time) domain.FileList {
 	var list domain.FileList
 	if fr.Size() == 0 {
 		return nil
@@ -135,13 +135,13 @@ func (fr DefaultFileRepository) GetByEventIdAndDate(eventId int, folderDate time
 		}
 	}
 	if len(list) > 0 {
-		return &list
+		return list
 	}
 	return nil
 }
 
 // GetByDate returns all file data from the repository for a specific folder date. Returns nil if repository is empty or no files match
-func (fr DefaultFileRepository) GetByDate(folderDate time.Time) *domain.FileList {
+func (fr DefaultFileRepository) GetByDate(folderDate time.Time) domain.FileList {
 	var list domain.FileList
 	if fr.Size() == 0 {
 		return nil
@@ -154,13 +154,13 @@ func (fr DefaultFileRepository) GetByDate(folderDate time.Time) *domain.FileList
 		}
 	}
 	if len(list) > 0 {
-		return &list
+		return list
 	}
 	return nil
 }
 
 // GetAll returns all file data from the repository. Returns nil if repository is empty
-func (fr DefaultFileRepository) GetAll() *domain.FileList {
+func (fr DefaultFileRepository) GetAll() domain.FileList {
 	var list domain.FileList
 	if fr.Size() == 0 {
 		return nil
@@ -170,16 +170,16 @@ func (fr DefaultFileRepository) GetAll() *domain.FileList {
 	for _, file := range fr.files.Files {
 		list = append(list, file)
 	}
-	return &list
+	return list
 }
 
 // GetByHour returns all files' information that fall into a given start hour. If no files match, the methods returns nil
-func (fr DefaultFileRepository) GetByHour(hour string, includeLive bool) *domain.FileList {
+func (fr DefaultFileRepository) GetByHour(hour string, includeLive bool) domain.FileList {
 	return fr.GetByDateAndHour(helper.DateForFolder(fr.Cfg.Misc.TestCrawl, fr.Cfg.Misc.TestDate, 0), hour, includeLive)
 }
 
 // GetByDateAndHour returns all files for a folder date that fall into a given start hour.
-func (fr DefaultFileRepository) GetByDateAndHour(folderDate time.Time, hour string, includeLive bool) *domain.FileList {
+func (fr DefaultFileRepository) GetByDateAndHour(folderDate time.Time, hour string, includeLive bool) domain.FileList {
 	var list domain.FileList
 	if fr.Size() == 0 {
 		return nil
@@ -199,24 +199,24 @@ func (fr DefaultFileRepository) GetByDateAndHour(folderDate time.Time, hour stri
 		}
 	}
 	if len(list) > 0 {
-		return &list
+		return list
 	}
 	return nil
 }
 
 // mergeFileList combines two file lists
-func mergeFileList(fl1, fl2 *domain.FileList) domain.FileList {
+func mergeFileList(fl1, fl2 domain.FileList) domain.FileList {
 	var list domain.FileList
 	if fl1 != nil {
-		if len(*fl1) > 0 {
-			for _, f := range *fl1 {
+		if len(fl1) > 0 {
+			for _, f := range fl1 {
 				list = append(list, f)
 			}
 		}
 	}
 	if fl2 != nil {
-		if len(*fl2) > 0 {
-			for _, f := range *fl2 {
+		if len(fl2) > 0 {
+			for _, f := range fl2 {
 				if !list.ContainsPath(f.Path) {
 					list = append(list, f)
 				}
@@ -227,18 +227,18 @@ func mergeFileList(fl1, fl2 *domain.FileList) domain.FileList {
 }
 
 // GetByIdAndHour gets all elements form the list that either match an eventId or a particular hour
-func (fr DefaultFileRepository) GetByIdAndHour(eventId int, hour string, includeLive bool) *domain.FileList {
+func (fr DefaultFileRepository) GetByIdAndHour(eventId int, hour string, includeLive bool) domain.FileList {
 	return fr.GetByIdAndDateAndHour(eventId, helper.DateForFolder(fr.Cfg.Misc.TestCrawl, fr.Cfg.Misc.TestDate, 0), hour, includeLive)
 }
 
 // GetByIdAndDateAndHour gets all elements that either match an eventId or a particular hour on the same folder date.
-func (fr DefaultFileRepository) GetByIdAndDateAndHour(eventId int, folderDate time.Time, hour string, includeLive bool) *domain.FileList {
+func (fr DefaultFileRepository) GetByIdAndDateAndHour(eventId int, folderDate time.Time, hour string, includeLive bool) domain.FileList {
 	var list domain.FileList
 	files1 := fr.GetByEventIdAndDate(eventId, folderDate)
 	files2 := fr.GetByDateAndHour(folderDate, hour, includeLive)
 	list = mergeFileList(files1, files2)
 	if len(list) > 0 {
-		return &list
+		return list
 	}
 	return nil
 }
@@ -349,7 +349,7 @@ func (fr DefaultFileRepository) DeleteAllData() {
 func (fr DefaultFileRepository) NewFiles() (newFiles bool) {
 	if fr.Size() > 0 {
 		allFiles := fr.GetAll()
-		for _, file := range *allFiles {
+		for _, file := range allFiles {
 			if !file.InfoExtracted {
 				newFiles = true
 				break
