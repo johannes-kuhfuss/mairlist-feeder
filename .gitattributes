@@ -1,0 +1,10 @@
+# gofmt requires LF line endings. GitHub's Windows runners otherwise check out
+# Go sources as CRLF when core.autocrlf is enabled and report every file as
+# unformatted.
+*.go text eol=lf
+go.mod text eol=lf
+go.sum text eol=lf
+
+# Keep automation files consistent across Windows and Unix checkouts.
+*.yml text eol=lf
+*.yaml text eol=lf
