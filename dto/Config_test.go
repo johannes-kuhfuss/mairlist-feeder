@@ -34,7 +34,7 @@ func TestConvertDateNoDateReturnsNA(t *testing.T) {
 
 func TestConvertDateDateReturnsString(t *testing.T) {
 	ti := time.Date(2024, 9, 17, 11, 12, 13, 0, time.UTC)
-	d := convertDate(ti)
+	d := convertDateInLocation(ti, time.FixedZone("CEST", 2*60*60))
 	assert.EqualValues(t, "2024-09-17 13:12:13 +0200 CEST", d)
 }
 

@@ -68,11 +68,14 @@ func setStartDate(date time.Time) string {
 
 // convertDate converts a date to its display format
 func convertDate(date time.Time) string {
+	return convertDateInLocation(date, time.Local)
+}
+
+func convertDateInLocation(date time.Time, location *time.Location) string {
 	if date.IsZero() {
 		return "N/A"
-	} else {
-		return date.Local().Format("2006-01-02 15:04:05 -0700 MST")
 	}
+	return date.In(location).Format("2006-01-02 15:04:05 -0700 MST")
 }
 
 // getNextJobDate retrieves a job's next execution date and returns it in its display format

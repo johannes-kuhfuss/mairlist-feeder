@@ -12,6 +12,7 @@ import (
 	"github.com/johannes-kuhfuss/mairlist-feeder/domain"
 	"github.com/johannes-kuhfuss/mairlist-feeder/repositories"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -124,7 +125,11 @@ func TestExtractFileInfoAnyFileReturnsData(t *testing.T) {
 func TestExtractFileInfoRealFileReturnsData(t *testing.T) {
 	teardown := setupTestCrawl()
 	defer teardown()
-	cfgCrawl.Crawl.FFprobePath = "../prog/ffprobe.exe"
+	ffprobeOutput, err := os.ReadFile("../samples/ffprobe_allok.json")
+	require.NoError(t, err)
+	crawlSvc.RunCmd = func(context.Context, string, ...string) ([]byte, error) {
+		return ffprobeOutput, nil
+	}
 	fi1 := domain.FileInfo{
 		Path:       audioSampleFile,
 		FolderDate: parsedFolderDate,
@@ -238,9 +243,15 @@ func TestAnalyzeTechMdStopsWhenContextIsCanceled(t *testing.T) {
 }
 
 func TestAnalyzeTechMdSampleFileReturnsTechMd(t *testing.T) {
-	d, e := analyzeTechMd(audioSampleFile, 5, "../prog/ffprobe.exe")
-	assert.Nil(t, e)
-	assert.NotNil(t, d)
+	ffprobeOutput, err := os.ReadFile("../samples/ffprobe_allok.json")
+	require.NoError(t, err)
+	runner := func(context.Context, string, ...string) ([]byte, error) {
+		return ffprobeOutput, nil
+	}
+
+	d, e := analyzeTechMdWithRunner(audioSampleFile, 5, "ffprobe", runner)
+	require.NoError(t, e)
+	require.NotNil(t, d)
 	assert.EqualValues(t, 5*time.Second, d.Duration.Round(time.Second))
 }
 

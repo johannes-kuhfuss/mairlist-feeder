@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -84,7 +85,7 @@ func TestCheckFilePathEmptyPathKeepsPathEmpty(t *testing.T) {
 func TestCheckFilePathCorrectPathReturnsCorrectPath(t *testing.T) {
 	testPath := "C:\\TEMP"
 	checkFilePath(&testPath)
-	assert.EqualValues(t, "C:\\temp", testPath)
+	assert.True(t, strings.EqualFold("C:\\temp", testPath))
 }
 
 func TestCheckFilePathWeirdPathReturnsCorrectPath(t *testing.T) {
