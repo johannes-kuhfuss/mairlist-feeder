@@ -131,10 +131,6 @@ func (s DefaultCalCmsService) getCalCmsEventDataContext(ctx context.Context) (ev
 	return s.getCalCmsEventDataForDatesContext(ctx, helper.GetCrawlDates(s.Cfg.Misc.TestCrawl, s.Cfg.Misc.TestDate))
 }
 
-func (s DefaultCalCmsService) getCalCmsEventDataForDates(dates []time.Time) (eventData []byte, e error) {
-	return s.getCalCmsEventDataForDatesContext(context.Background(), dates)
-}
-
 func (s DefaultCalCmsService) getCalCmsEventDataForDatesContext(ctx context.Context, dates []time.Time) (eventData []byte, e error) {
 	//API doc: https://github.com/rapilodev/racalmas/blob/master/docs/event-api.md
 	//URL old: https://programm.coloradio.org/agenda/events.cgi?date=2024-04-09&template=event.json-p

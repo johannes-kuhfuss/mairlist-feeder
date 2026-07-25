@@ -382,11 +382,7 @@ func (s DefaultCrawlService) extractFileInfoContext(ctx context.Context) (fc dto
 	return fc, nil
 }
 
-// extractAudioInfo enriches the file information with audio file specific metadata
-func (s DefaultCrawlService) extractAudioInfo(oldInfo domain.FileInfo) (newInfo domain.FileInfo, e error) {
-	return s.extractAudioInfoContext(context.Background(), oldInfo)
-}
-
+// extractAudioInfoContext enriches the file information with audio file specific metadata
 func (s DefaultCrawlService) extractAudioInfoContext(ctx context.Context, oldInfo domain.FileInfo) (newInfo domain.FileInfo, e error) {
 	newInfo = oldInfo
 	newInfo.FileType = domain.FileTypeAudio
