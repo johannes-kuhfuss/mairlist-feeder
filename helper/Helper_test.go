@@ -3,6 +3,7 @@ package helper
 import (
 	"fmt"
 	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -53,7 +54,7 @@ func TestTimeFromHourAndMinuteAndDateCorrectTimeReturnsTime(t *testing.T) {
 func TestIsAudioFileNotInReturnsFalse(t *testing.T) {
 	var cfg config.AppConfig
 	config.InitConfig("", &cfg)
-	path := "C:\\TEMP\\testfile.flac"
+	path := filepath.Join(t.TempDir(), "testfile.flac")
 	isA := IsAudioFile(&cfg, path)
 	assert.EqualValues(t, false, isA)
 }
@@ -61,7 +62,7 @@ func TestIsAudioFileNotInReturnsFalse(t *testing.T) {
 func TestIsAudioFileInReturnsTrue(t *testing.T) {
 	var cfg config.AppConfig
 	config.InitConfig("", &cfg)
-	path := "C:\\TEMP\\testfile.mp3"
+	path := filepath.Join(t.TempDir(), "testfile.mp3")
 	isA := IsAudioFile(&cfg, path)
 	assert.EqualValues(t, true, isA)
 }
@@ -69,7 +70,7 @@ func TestIsAudioFileInReturnsTrue(t *testing.T) {
 func TestIsStreamingFileNotInReturnsFalse(t *testing.T) {
 	var cfg config.AppConfig
 	config.InitConfig("", &cfg)
-	path := "C:\\TEMP\\testfile.xyz"
+	path := filepath.Join(t.TempDir(), "testfile.xyz")
 	isA := IsStreamingFile(&cfg, path)
 	assert.EqualValues(t, false, isA)
 }
@@ -77,7 +78,7 @@ func TestIsStreamingFileNotInReturnsFalse(t *testing.T) {
 func TestIsStreamingFileInReturnsTrue(t *testing.T) {
 	var cfg config.AppConfig
 	config.InitConfig("", &cfg)
-	path := "C:\\TEMP\\testfile.stream"
+	path := filepath.Join(t.TempDir(), "testfile.stream")
 	isA := IsStreamingFile(&cfg, path)
 	assert.EqualValues(t, true, isA)
 }

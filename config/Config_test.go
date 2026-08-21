@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -83,15 +82,18 @@ func TestCheckFilePathEmptyPathKeepsPathEmpty(t *testing.T) {
 }
 
 func TestCheckFilePathCorrectPathReturnsCorrectPath(t *testing.T) {
-	testPath := "C:\\TEMP"
+	testPath := "folder" + string(os.PathSeparator) + "." + string(os.PathSeparator) + "file.txt"
+
 	checkFilePath(&testPath)
-	assert.True(t, strings.EqualFold("C:\\temp", testPath))
+	assert.EqualValues(t, filepath.Join("folder", "file.txt"), testPath)
 }
 
 func TestCheckFilePathWeirdPathReturnsCorrectPath(t *testing.T) {
-	testPath := "C:\\TEMP\\..\\..\\..\\etc"
+	testPath := "folder" + string(os.PathSeparator) + ".." + string(os.PathSeparator) + ".." + string(os.PathSeparator) + "etc"
+	expectedPath := filepath.Clean(testPath)
+
 	checkFilePath(&testPath)
-	assert.EqualValues(t, "C:\\etc", testPath)
+	assert.EqualValues(t, expectedPath, testPath)
 }
 
 func TestValidateConfigInvalidExportMinuteReturnsError(t *testing.T) {
