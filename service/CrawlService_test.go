@@ -92,7 +92,7 @@ func TestExtractFileInfoFileNamingConventionReturnsData(t *testing.T) {
 	teardown := setupTestCrawl()
 	defer teardown()
 	fi1 := domain.FileInfo{
-		Path:       "Z:\\sendungen\\2024\\09\\22\\2000-2100_sendung-xyz.mp3",
+		Path:       filepath.Join("sendungen", "2024", "09", "22", "2000-2100_sendung-xyz.mp3"),
 		FolderDate: parsedFolderDate,
 	}
 	crawlRepo.Store(fi1)
