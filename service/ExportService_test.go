@@ -281,7 +281,7 @@ func TestSetExportPathRegularReturnsPath(t *testing.T) {
 	file := time.Now().Format("2006-01-02") + "-" + hour + ".tpi"
 	tp := filepath.Join(exportService.Cfg.Export.ExportFolder, file)
 
-	assert.EqualValues(t, strings.Replace(tp, "/", "\\", -1), s)
+	assert.EqualValues(t, tp, s)
 }
 
 func TestSetExportPathForDateRegularReturnsPathForRequestedDate(t *testing.T) {
@@ -294,7 +294,7 @@ func TestSetExportPathForDateRegularReturnsPathForRequestedDate(t *testing.T) {
 	file := "2024-09-18-" + hour + ".tpi"
 	tp := filepath.Join(exportService.Cfg.Export.ExportFolder, file)
 
-	assert.EqualValues(t, strings.Replace(tp, "/", "\\", -1), s)
+	assert.EqualValues(t, tp, s)
 }
 
 func TestIsPathWithinRejectsSiblingDirectory(t *testing.T) {

@@ -224,8 +224,7 @@ func TestParseTechMdCorrectDataReturnsTechMD(t *testing.T) {
 func TestAnalyzeTechMdWrongFfprobePathReturnsError(t *testing.T) {
 	d, e := analyzeTechMd("/here/file", 5, "/here/no/ffprobe")
 	assert.Nil(t, d)
-	assert.NotNil(t, e)
-	assert.Contains(t, e.Error(), "executable file not found")
+	assert.Error(t, e)
 }
 
 func TestAnalyzeTechMdStopsWhenContextIsCanceled(t *testing.T) {
@@ -369,7 +368,10 @@ func TestAnalyzeStreamDataMixedCaseMapKeyReturnsNameAndId(t *testing.T) {
 }
 
 func TestFolderDateFromPathCorrectPathReturnsFolderDate(t *testing.T) {
-	folderDate, err := folderDateFromPath("Z:\\sendungen\\2024\\09\\22\\21-00\\test.mp3", "Z:\\sendungen")
+	rootFolder := filepath.Join("root", "sendungen")
+	sourcePath := filepath.Join(rootFolder, "2024", "09", "22", "21-00", "test.mp3")
+
+	folderDate, err := folderDateFromPath(sourcePath, rootFolder)
 	assert.Nil(t, err)
 	assert.EqualValues(t, domain.MustParseFolderDate("2024-09-22"), folderDate)
 }
